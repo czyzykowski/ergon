@@ -16,7 +16,7 @@ export class ClockworkClient {
 
   async startTimer(issueKey: string): Promise<ClockworkTimerResponse> {
     return await this.request<ClockworkTimerResponse>(
-      "/rest/clockwork/1/timer",
+      "/v1/timer",
       {
         method: "POST",
         body: JSON.stringify({ issueKey }),
@@ -26,7 +26,7 @@ export class ClockworkClient {
 
   async stopTimer(): Promise<ClockworkTimerResponse> {
     return await this.request<ClockworkTimerResponse>(
-      "/rest/clockwork/1/timer",
+      "/v1/timer",
       {
         method: "DELETE",
       },
@@ -53,16 +53,14 @@ export class ClockworkClient {
     }
 
     const query = params.toString();
-    const path = query
-      ? `/rest/clockwork/1/worklog?${query}`
-      : "/rest/clockwork/1/worklog";
+    const path = query ? `/v1/worklogs?${query}` : "/v1/worklogs";
 
-    const response = await this.request<{ worklogs: ClockworkWorklog[] }>(
+    const response = await this.request<ClockworkWorklog[]>(
       path,
       { method: "GET" },
     );
 
-    return response.worklogs ?? [];
+    return response ?? [];
   }
 
   async logWork(input: {
@@ -72,7 +70,7 @@ export class ClockworkClient {
     startedAt?: string;
   }): Promise<ClockworkWorklog> {
     const response = await this.request<ClockworkWorklog>(
-      "/rest/clockwork/1/worklog",
+      "/v1/worklogs",
       {
         method: "POST",
         body: JSON.stringify({
@@ -94,7 +92,7 @@ export class ClockworkClient {
     const url = `${this.baseUrl}${path}`;
     const headers = new Headers(init.headers);
 
-    headers.set("Authorization", `Bearer ${this.apiToken}`);
+    headers.set("Authorization", `Token ${this.apiToken}`);
     headers.set("Accept", "application/json");
 
     if (init.body) {
