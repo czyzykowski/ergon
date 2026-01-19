@@ -8,3 +8,4 @@
 - [x] 6.3 Jira client
 - [x] 6.4 Clockwork client
 - [x] Add API check script
+- [x] 6.5 Local state

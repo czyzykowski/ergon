@@ -43,6 +43,19 @@ export interface ClockworkWorklog {
   timeSpentSeconds?: number;
 }
 
+export interface TimerState {
+  issueKey: string;
+  startedAt: string;
+  summary?: string;
+}
+
+export interface ErgonState {
+  lastProject?: string;
+  lastEpic?: string;
+  lastIssueKey?: string;
+  timer?: TimerState;
+}
+
 export interface ErgonConfig {
   jira: JiraConfig;
   clockwork: ClockworkConfig;
