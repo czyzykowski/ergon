@@ -1,6 +1,7 @@
 {
   "name": "ergon",
   "version": "0.1.0",
+  "exports": "./src/main.ts",
   "imports": {
     "cliffy/": "https://deno.land/x/cliffy@v0.25.7/",
     "yaml/": "https://deno.land/std@0.224.0/yaml/",

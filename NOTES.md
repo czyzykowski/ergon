@@ -9,3 +9,4 @@
 - [x] 6.4 Clockwork client
 - [x] Add API check script
 - [x] 6.5 Local state
+- [x] 6.6 Commands (start/stop/status)

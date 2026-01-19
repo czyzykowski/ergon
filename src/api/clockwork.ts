@@ -103,15 +103,30 @@ export class ClockworkClient {
       ...init,
       headers,
     });
+    const body = await response.text();
+
+    if (Deno.env.get("ERGON_DEBUG_CLOCKWORK") === "1") {
+      console.log(
+        JSON.stringify(
+          {
+            url,
+            status: response.status,
+            ok: response.ok,
+            body,
+          },
+          null,
+          2,
+        ),
+      );
+    }
 
     if (!response.ok) {
-      const body = await response.text();
       throw new Error(
         `Clockwork API request failed (${response.status}): ${body}`,
       );
     }
 
-    return (await response.json()) as T;
+    return JSON.parse(body) as T;
   }
 }
 

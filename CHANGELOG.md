@@ -12,3 +12,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Added Clockwork client for timers and worklogs.
 - Added API check script for Jira and Clockwork.
 - Added local state loader for last selections and timer metadata.
+- Added start/stop/status commands wired to Jira and Clockwork.
