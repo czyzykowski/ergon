@@ -35,6 +35,14 @@ export interface JiraIssue {
   originalEstimateSeconds: number | null;
 }
 
+export interface ClockworkWorklog {
+  id?: string | number;
+  issueKey?: string;
+  description?: string;
+  startedAt?: string;
+  timeSpentSeconds?: number;
+}
+
 export interface ErgonConfig {
   jira: JiraConfig;
   clockwork: ClockworkConfig;

@@ -9,3 +9,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Added initial Deno CLI skeleton with Cliffy.
 - Added YAML config loader with env var expansion.
 - Added Jira API client with issue mapping and search helpers.
+- Added Clockwork client for timers and worklogs.
