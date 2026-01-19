@@ -10,6 +10,10 @@ export function buildCommand(): Command {
     .description(MAIN_DESCRIPTION);
 }
 
-if (import.meta.main) {
+export async function main(): Promise<void> {
   await buildCommand().parse(Deno.args);
+}
+
+if (import.meta.main) {
+  await main();
 }

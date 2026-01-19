@@ -2,7 +2,9 @@
   "name": "ergon",
   "version": "0.1.0",
   "imports": {
-    "cliffy/": "https://deno.land/x/cliffy@v0.25.7/"
+    "cliffy/": "https://deno.land/x/cliffy@v0.25.7/",
+    "yaml/": "https://deno.land/std@0.224.0/yaml/",
+    "path/": "https://deno.land/std@0.224.0/path/"
   },
   "tasks": {
     "ergon": "deno run --allow-net --allow-read --allow-env --allow-write src/main.ts"

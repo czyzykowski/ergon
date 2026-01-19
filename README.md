@@ -10,3 +10,7 @@ CLI for Jira + Clockwork workflows.
 ## Usage
 
 - `ergon --help`
+
+## Configuration
+
+Config file location: `~/.config/ergon/config.yaml`.
