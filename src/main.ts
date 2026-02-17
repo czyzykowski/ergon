@@ -1,5 +1,11 @@
 import { Command } from "cliffy/command/mod.ts";
 import { ConfigError } from "./config.ts";
+import { registerLogCommand } from "./commands/log.ts";
+import { registerLsCommand } from "./commands/ls.ts";
+import { registerMenuCommand } from "./commands/menu.ts";
+import { registerNewCommand } from "./commands/new.ts";
+import { registerOpenCommand } from "./commands/open.ts";
+import { registerSearchCommand } from "./commands/search.ts";
 import { registerStartCommand } from "./commands/start.ts";
 import { registerStatusCommand } from "./commands/status.ts";
 import { registerStopCommand } from "./commands/stop.ts";
@@ -12,9 +18,15 @@ export function buildCommand(): Command {
     .version("0.1.0")
     .description(MAIN_DESCRIPTION);
 
+  registerNewCommand(program);
   registerStartCommand(program);
   registerStopCommand(program);
   registerStatusCommand(program);
+  registerLogCommand(program);
+  registerLsCommand(program);
+  registerSearchCommand(program);
+  registerOpenCommand(program);
+  registerMenuCommand(program);
 
   return program;
 }

@@ -8,6 +8,9 @@
     "path/": "https://deno.land/std@0.224.0/path/"
   },
   "tasks": {
-    "ergon": "deno run --allow-net --allow-read --allow-env --allow-write src/main.ts"
+    "ergon": "deno run --allow-net --allow-read --allow-env --allow-write --allow-run src/main.ts",
+    "test": "deno test --allow-read --allow-write --allow-env",
+    "coverage": "deno test --allow-read --allow-write --allow-env --coverage=coverage",
+    "coverage:report": "deno coverage coverage"
   }
 }
