@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+
+# Guard: jq must be available
+if ! command -v jq &>/dev/null; then
+  printf '%s' '--'
+  exit 0
+fi
+
+# Run ergon status --json
+json=$(cd "$PROJECT_DIR" && deno task ergon status --json 2>/dev/null)
+if [[ $? -ne 0 ]]; then
+  printf '%s' '--'
+  exit 0
+fi
+
+# Parse JSON
+today=$(echo "$json" | jq -r '.todayFormatted')
+issue_key=$(echo "$json" | jq -r '.timer.issueKey // empty')
+summary=$(echo "$json" | jq -r '.timer.summary // empty')
+
+# Format output
+if [[ -z "$issue_key" ]]; then
+  printf '%s' "-- | $today"
+elif [[ -z "$summary" ]]; then
+  printf '%s' "$issue_key | $today"
+else
+  if [[ ${#summary} -gt 30 ]]; then
+    summary="${summary:0:30}…"
+  fi
+  printf '%s' "$issue_key $summary | $today"
+fi
+
+exit 0

@@ -30,11 +30,71 @@ export interface JiraIssueFields {
 export interface JiraIssueResponse {
   id: string;
   key: string;
-  fields: JiraIssueFields;
+  fields?: JiraIssueFields;
 }
 
 export interface JiraSearchResponse {
   issues: JiraIssueResponse[];
+}
+
+export interface JiraIssueFieldsResponse {
+  fields: Record<string, unknown>;
+}
+
+export interface JiraFieldOption {
+  id: string;
+  value: string;
+}
+
+export interface JiraFieldContextResponse {
+  values?: Array<{ id: string }>;
+}
+
+export interface JiraFieldOptionResponse {
+  values?: JiraFieldOption[];
+}
+
+export interface JiraBoard {
+  id: number;
+  name: string;
+}
+
+export interface JiraBoardResponse {
+  values?: JiraBoard[];
+}
+
+export interface JiraSprint {
+  id: number;
+  name: string;
+  state?: string;
+}
+
+export interface JiraSprintResponse {
+  values?: JiraSprint[];
+}
+
+export interface JiraLabelResponse {
+  values?: string[];
+  startAt?: number;
+  maxResults?: number;
+  isLast?: boolean;
+  total?: number;
+}
+
+export interface JiraWorklogResponse {
+  id: string;
+  started: string;
+  timeSpentSeconds: number;
+}
+
+export interface JiraTransition {
+  id: string;
+  name: string;
+  to: { name: string };
+}
+
+export interface JiraTransitionsResponse {
+  transitions: JiraTransition[];
 }
 
 export class JiraClient {
@@ -54,6 +114,8 @@ export class JiraClient {
     issueType: string;
     description?: string;
     parentKey?: string;
+    labels?: string[];
+    customFields?: Record<string, unknown>;
   }): Promise<JiraIssue> {
     const fields: Record<string, unknown> = {
       project: { key: input.projectKey },
@@ -67,6 +129,16 @@ export class JiraClient {
 
     if (input.parentKey) {
       fields.parent = { key: input.parentKey };
+    }
+
+    if (input.labels && input.labels.length > 0) {
+      fields.labels = input.labels;
+    }
+
+    if (input.customFields) {
+      for (const [key, value] of Object.entries(input.customFields)) {
+        fields[key] = value;
+      }
     }
 
     const response = await this.request<JiraIssueResponse>(
@@ -91,13 +163,14 @@ export class JiraClient {
     return mapIssue(issue);
   }
 
-  async search(jql: string): Promise<JiraIssue[]> {
+  async search(jql: string, maxResults = 50): Promise<JiraIssue[]> {
     const response = await this.request<JiraSearchResponse>(
-      "/rest/api/3/search",
+      "/rest/api/3/search/jql",
       {
         method: "POST",
         body: JSON.stringify({
           jql,
+          maxResults,
           fields: SEARCH_FIELDS,
         }),
       },
@@ -111,6 +184,155 @@ export class JiraClient {
       `project = ${projectKey} AND issuetype = Epic ORDER BY updated DESC`;
 
     return await this.search(jql);
+  }
+
+  async getIssueFields(
+    issueKey: string,
+    fields: string[],
+  ): Promise<Record<string, unknown>> {
+    const params = new URLSearchParams({ fields: fields.join(",") });
+    const response = await this.request<JiraIssueFieldsResponse>(
+      `/rest/api/3/issue/${encodeURIComponent(issueKey)}?${params}`,
+      {
+        method: "GET",
+      },
+    );
+
+    return response.fields ?? {};
+  }
+
+  async getFieldOptions(fieldId: string): Promise<JiraFieldOption[]> {
+    const contexts = await this.request<JiraFieldContextResponse>(
+      `/rest/api/3/field/${encodeURIComponent(fieldId)}/context`,
+      {
+        method: "GET",
+      },
+    );
+
+    const contextId = contexts.values?.[0]?.id;
+    if (!contextId) {
+      return [];
+    }
+
+    const options = await this.request<JiraFieldOptionResponse>(
+      `/rest/api/3/field/${
+        encodeURIComponent(fieldId)
+      }/context/${contextId}/option`,
+      {
+        method: "GET",
+      },
+    );
+
+    return options.values ?? [];
+  }
+
+  async listBoards(projectKey: string): Promise<JiraBoard[]> {
+    const params = new URLSearchParams({ projectKeyOrId: projectKey });
+    const response = await this.request<JiraBoardResponse>(
+      `/rest/agile/1.0/board?${params}`,
+      {
+        method: "GET",
+      },
+    );
+
+    return response.values ?? [];
+  }
+
+  async listActiveSprints(boardId: number): Promise<JiraSprint[]> {
+    const params = new URLSearchParams({ state: "active" });
+    const response = await this.request<JiraSprintResponse>(
+      `/rest/agile/1.0/board/${boardId}/sprint?${params}`,
+      {
+        method: "GET",
+      },
+    );
+
+    return response.values ?? [];
+  }
+
+  async listLabels(): Promise<string[]> {
+    const labels: string[] = [];
+    let startAt = 0;
+
+    while (true) {
+      const params = new URLSearchParams({
+        startAt: startAt.toString(),
+        maxResults: "1000",
+      });
+      const response = await this.request<JiraLabelResponse>(
+        `/rest/api/3/label?${params}`,
+        {
+          method: "GET",
+        },
+      );
+
+      if (response.values) {
+        labels.push(...response.values);
+      }
+
+      if (response.isLast) {
+        break;
+      }
+
+      const pageSize = response.maxResults ?? response.values?.length ?? 0;
+      if (pageSize === 0) {
+        break;
+      }
+
+      startAt += pageSize;
+      if (response.total && startAt >= response.total) {
+        break;
+      }
+    }
+
+    return labels;
+  }
+
+  async addWorklog(input: {
+    issueKey: string;
+    timeSpentSeconds: number;
+    startedAt?: string;
+    comment?: string;
+  }): Promise<JiraWorklogResponse> {
+    const body: Record<string, unknown> = {
+      timeSpentSeconds: input.timeSpentSeconds,
+    };
+
+    if (input.startedAt) {
+      body.started = input.startedAt;
+    }
+
+    if (input.comment) {
+      body.comment = input.comment;
+    }
+
+    const response = await this.request<JiraWorklogResponse>(
+      `/rest/api/3/issue/${encodeURIComponent(input.issueKey)}/worklog`,
+      {
+        method: "POST",
+        body: JSON.stringify(body),
+      },
+    );
+
+    return response;
+  }
+
+  async getTransitions(issueKey: string): Promise<JiraTransition[]> {
+    const response = await this.request<JiraTransitionsResponse>(
+      `/rest/api/3/issue/${encodeURIComponent(issueKey)}/transitions`,
+      { method: "GET" },
+    );
+    return response.transitions;
+  }
+
+  async transitionIssue(issueKey: string, transitionId: string): Promise<void> {
+    await this.request<unknown>(
+      `/rest/api/3/issue/${encodeURIComponent(issueKey)}/transitions`,
+      {
+        method: "POST",
+        body: JSON.stringify({ transition: { id: transitionId } }),
+      },
+    );
   }
 
   private async request<T>(
@@ -140,27 +362,30 @@ export class JiraClient {
       );
     }
 
-    return (await response.json()) as T;
+    const text = await response.text();
+    if (!text) return undefined as T;
+    return JSON.parse(text) as T;
   }
 }
 
 function mapIssue(issue: JiraIssueResponse): JiraIssue {
-  const epic = issue.fields.customfield_10008?.[0];
+  const fields = issue.fields ?? {} as JiraIssueFields;
+  const epic = fields.customfield_10008?.[0];
 
   return {
     id: issue.id,
     key: issue.key,
-    summary: issue.fields.summary,
-    status: issue.fields.status?.name ?? "",
-    issueType: issue.fields.issuetype?.name ?? "",
-    projectKey: issue.fields.project?.key ?? "",
-    parentKey: issue.fields.parent?.key,
-    parentSummary: issue.fields.parent?.fields.summary,
-    assignee: issue.fields.assignee?.displayName ?? null,
+    summary: fields.summary ?? "",
+    status: fields.status?.name ?? "",
+    issueType: fields.issuetype?.name ?? "",
+    projectKey: fields.project?.key ?? "",
+    parentKey: fields.parent?.key,
+    parentSummary: fields.parent?.fields.summary,
+    assignee: fields.assignee?.displayName ?? null,
     epicKey: epic?.key,
     epicSummary: epic?.fields?.summary,
-    timeSpentSeconds: issue.fields.timetracking?.timeSpentSeconds ?? null,
-    originalEstimateSeconds:
-      issue.fields.timetracking?.originalEstimateSeconds ?? null,
+    timeSpentSeconds: fields.timetracking?.timeSpentSeconds ?? null,
+    originalEstimateSeconds: fields.timetracking?.originalEstimateSeconds ??
+      null,
   };
 }

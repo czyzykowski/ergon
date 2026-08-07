@@ -1,4 +1,4 @@
-import { Command } from "cliffy/command/mod.ts";
+import type { Command } from "cliffy/command/mod.ts";
 import { ClockworkClient, formatDuration } from "../api/clockwork.ts";
 import { loadConfig } from "../config.ts";
 import { loadState } from "../state.ts";
@@ -28,13 +28,15 @@ export function registerStatusCommand(program: Command): void {
       const worklogs = await clockwork.getWorklogs({
         from: dateLabel,
         to: dateLabel,
+        userQuery: config.clockwork.userQuery,
       });
       const todayWorklogs = worklogs.filter((log) => {
-        if (!log.startedAt) {
+        const startedAt = log.startedAt ?? log.started;
+        if (!startedAt) {
           return false;
         }
 
-        return log.startedAt.startsWith(dateLabel);
+        return startedAt.startsWith(dateLabel);
       });
       const todaySeconds = todayWorklogs.reduce((total, log) => {
         return total + (log.timeSpentSeconds ?? 0);

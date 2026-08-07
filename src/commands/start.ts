@@ -1,4 +1,4 @@
-import { Command } from "cliffy/command/mod.ts";
+import type { Command } from "cliffy/command/mod.ts";
 import { JiraClient } from "../api/jira.ts";
 import { ClockworkClient } from "../api/clockwork.ts";
 import { loadConfig } from "../config.ts";
@@ -18,7 +18,9 @@ export function registerStartCommand(program: Command): void {
       }
 
       const jira = new JiraClient(config.jira);
-      const clockwork = new ClockworkClient(config.clockwork);
+      const clockwork = new ClockworkClient(config.clockwork, {
+        timerBaseUrl: config.clockwork.timerBaseUrl,
+      });
 
       const issue = await jira.getIssue(key);
       const timer = await clockwork.startTimer(issue.key);

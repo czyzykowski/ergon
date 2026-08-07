@@ -39,5 +39,8 @@ export function resolveStatePath(baseDir?: string): string {
     return join(baseDir, STATE_RELATIVE_PATH);
   }
 
-  return join(Deno.env.get("HOME") ?? Deno.homeDir(), STATE_RELATIVE_PATH);
+  return join(
+    Deno.env.get("HOME") ?? Deno.env.get("USERPROFILE") ?? "",
+    STATE_RELATIVE_PATH,
+  );
 }

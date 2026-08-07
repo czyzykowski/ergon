@@ -4,6 +4,7 @@ import { registerLogCommand } from "./commands/log.ts";
 import { registerLsCommand } from "./commands/ls.ts";
 import { registerMenuCommand } from "./commands/menu.ts";
 import { registerNewCommand } from "./commands/new.ts";
+import { registerMoveCommand } from "./commands/move.ts";
 import { registerOpenCommand } from "./commands/open.ts";
 import { registerSearchCommand } from "./commands/search.ts";
 import { registerStartCommand } from "./commands/start.ts";
@@ -26,6 +27,7 @@ export function buildCommand(): Command {
   registerLsCommand(program);
   registerSearchCommand(program);
   registerOpenCommand(program);
+  registerMoveCommand(program);
   registerMenuCommand(program);
 
   return program;

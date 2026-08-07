@@ -7,16 +7,60 @@ export interface JiraConfig {
 export interface ClockworkConfig {
   baseUrl: string;
   apiToken: string;
+  timerBaseUrl?: string;
+  userQuery?: string | string[];
 }
 
 export interface ConfigDefaults {
   project?: string;
   epic?: string;
   issueType?: string;
+  projects?: Record<string, ProjectDefaults>;
+}
+
+export interface ProjectDefaults {
+  fields?: ProjectFieldDefaults;
+}
+
+export interface ProjectFieldDefaults {
+  clientSowFieldId?: string;
+  clientSowValue?: string;
+  labels?: string[];
+  sprintBoardId?: number;
+  sprintFieldId?: string;
 }
 
 export interface ConfigPaths {
   jiraYaml?: string;
+}
+
+export interface CachedIssue {
+  key: string;
+  summary: string;
+}
+
+export interface CachedOption {
+  id: string;
+  value: string;
+}
+
+export interface CachedBoard {
+  id: number;
+  name: string;
+}
+
+export interface CachedSprint {
+  id: number;
+  name: string;
+  state?: string;
+}
+
+export interface CacheState {
+  epics?: Record<string, CachedIssue[]>;
+  labels?: string[];
+  clientSowOptions?: Record<string, CachedOption[]>;
+  boards?: Record<string, CachedBoard[]>;
+  sprints?: Record<string, CachedSprint[]>;
 }
 
 export interface JiraIssue {
@@ -40,6 +84,7 @@ export interface ClockworkWorklog {
   issueKey?: string;
   description?: string;
   startedAt?: string;
+  started?: string;
   timeSpentSeconds?: number;
 }
 
@@ -53,6 +98,8 @@ export interface ErgonState {
   lastProject?: string;
   lastEpic?: string;
   lastIssueKey?: string;
+  lastClientSow?: string;
+  cache?: CacheState;
   timer?: TimerState;
 }
 

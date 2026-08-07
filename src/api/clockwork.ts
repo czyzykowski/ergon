@@ -5,30 +5,52 @@ export interface ClockworkTimerResponse {
   startedAt?: string;
 }
 
-export class ClockworkClient {
-  readonly baseUrl: string;
-  readonly apiToken: string;
+interface ClockworkClientOptions {
+  timerBaseUrl?: string;
+}
 
-  constructor(config: ClockworkConfig) {
-    this.baseUrl = config.baseUrl.replace(/\/$/, "");
-    this.apiToken = config.apiToken;
+export class ClockworkClient {
+  readonly worklogBaseUrl: string;
+  readonly worklogAuthHeader: string;
+  readonly timerBaseUrl: string;
+
+  constructor(config: ClockworkConfig, options: ClockworkClientOptions = {}) {
+    this.worklogBaseUrl = config.baseUrl.replace(/\/$/, "");
+    this.worklogAuthHeader = `Token ${config.apiToken}`;
+    this.timerBaseUrl = (options.timerBaseUrl ?? this.worklogBaseUrl).replace(
+      /\/$/,
+      "",
+    );
   }
 
   async startTimer(issueKey: string): Promise<ClockworkTimerResponse> {
+    const form = new URLSearchParams({ issue_key: issueKey });
+
     return await this.request<ClockworkTimerResponse>(
-      "/v1/timer",
+      "/v1/start_timer",
       {
         method: "POST",
-        body: JSON.stringify({ issueKey }),
+        body: form,
+      },
+      {
+        baseUrl: this.timerBaseUrl,
+        authHeader: this.worklogAuthHeader,
       },
     );
   }
 
-  async stopTimer(): Promise<ClockworkTimerResponse> {
+  async stopTimer(issueKey: string): Promise<ClockworkTimerResponse> {
+    const form = new URLSearchParams({ issue_key: issueKey });
+
     return await this.request<ClockworkTimerResponse>(
-      "/v1/timer",
+      "/v1/stop_timer",
       {
-        method: "DELETE",
+        method: "POST",
+        body: form,
+      },
+      {
+        baseUrl: this.timerBaseUrl,
+        authHeader: this.worklogAuthHeader,
       },
     );
   }
@@ -37,6 +59,7 @@ export class ClockworkClient {
     issueKey?: string;
     from?: string;
     to?: string;
+    userQuery?: string | string[];
   } = {}): Promise<ClockworkWorklog[]> {
     const params = new URLSearchParams();
 
@@ -45,11 +68,20 @@ export class ClockworkClient {
     }
 
     if (input.from) {
-      params.set("from", input.from);
+      params.set("starting_at", input.from);
     }
 
     if (input.to) {
-      params.set("to", input.to);
+      params.set("ending_at", input.to);
+    }
+
+    if (input.userQuery) {
+      const entries = Array.isArray(input.userQuery)
+        ? input.userQuery
+        : [input.userQuery];
+      for (const entry of entries) {
+        params.append("user_query[]", entry);
+      }
     }
 
     const query = params.toString();
@@ -58,6 +90,10 @@ export class ClockworkClient {
     const response = await this.request<ClockworkWorklog[]>(
       path,
       { method: "GET" },
+      {
+        baseUrl: this.worklogBaseUrl,
+        authHeader: this.worklogAuthHeader,
+      },
     );
 
     return response ?? [];
@@ -80,6 +116,10 @@ export class ClockworkClient {
           startedAt: input.startedAt,
         }),
       },
+      {
+        baseUrl: this.worklogBaseUrl,
+        authHeader: this.worklogAuthHeader,
+      },
     );
 
     return response;
@@ -88,15 +128,25 @@ export class ClockworkClient {
   private async request<T>(
     path: string,
     init: RequestInit,
+    overrides?: {
+      baseUrl?: string;
+      authHeader?: string;
+    },
   ): Promise<T> {
-    const url = `${this.baseUrl}${path}`;
+    const baseUrl = overrides?.baseUrl ?? this.worklogBaseUrl;
+    const authHeader = overrides?.authHeader ?? this.worklogAuthHeader;
+    const url = `${baseUrl}${path}`;
     const headers = new Headers(init.headers);
 
-    headers.set("Authorization", `Token ${this.apiToken}`);
+    headers.set("Authorization", authHeader);
     headers.set("Accept", "application/json");
 
     if (init.body) {
-      headers.set("Content-Type", "application/json");
+      if (init.body instanceof URLSearchParams) {
+        headers.set("Content-Type", "application/x-www-form-urlencoded");
+      } else {
+        headers.set("Content-Type", "application/json");
+      }
     }
 
     const response = await fetch(url, {

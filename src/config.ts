@@ -32,8 +32,9 @@ export async function loadConfig(
   try {
     parsed = parse(expanded);
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     throw new ConfigError(
-      `Failed to parse YAML config at ${configPath}: ${error.message}`,
+      `Failed to parse YAML config at ${configPath}: ${message}`,
     );
   }
 
@@ -54,7 +55,10 @@ export function resolveConfigPath(baseDir?: string): string {
     return join(baseDir, CONFIG_RELATIVE_PATH);
   }
 
-  return join(Deno.env.get("HOME") ?? Deno.homeDir(), CONFIG_RELATIVE_PATH);
+  return join(
+    Deno.env.get("HOME") ?? Deno.env.get("USERPROFILE") ?? "",
+    CONFIG_RELATIVE_PATH,
+  );
 }
 
 function validateRequired(
