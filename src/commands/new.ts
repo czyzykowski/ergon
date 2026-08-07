@@ -25,6 +25,7 @@ interface NewOptions {
   labels?: string;
   sprint?: string;
   noCache?: boolean;
+  nonInteractive?: boolean;
 }
 
 const PARENT_REQUIRED_TYPES = new Set(["Task", "Sub-task"]);
@@ -357,16 +358,27 @@ export function registerNewCommand(program: Command): void {
     .option("--description <description:string>", "Issue description")
     .option("--client-sow <clientSow:string>", "Client SOW")
     .option("--labels <labels:string>", "Labels (comma separated)")
-    .option("--sprint <sprint:string>", "Sprint name or id")
+    .option(
+      "--sprint <sprint:string>",
+      "Sprint name or id; 'current' (or 'active') for the board's active sprint, 'none' to skip",
+    )
     .option("--no-cache", "Disable cached Jira metadata")
+    .option(
+      "--non-interactive",
+      "Never prompt; use flags/defaults only. Skips epic/labels/client-sow/sprint when not provided. Use 'none' as a value to explicitly clear --epic/--client-sow/--sprint.",
+    )
     .action(async (options: NewOptions, summaryArg?: string) => {
       const config = await loadConfig();
       const jira = new JiraClient(config.jira);
       const state = await loadState();
 
-      const projectKey = options.project ?? state.lastProject ??
-        config.defaults?.project ??
-        (await promptProject(config.projects)) ?? "";
+      const interactive = !options.nonInteractive;
+
+      let projectKey = options.project ?? state.lastProject ??
+        config.defaults?.project ?? "";
+      if (!projectKey && interactive) {
+        projectKey = (await promptProject(config.projects)) ?? "";
+      }
 
       if (!projectKey) {
         throw new Error("Project key is required.");
@@ -377,9 +389,12 @@ export function registerNewCommand(program: Command): void {
       const cache: CacheState = useCache
         ? { ...(state.cache ?? {}) }
         : state.cache ?? {};
-      let epicKey = options.epic ?? state.lastEpic ?? config.defaults?.epic;
+      const epicNone = options.epic?.trim().toLowerCase() === "none" ||
+        options.epic === EPIC_NONE_VALUE;
+      let epicKey = epicNone ? undefined : (options.epic ??
+        (interactive ? state.lastEpic : undefined) ?? config.defaults?.epic);
 
-      if (!epicKey && issueType !== "Sub-task") {
+      if (!epicKey && !epicNone && issueType !== "Sub-task" && interactive) {
         let cachedEpics = useCache ? cache.epics?.[projectKey] : undefined;
 
         if (!cachedEpics) {
@@ -411,16 +426,18 @@ export function registerNewCommand(program: Command): void {
       }
 
       const summary = summaryArg ?? options.summary ??
-        (await Input.prompt({
-          message: "Summary",
-          minLength: 1,
-        }));
+        (interactive
+          ? await Input.prompt({
+            message: "Summary",
+            minLength: 1,
+          })
+          : undefined);
 
       if (!summary) {
         throw new Error("Summary is required.");
       }
       let parentKey = options.parent;
-      if (!parentKey && issueTypeRequiresParent(issueType)) {
+      if (!parentKey && issueTypeRequiresParent(issueType) && interactive) {
         const parentTypes = issueType === "Sub-task" ? ["Task"] : ["Story"];
         parentKey = await promptParentIssue(jira, projectKey, parentTypes);
       }
@@ -449,7 +466,7 @@ export function registerNewCommand(program: Command): void {
       const labelsOverride = parseLabels(options.labels);
       let labels = labelsOverride ?? parentLabels ?? fieldDefaults?.labels;
 
-      if (!labels || labels.length === 0) {
+      if ((!labels || labels.length === 0) && interactive) {
         let availableLabels = useCache ? cache.labels : undefined;
 
         if (!availableLabels) {
@@ -464,49 +481,71 @@ export function registerNewCommand(program: Command): void {
       }
 
       const clientSowOverride = options.clientSow;
-      const defaultClientSow = clientSowOverride ?? parentClientSow?.id ??
-        parentClientSow?.value ?? state.lastClientSow ??
-        fieldDefaults?.clientSowValue;
+      const clientSowNone = clientSowOverride?.trim().toLowerCase() === "none";
+      const defaultClientSow = clientSowNone ? undefined : (clientSowOverride ??
+        parentClientSow?.id ?? parentClientSow?.value ?? state.lastClientSow ??
+        fieldDefaults?.clientSowValue);
       let clientSowPayload: Record<string, string> | undefined;
-      let clientSowOptions = useCache
-        ? cache.clientSowOptions?.[clientSowFieldId]
-        : undefined;
 
-      if (!clientSowOptions) {
-        const optionsList = await jira.getFieldOptions(clientSowFieldId);
-        clientSowOptions = toCachedOptions(optionsList);
+      if (!clientSowNone && (clientSowOverride || interactive)) {
+        let clientSowOptions = useCache
+          ? cache.clientSowOptions?.[clientSowFieldId]
+          : undefined;
 
-        if (useCache) {
-          cache.clientSowOptions = {
-            ...(cache.clientSowOptions ?? {}),
-            [clientSowFieldId]: clientSowOptions,
-          };
+        if (!clientSowOptions) {
+          const optionsList = await jira.getFieldOptions(clientSowFieldId);
+          clientSowOptions = toCachedOptions(optionsList);
+
+          if (useCache) {
+            cache.clientSowOptions = {
+              ...(cache.clientSowOptions ?? {}),
+              [clientSowFieldId]: clientSowOptions,
+            };
+          }
         }
-      }
 
-      if (clientSowOverride) {
-        const match = clientSowOptions.find((option) =>
-          option.id === clientSowOverride || option.value === clientSowOverride
-        );
-        clientSowPayload = match
-          ? { id: match.id }
-          : { value: clientSowOverride };
-      } else {
-        clientSowPayload = optionPayload(
-          await promptClientSow(clientSowOptions, defaultClientSow),
-        );
+        if (clientSowOverride) {
+          const match = clientSowOptions.find((option) =>
+            option.id === clientSowOverride ||
+            option.value === clientSowOverride
+          );
+          clientSowPayload = match
+            ? { id: match.id }
+            : { value: clientSowOverride };
+        } else {
+          clientSowPayload = optionPayload(
+            await promptClientSow(clientSowOptions, defaultClientSow),
+          );
+        }
       }
 
       const sprintFieldId = fieldDefaults?.sprintFieldId ??
         DEFAULT_SPRINT_FIELD_ID;
       const sprintOverride = options.sprint;
+      const sprintKeyword = sprintOverride?.trim().toLowerCase();
+      const sprintNone = sprintKeyword === "none";
+      const sprintCurrent = sprintKeyword === "current" ||
+        sprintKeyword === "active";
       const sprintIdOverride = parseSprintId(sprintOverride);
-      const sprintNameOverride = sprintOverride && !sprintIdOverride
-        ? sprintOverride
-        : undefined;
+      const sprintNameOverride =
+        sprintOverride && !sprintIdOverride && !sprintNone && !sprintCurrent
+          ? sprintOverride
+          : undefined;
       let sprintId = sprintIdOverride;
 
-      if (!sprintId) {
+      // Resolve a sprint when it isn't already a numeric id or an explicit
+      // 'none'. In non-interactive mode this only runs for --sprint by name or
+      // --sprint current/active (a plain absence leaves the sprint unset).
+      if (
+        !sprintId && !sprintNone &&
+        (interactive || sprintNameOverride || sprintCurrent)
+      ) {
+        if (!interactive && sprintNameOverride) {
+          throw new Error(
+            "Resolving --sprint by name needs interactive mode; pass a numeric sprint id or 'current'.",
+          );
+        }
+
         let availableBoards = useCache ? cache.boards?.[projectKey] : undefined;
 
         if (!availableBoards) {
@@ -521,15 +560,30 @@ export function registerNewCommand(program: Command): void {
           }
         }
 
-        const boardId = await promptSprintBoard(
-          availableBoards,
-          fieldDefaults?.sprintBoardId,
-        );
+        let boardId: number | undefined;
+        if (sprintCurrent) {
+          // 'current' just needs any board's active sprint; don't prompt.
+          boardId = normalizeBoardId(fieldDefaults?.sprintBoardId) ??
+            availableBoards[0]?.id;
+        } else {
+          if (
+            !interactive && !normalizeBoardId(fieldDefaults?.sprintBoardId) &&
+            availableBoards.length > 1
+          ) {
+            throw new Error(
+              "Multiple boards found; set a default sprintBoardId or pass a numeric --sprint id.",
+            );
+          }
+          boardId = await promptSprintBoard(
+            availableBoards,
+            fieldDefaults?.sprintBoardId,
+          );
+        }
 
         if (!boardId) {
-          if (sprintNameOverride) {
+          if (sprintNameOverride || sprintCurrent) {
             throw new Error(
-              "Sprint name provided but no board available for selection.",
+              "No board available to resolve the sprint.",
             );
           }
         } else {
@@ -550,7 +604,16 @@ export function registerNewCommand(program: Command): void {
             }
           }
 
-          sprintId = await promptSprint(availableSprints, sprintNameOverride);
+          if (sprintCurrent) {
+            if (availableSprints.length === 0) {
+              throw new Error("No active sprint found for the board.");
+            }
+            const current = availableSprints[0];
+            sprintId = current.id;
+            console.error(`Using active sprint: ${current.name} (${current.id})`);
+          } else {
+            sprintId = await promptSprint(availableSprints, sprintNameOverride);
+          }
         }
       }
 

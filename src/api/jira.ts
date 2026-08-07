@@ -124,7 +124,7 @@ export class JiraClient {
     };
 
     if (input.description) {
-      fields.description = input.description;
+      fields.description = toAdf(input.description);
     }
 
     if (input.parentKey) {
@@ -366,6 +366,20 @@ export class JiraClient {
     if (!text) return undefined as T;
     return JSON.parse(text) as T;
   }
+}
+
+// Jira Cloud REST v3 requires rich-text fields as Atlassian Document Format
+// (ADF), not plain strings. Render each line as a paragraph (blank line -> empty
+// paragraph) so multi-line descriptions round-trip.
+function toAdf(text: string): Record<string, unknown> {
+  return {
+    type: "doc",
+    version: 1,
+    content: text.split("\n").map((line) => ({
+      type: "paragraph",
+      content: line.length > 0 ? [{ type: "text", text: line }] : [],
+    })),
+  };
 }
 
 function mapIssue(issue: JiraIssueResponse): JiraIssue {
