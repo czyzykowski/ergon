@@ -46,3 +46,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Fixed `ergon new --non-interactive` dropping the Client SOW entirely unless
   `--client-sow` was passed.
 - Fixed `ergon new` recording a remembered Client SOW it never applied.
+- Removed the hard-coded `customfield_10200` fallback for the Client SOW field.
+  A project that sets a Client SOW must now declare `clientSowFieldId`, and
+  creating an issue fails with the key to add rather than writing to a guessed
+  field. See [ADR 0002](./docs/adr/0002-no-default-client-sow-field-id.md).

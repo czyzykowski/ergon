@@ -1,11 +1,18 @@
-import { assertEquals } from "https://deno.land/std@0.224.0/testing/asserts.ts";
+import {
+  assertEquals,
+  assertThrows,
+} from "https://deno.land/std@0.224.0/testing/asserts.ts";
 import {
   isNoneValue,
   parentFieldsFrom,
   parseLabels,
+  requireClientSowFieldId,
   resolveFields,
 } from "../src/commands/new_fields.ts";
-import type { ResolveFieldsInput } from "../src/commands/new_fields.ts";
+import type {
+  ClientSowPlan,
+  ResolveFieldsInput,
+} from "../src/commands/new_fields.ts";
 
 const PARENT_LABELLED = {
   clientSow: { id: "10084", value: "Pickaxe: Internal Projects" },
@@ -190,4 +197,51 @@ Deno.test("isNoneValue matches the sentinel case-insensitively", () => {
   assertEquals(isNoneValue("none"), true);
   assertEquals(isNoneValue("nonexistent"), false);
   assertEquals(isNoneValue(undefined), false);
+});
+
+Deno.test("parentFieldsFrom inherits labels alone without a SOW field", () => {
+  const parent = parentFieldsFrom(
+    { labels: ["Druid"], customfield_10200: { id: "10084" } },
+    undefined,
+  );
+
+  assertEquals(parent.clientSow, undefined);
+  assertEquals(parent.labels, ["Druid"]);
+});
+
+const PLANS_NEEDING_A_FIELD: ClientSowPlan[] = [
+  { kind: "lookup", value: "Client SOW A" },
+  { kind: "prompt", default: "Client SOW A" },
+  { kind: "payload", payload: { id: "10084" } },
+];
+
+Deno.test("requireClientSowFieldId returns the id to every plan that uses one", () => {
+  for (const plan of PLANS_NEEDING_A_FIELD) {
+    assertEquals(
+      requireClientSowFieldId(plan, "customfield_10200", "PGR"),
+      "customfield_10200",
+      `plan ${plan.kind} should resolve the configured field`,
+    );
+  }
+});
+
+Deno.test("requireClientSowFieldId throws when a plan needs an unconfigured field", () => {
+  for (const plan of PLANS_NEEDING_A_FIELD) {
+    assertThrows(
+      () => requireClientSowFieldId(plan, undefined, "PGR"),
+      Error,
+      "clientSowFieldId",
+      `plan ${plan.kind} should refuse to guess a field`,
+    );
+  }
+});
+
+Deno.test("requireClientSowFieldId lets a skipped SOW pass without a field", () => {
+  const plan: ClientSowPlan = { kind: "skip" };
+
+  assertEquals(requireClientSowFieldId(plan, undefined, "PGR"), undefined);
+  assertEquals(
+    requireClientSowFieldId(plan, "customfield_10200", "PGR"),
+    undefined,
+  );
 });

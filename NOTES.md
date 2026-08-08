@@ -49,3 +49,11 @@
   inheritance work; only `--non-interactive` gained new precedence rules.
 - `deno lint` fails repo-wide on `no-import-prefix` for the `https://` std
   imports in `tests/`; pre-existing, not addressed here.
+- The Client SOW field id has no default. `requireClientSowFieldId` in
+  `src/commands/new_fields.ts` decides when a missing id is an error: every plan
+  kind but `skip` needs one — see
+  `docs/adr/0002-no-default-client-sow-field-id.md`.
+- `~/.config/ergon/config.yaml` previously relied on the removed fallback for
+  PGR; `clientSowFieldId: customfield_10200` was added there to match.
+- `DEFAULT_SPRINT_FIELD_ID` deliberately still defaults — ADR 0002 covers Client
+  SOW only.

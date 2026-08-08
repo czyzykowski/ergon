@@ -43,6 +43,32 @@ export function isNoneValue(input?: string): boolean {
   return input?.trim().toLowerCase() === "none";
 }
 
+/**
+ * The field id to settle this plan against, or `undefined` when the plan needs
+ * no field at all. Every kind but `skip` either reads the field's options or
+ * writes to it, so an unconfigured project is an error there rather than a
+ * silent write to a guessed field — see docs/adr/0002.
+ */
+export function requireClientSowFieldId(
+  plan: ClientSowPlan,
+  fieldId: string | undefined,
+  projectKey: string,
+): string | undefined {
+  if (plan.kind === "skip") {
+    return undefined;
+  }
+
+  if (!fieldId) {
+    throw new Error(
+      `No Client SOW field configured for ${projectKey}. Set ` +
+        `defaults.projects.${projectKey}.fields.clientSowFieldId in ` +
+        `~/.config/ergon/config.yaml, or pass --client-sow none.`,
+    );
+  }
+
+  return fieldId;
+}
+
 export function parseLabels(input?: string): string[] | undefined {
   if (!input) {
     return undefined;
@@ -92,13 +118,18 @@ export function optionPayload(option: ClientSowValue): Record<string, string> {
   return {};
 }
 
-/** Read the inheritable fields out of a raw Jira issue `fields` object. */
+/**
+ * Read the inheritable fields out of a raw Jira issue `fields` object. A project
+ * with no Client SOW field declared inherits labels alone.
+ */
 export function parentFieldsFrom(
   fields: Record<string, unknown>,
-  clientSowFieldId: string,
+  clientSowFieldId: string | undefined,
 ): ParentFieldValues {
   return {
-    clientSow: extractOptionValue(fields[clientSowFieldId]),
+    clientSow: clientSowFieldId
+      ? extractOptionValue(fields[clientSowFieldId])
+      : undefined,
     labels: Array.isArray(fields.labels)
       ? fields.labels.filter((value): value is string =>
         typeof value === "string"

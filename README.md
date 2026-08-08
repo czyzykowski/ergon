@@ -57,6 +57,11 @@ defaults:
         sprintFieldId: customfield_10020
 ```
 
+`clientSowFieldId` is required for any project that sets a Client SOW — there is
+no default, so `ergon new` fails naming the key rather than writing to a guessed
+field ([ADR 0002](./docs/adr/0002-no-default-client-sow-field-id.md)). A project
+that never sets one needs no Client SOW configuration at all.
+
 ## Checks
 
 Run a quick API check:
