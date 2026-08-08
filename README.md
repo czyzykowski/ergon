@@ -16,6 +16,20 @@ CLI for Jira + Clockwork workflows.
 - Epic prompt supports search input.
 - Use `--no-cache` to force fresh Jira metadata.
 
+### Discovering field values
+
+Before scripting `ergon new`, list what Jira will accept:
+
+```
+ergon labels [--filter <substring>] [--json]
+ergon client-sows <PROJECT> [--json]
+```
+
+Both always query Jira rather than the metadata cache, so they report what is
+valid now. `--json` gives labels as `["a", "b"]` and Client SOWs as
+`[{"id": "...", "value": "..."}]`; `ergon new --client-sow` accepts either the
+id or the value.
+
 ### Scripted creation
 
 With `--non-interactive`, `ergon new` never prompts and inherits Client SOW and

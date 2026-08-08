@@ -4,6 +4,7 @@ import { loadConfig } from "../config.ts";
 
 interface LabelsOptions {
   filter?: string;
+  json?: boolean;
 }
 
 export function registerLabelsCommand(program: Command): void {
@@ -14,6 +15,7 @@ export function registerLabelsCommand(program: Command): void {
       "--filter <filter:string>",
       "Only labels containing this substring (case-insensitive)",
     )
+    .option("--json", "Output raw JSON")
     .action(async (options: LabelsOptions) => {
       const config = await loadConfig();
       const jira = new JiraClient(config.jira);
@@ -23,6 +25,11 @@ export function registerLabelsCommand(program: Command): void {
       const filtered = filter
         ? labels.filter((label) => label.toLowerCase().includes(filter))
         : labels;
+
+      if (options.json) {
+        console.log(JSON.stringify(filtered, null, 2));
+        return;
+      }
 
       if (filtered.length === 0) {
         console.log("No labels found.");

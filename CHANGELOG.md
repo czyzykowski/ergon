@@ -50,3 +50,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   A project that sets a Client SOW must now declare `clientSowFieldId`, and
   creating an issue fails with the key to add rather than writing to a guessed
   field. See [ADR 0002](./docs/adr/0002-no-default-client-sow-field-id.md).
+- Added `ergon client-sows <PROJECT>` to list the Client SOW options a project
+  accepts.
+- Added `--json` to `ergon client-sows` and `ergon labels`.

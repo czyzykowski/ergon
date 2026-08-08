@@ -57,3 +57,10 @@
   PGR; `clientSowFieldId: customfield_10200` was added there to match.
 - `DEFAULT_SPRINT_FIELD_ID` deliberately still defaults — ADR 0002 covers Client
   SOW only.
+- `ergon labels` and `ergon client-sows` deliberately bypass the metadata cache.
+  The cache has no expiry, and a discovery command answering from stale data is
+  worse than not having one: the caller cannot tell it is stale.
+- `ergon client-sows` takes the project positionally and never reads
+  `state.lastProject`, so its answer depends on config alone.
+- `--json` narrows Client SOW options to `{id, value}`; Jira also returns
+  `disabled`, which is dropped so the shape stays a contract.
