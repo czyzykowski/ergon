@@ -13,6 +13,12 @@ import type {
 } from "../types.ts";
 import { loadConfig } from "../config.ts";
 import { loadState, saveState } from "../state.ts";
+import {
+  optionPayload,
+  parentFieldsFrom,
+  parseLabels,
+  resolveFields,
+} from "./new_fields.ts";
 
 interface NewOptions {
   project?: string;
@@ -65,19 +71,6 @@ function issueTypeRequiresParent(type?: string): boolean {
   return PARENT_REQUIRED_TYPES.has(type);
 }
 
-function parseLabels(input?: string): string[] | undefined {
-  if (!input) {
-    return undefined;
-  }
-
-  const labels = input
-    .split(",")
-    .map((value) => value.trim())
-    .filter((value) => value.length > 0);
-
-  return labels.length > 0 ? labels : undefined;
-}
-
 async function promptLabels(availableLabels: string[]): Promise<string[]> {
   if (availableLabels.length === 0) {
     const labelInput = await Input.prompt({
@@ -110,44 +103,6 @@ async function promptLabels(availableLabels: string[]): Promise<string[]> {
   }
 
   return selection;
-}
-
-function extractOptionValue(
-  fieldValue: unknown,
-): { id?: string; value?: string } | undefined {
-  if (!fieldValue) {
-    return undefined;
-  }
-
-  if (typeof fieldValue === "string") {
-    return { value: fieldValue };
-  }
-
-  if (typeof fieldValue === "object") {
-    const record = fieldValue as Record<string, unknown>;
-    const id = typeof record.id === "string" ? record.id : undefined;
-    const value = typeof record.value === "string" ? record.value : undefined;
-
-    if (id || value) {
-      return { id, value };
-    }
-  }
-
-  return undefined;
-}
-
-function optionPayload(
-  option: { id?: string; value?: string },
-): Record<string, string> {
-  if (option.id) {
-    return { id: option.id };
-  }
-
-  if (option.value) {
-    return { value: option.value };
-  }
-
-  return {};
 }
 
 async function promptClientSow(
@@ -357,7 +312,10 @@ export function registerNewCommand(program: Command): void {
     .option("--summary <summary:string>", "Issue summary")
     .option("--description <description:string>", "Issue description")
     .option("--client-sow <clientSow:string>", "Client SOW")
-    .option("--labels <labels:string>", "Labels (comma separated)")
+    .option(
+      "--labels <labels:string>",
+      "Labels (comma separated); 'none' to create the issue unlabelled",
+    )
     .option(
       "--sprint <sprint:string>",
       "Sprint name or id; 'current' (or 'active') for the board's active sprint, 'none' to skip",
@@ -365,7 +323,7 @@ export function registerNewCommand(program: Command): void {
     .option("--no-cache", "Disable cached Jira metadata")
     .option(
       "--non-interactive",
-      "Never prompt; use flags/defaults only. Skips epic/labels/client-sow/sprint when not provided. Use 'none' as a value to explicitly clear --epic/--client-sow/--sprint.",
+      "Never prompt. Client SOW and labels are inherited from the parent (or the epic), then from project config; remembered state is ignored. Use 'none' as a value to explicitly clear --epic/--labels/--client-sow/--sprint.",
     )
     .action(async (options: NewOptions, summaryArg?: string) => {
       const config = await loadConfig();
@@ -446,27 +404,32 @@ export function registerNewCommand(program: Command): void {
       const fieldDefaults = projectDefaults?.fields;
       const clientSowFieldId = fieldDefaults?.clientSowFieldId ??
         DEFAULT_CLIENT_SOW_FIELD_ID;
-      let parentFields: Record<string, unknown> = {};
-
-      if (parentKey) {
-        parentFields = await jira.getIssueFields(parentKey, [
+      // Interactive runs only inherit from an explicit --parent. Non-interactive
+      // runs also inherit from the epic, which becomes this issue's parent when
+      // no --parent was given.
+      const inheritFromKey = parentKey ?? (interactive ? undefined : epicKey);
+      const parentValues = inheritFromKey
+        ? parentFieldsFrom(
+          await jira.getIssueFields(inheritFromKey, [
+            clientSowFieldId,
+            "labels",
+          ]),
           clientSowFieldId,
-          "labels",
-        ]);
-      }
-
-      const parentClientSow = extractOptionValue(
-        parentFields[clientSowFieldId],
-      );
-      const parentLabels = Array.isArray(parentFields.labels)
-        ? parentFields.labels.filter(
-          (value): value is string => typeof value === "string",
         )
         : undefined;
-      const labelsOverride = parseLabels(options.labels);
-      let labels = labelsOverride ?? parentLabels ?? fieldDefaults?.labels;
 
-      if ((!labels || labels.length === 0) && interactive) {
+      const resolved = resolveFields({
+        interactive,
+        labelsOption: options.labels,
+        clientSowOption: options.clientSow,
+        parent: parentValues,
+        fieldDefaults,
+        lastClientSow: state.lastClientSow,
+      });
+
+      let labels = resolved.labels;
+
+      if (resolved.needsLabelPrompt) {
         let availableLabels = useCache ? cache.labels : undefined;
 
         if (!availableLabels) {
@@ -480,43 +443,52 @@ export function registerNewCommand(program: Command): void {
         labels = await promptLabels(availableLabels);
       }
 
-      const clientSowOverride = options.clientSow;
-      const clientSowNone = clientSowOverride?.trim().toLowerCase() === "none";
-      const defaultClientSow = clientSowNone ? undefined : (clientSowOverride ??
-        parentClientSow?.id ?? parentClientSow?.value ?? state.lastClientSow ??
-        fieldDefaults?.clientSowValue);
-      let clientSowPayload: Record<string, string> | undefined;
-
-      if (!clientSowNone && (clientSowOverride || interactive)) {
-        let clientSowOptions = useCache
+      const loadClientSowOptions = async (): Promise<CachedOption[]> => {
+        const cached = useCache
           ? cache.clientSowOptions?.[clientSowFieldId]
           : undefined;
 
-        if (!clientSowOptions) {
-          const optionsList = await jira.getFieldOptions(clientSowFieldId);
-          clientSowOptions = toCachedOptions(optionsList);
-
-          if (useCache) {
-            cache.clientSowOptions = {
-              ...(cache.clientSowOptions ?? {}),
-              [clientSowFieldId]: clientSowOptions,
-            };
-          }
+        if (cached) {
+          return cached;
         }
 
-        if (clientSowOverride) {
-          const match = clientSowOptions.find((option) =>
-            option.id === clientSowOverride ||
-            option.value === clientSowOverride
-          );
-          clientSowPayload = match
-            ? { id: match.id }
-            : { value: clientSowOverride };
-        } else {
-          clientSowPayload = optionPayload(
-            await promptClientSow(clientSowOptions, defaultClientSow),
-          );
+        const options = toCachedOptions(
+          await jira.getFieldOptions(clientSowFieldId),
+        );
+
+        if (useCache) {
+          cache.clientSowOptions = {
+            ...(cache.clientSowOptions ?? {}),
+            [clientSowFieldId]: options,
+          };
         }
+
+        return options;
+      };
+
+      const clientSowPlan = resolved.clientSow;
+      let clientSowPayload: Record<string, string> | undefined;
+
+      if (clientSowPlan.kind === "payload") {
+        // Inherited values arrive with their option id attached, so they need
+        // no lookup against the field's options.
+        clientSowPayload = clientSowPlan.payload;
+      } else if (clientSowPlan.kind === "lookup") {
+        const clientSowOptions = await loadClientSowOptions();
+        const match = clientSowOptions.find((option) =>
+          option.id === clientSowPlan.value ||
+          option.value === clientSowPlan.value
+        );
+        clientSowPayload = match
+          ? { id: match.id }
+          : { value: clientSowPlan.value };
+      } else if (clientSowPlan.kind === "prompt") {
+        clientSowPayload = optionPayload(
+          await promptClientSow(
+            await loadClientSowOptions(),
+            clientSowPlan.default,
+          ),
+        );
       }
 
       const sprintFieldId = fieldDefaults?.sprintFieldId ??
@@ -610,7 +582,9 @@ export function registerNewCommand(program: Command): void {
             }
             const current = availableSprints[0];
             sprintId = current.id;
-            console.error(`Using active sprint: ${current.name} (${current.id})`);
+            console.error(
+              `Using active sprint: ${current.name} (${current.id})`,
+            );
           } else {
             sprintId = await promptSprint(availableSprints, sprintNameOverride);
           }
@@ -636,15 +610,18 @@ export function registerNewCommand(program: Command): void {
         customFields,
       });
 
-      const nextClientSow = clientSowPayload?.id ?? clientSowPayload?.value ??
-        defaultClientSow;
+      const nextClientSow = clientSowPayload?.id ?? clientSowPayload?.value;
 
       await saveState({
         ...state,
         lastProject: projectKey,
         lastEpic: epicKey,
         lastIssueKey: issue.key,
-        lastClientSow: nextClientSow ?? state.lastClientSow,
+        // The remembered SOW records what a human picked at the prompt, so a
+        // non-interactive run must not overwrite it — see docs/adr/0001.
+        lastClientSow: interactive
+          ? nextClientSow ?? state.lastClientSow
+          : state.lastClientSow,
         cache: useCache ? cache : state.cache,
       });
 

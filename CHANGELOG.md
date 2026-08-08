@@ -37,3 +37,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Fixed config parse error handling.
 - Fixed temp directory usage in tests when env enabled.
 - Updated test/coverage tasks for env permissions.
+- Added Client SOW and label inheritance from the parent issue in
+  `ergon new --non-interactive`, falling back to project config defaults. The
+  epic counts as the parent when `--parent` is omitted.
+- Added `--labels none` to create an issue with no labels.
+- Changed `ergon new --non-interactive` to ignore the remembered Client SOW, so
+  scripted runs resolve fields deterministically.
+- Fixed `ergon new --non-interactive` dropping the Client SOW entirely unless
+  `--client-sow` was passed.
+- Fixed `ergon new` recording a remembered Client SOW it never applied.

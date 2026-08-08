@@ -12,6 +12,7 @@
 - [x] 6.6 Commands (start/stop/status)
 - [x] 6.6 Commands (log/ls/search/new/menu)
 - [x] New command required fields (Client SOW, labels)
+- [x] Parent inheritance for Client SOW and labels (non-interactive)
 
 ## Updates
 
@@ -37,3 +38,14 @@
 - Fixed config parse error handling for tests.
 - Fixed temp directory usage in tests when env enabled.
 - Updated test/coverage tasks for env permissions.
+- Jira silently omits unknown custom fields from `GET /issue?fields=`; it does
+  not error, so an unconfigured `clientSowFieldId` degrades to no inheritance.
+- Client SOW/label precedence for `ergon new` lives in one pure function,
+  `resolveFields` in `src/commands/new_fields.ts`, covered by
+  `tests/new_fields_test.ts`.
+- Non-interactive runs neither read nor write `state.lastClientSow` — see
+  `docs/adr/0001-non-interactive-ignores-remembered-state.md`.
+- Interactive behaviour of `ergon new` is deliberately unchanged by the
+  inheritance work; only `--non-interactive` gained new precedence rules.
+- `deno lint` fails repo-wide on `no-import-prefix` for the `https://` std
+  imports in `tests/`; pre-existing, not addressed here.

@@ -16,6 +16,27 @@ CLI for Jira + Clockwork workflows.
 - Epic prompt supports search input.
 - Use `--no-cache` to force fresh Jira metadata.
 
+### Scripted creation
+
+With `--non-interactive`, `ergon new` never prompts and inherits Client SOW and
+labels from the parent issue:
+
+```
+ergon new "Fix login" --non-interactive --parent PCK-12
+```
+
+- The parent is `--parent`, or the epic when `--parent` is omitted.
+- Anything passed explicitly wins; `--labels` replaces the inherited set rather
+  than adding to it.
+- Where the parent has nothing, project config defaults apply.
+- The remembered Client SOW is ignored, so the same command always produces the
+  same issue.
+- Use `none` to clear a field: `--labels none`, `--client-sow none`,
+  `--epic none`, `--sprint none`.
+
+Interactive runs are unaffected: the parent still pre-selects the Client SOW
+prompt, and the label prompt still appears when nothing supplied labels.
+
 ## Configuration
 
 Config file location: `~/.config/ergon/config.yaml`.
