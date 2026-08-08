@@ -10,6 +10,7 @@ rules for every change you make.
 - Keep `README.md` current with setup/usage.
 - Update the progress tracker in `NOTES.md` when milestones change.
 - Prefer small, focused changes; avoid unrelated cleanup.
+- Rebuild the installed binary after any substantial change (see Build).
 
 ## Repo Overview
 
@@ -26,6 +27,9 @@ rules for every change you make.
   `deno run --allow-net --allow-read --allow-env --allow-write src/main.ts`.
 - Install:
   `deno install --allow-net --allow-read --allow-env --allow-write --name ergon src/main.ts`.
+- Rebuild after any substantial change, so the working copy is what the `ergon`
+  on `PATH` actually runs:
+  `deno compile --allow-net --allow-read --allow-env --allow-write --allow-run -o ~/.local/bin/ergon src/main.ts`.
 
 ### Test
 
