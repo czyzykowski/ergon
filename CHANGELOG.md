@@ -53,3 +53,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Added `ergon client-sows <PROJECT>` to list the Client SOW options a project
   accepts.
 - Added `--json` to `ergon client-sows` and `ergon labels`.
+- Added `ergon edit [ISSUE]` to change an issue's description and summary. With
+  no flags it opens the current description in `$EDITOR`; `--description -`
+  reads the body from stdin. It refuses to rewrite a description holding lists,
+  code, tables, or formatting rather than flattening it silently — `--force`
+  overrides. See [ADR 0003](./docs/adr/0003-descriptions-are-plain-text.md).

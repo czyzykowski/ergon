@@ -51,6 +51,32 @@ ergon new "Fix login" --non-interactive --parent PCK-12
 Interactive runs are unaffected: the parent still pre-selects the Client SOW
 prompt, and the label prompt still appears when nothing supplied labels.
 
+### Editing an issue
+
+`ergon edit` changes an issue's description and summary. With no flags it opens
+the current description in `$VISUAL` or `$EDITOR`; saving an unchanged buffer
+writes nothing.
+
+```
+ergon edit PCK-12
+ergon edit PCK-12 --summary "Fix login redirect"
+ergon edit PCK-12 --description - <<'EOF'
+Steps to reproduce:
+1. Log in
+EOF
+```
+
+- The issue key is optional and falls back to the last one, like `ergon move`.
+- `--description ""` clears the description. `none` is not a sentinel here — it
+  is only meaningful for fields with enumerable values.
+- ergon writes descriptions as plain text. It refuses to rewrite one containing
+  lists, code, tables, or formatting, because it cannot reproduce them; pass
+  `--force` with `--description` to replace such a description outright, or edit
+  it in Jira. `--force` is not available on the editor path
+  ([ADR 0003](./docs/adr/0003-descriptions-are-plain-text.md)).
+- Other fields stay where they were: status is `ergon move`, and labels, Client
+  SOW, Epic, and sprint are set at creation by `ergon new`.
+
 ## Configuration
 
 Config file location: `~/.config/ergon/config.yaml`.

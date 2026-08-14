@@ -1,6 +1,7 @@
 import { Command } from "cliffy/command/mod.ts";
 import { ConfigError } from "./config.ts";
 import { registerClientSowsCommand } from "./commands/client_sows.ts";
+import { registerEditCommand } from "./commands/edit.ts";
 import { registerGetCommand } from "./commands/get.ts";
 import { registerLabelsCommand } from "./commands/labels.ts";
 import { registerLogCommand } from "./commands/log.ts";
@@ -34,6 +35,7 @@ export function buildCommand(): Command {
   registerSearchCommand(program);
   registerOpenCommand(program);
   registerMoveCommand(program);
+  registerEditCommand(program);
   registerMenuCommand(program);
 
   return program;

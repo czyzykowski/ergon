@@ -30,8 +30,16 @@ contract, engagement
 
 **None**: The literal word a flag takes to mean "explicitly empty", as distinct
 from omitting the flag, which means "decide for me". `--client-sow none` clears
-the field; leaving `--client-sow` off lets it be inherited. _Avoid_: empty,
+the field; leaving `--client-sow` off lets it be inherited. The convention holds
+only for fields with enumerable values, where `none` cannot collide with a real
+one — a free-text field is cleared with an empty string instead. _Avoid_: empty,
 null, unset
+
+**Description**: The free-text body of an issue. ergon treats it as plain text,
+so an issue whose Description holds lists, code, or tables is one ergon will not
+rewrite unless forced to — see
+[ADR 0003](./docs/adr/0003-descriptions-are-plain-text.md). _Avoid_: body,
+details, notes
 
 ### Invocation
 

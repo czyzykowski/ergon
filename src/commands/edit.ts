@@ -1,0 +1,150 @@
+import type { Command } from "cliffy/command/mod.ts";
+import { fromAdf, toAdf, unsupportedAdfNodes } from "../adf.ts";
+import { JiraClient } from "../api/jira.ts";
+import { loadConfig } from "../config.ts";
+import { loadState } from "../state.ts";
+
+interface EditOptions {
+  summary?: string;
+  description?: string;
+  force?: boolean;
+}
+
+export function registerEditCommand(program: Command): void {
+  program
+    .command("edit [issueKey:string]")
+    .description("Edit a Jira issue's description or summary.")
+    .option("--summary <summary:string>", "New summary")
+    .option(
+      "--description <description:string>",
+      "New description, or '-' to read it from stdin",
+    )
+    .option("--force", "Overwrite a description ergon cannot round-trip")
+    .action(async (options: EditOptions, issueKey?: string) => {
+      const config = await loadConfig();
+      const state = await loadState();
+      const key = issueKey ?? state.lastIssueKey;
+
+      if (!key) {
+        throw new Error("Provide an issue key or run from a previous issue.");
+      }
+
+      const supplied = options.description !== undefined;
+
+      // --force means "flatten this deliberately", which only makes sense when
+      // the replacement was written by hand. See ADR 0003.
+      if (options.force && !supplied) {
+        throw new Error("--force applies only to --description.");
+      }
+
+      const jira = new JiraClient(config.jira);
+      const current = await jira.getIssueFields(key, ["description"]);
+      const currentAdf = current.description;
+      const lost = unsupportedAdfNodes(currentAdf);
+
+      if (lost.length > 0) {
+        if (!supplied) {
+          throw new Error(
+            `${key}'s description contains ${
+              lost.join(", ")
+            }, which ergon cannot edit in place. ` +
+              `Pass --description --force to replace it outright, or edit it in Jira.`,
+          );
+        }
+
+        if (!options.force) {
+          throw new Error(
+            `${key}'s description contains ${
+              lost.join(", ")
+            }, which would be lost. ` +
+              `Pass --force to replace it with plain text.`,
+          );
+        }
+      }
+
+      const description = supplied
+        ? await resolveDescription(options.description as string)
+        : await editDescription(key, fromAdf(currentAdf));
+
+      const fields: Record<string, unknown> = {};
+      const changed: string[] = [];
+
+      if (description !== undefined) {
+        fields.description = toAdfField(description);
+        changed.push("description");
+      }
+
+      if (options.summary !== undefined) {
+        fields.summary = options.summary;
+        changed.push("summary");
+      }
+
+      if (changed.length === 0) {
+        console.log(`No changes for ${key}`);
+        return;
+      }
+
+      await jira.updateIssue(key, fields);
+      console.log(`Updated ${key} (${changed.join(", ")})`);
+    });
+}
+
+/** `-` means the body is on stdin; anything else is the body itself. */
+async function resolveDescription(value: string): Promise<string> {
+  if (value !== "-") return value;
+
+  return await new Response(Deno.stdin.readable).text();
+}
+
+/**
+ * Put the current description in front of the operator in `$EDITOR`. Returns
+ * undefined when nothing should be written — the editor failed, or the buffer
+ * came back exactly as it went in.
+ */
+async function editDescription(
+  key: string,
+  current: string,
+): Promise<string | undefined> {
+  const editor = Deno.env.get("VISUAL") ?? Deno.env.get("EDITOR");
+
+  if (!editor) {
+    throw new Error(
+      "Set $EDITOR (or $VISUAL) to edit a description, or pass --description.",
+    );
+  }
+
+  const path = await Deno.makeTempFile({
+    prefix: `ergon-${key}-`,
+    suffix: ".txt",
+  });
+
+  try {
+    await Deno.writeTextFile(path, current);
+
+    const [command, ...args] = editor.split(/\s+/);
+    const status = await new Deno.Command(command, {
+      args: [...args, path],
+      stdin: "inherit",
+      stdout: "inherit",
+      stderr: "inherit",
+    }).output();
+
+    if (!status.success) {
+      throw new Error(`Editor exited with ${status.code}; ${key} unchanged.`);
+    }
+
+    const edited = await Deno.readTextFile(path);
+
+    return edited === current ? undefined : edited;
+  } finally {
+    await Deno.remove(path).catch(() => {});
+  }
+}
+
+/**
+ * Jira clears a rich-text field with null rather than an empty document, so an
+ * empty description has to be sent as null.
+ */
+function toAdfField(text: string): unknown {
+  return text.length === 0 ? null : toAdf(text);
+}

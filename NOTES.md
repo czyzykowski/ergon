@@ -13,6 +13,7 @@
 - [x] 6.6 Commands (log/ls/search/new/menu)
 - [x] New command required fields (Client SOW, labels)
 - [x] Parent inheritance for Client SOW and labels (non-interactive)
+- [x] Editing an issue's description and summary (`ergon edit`)
 
 ## Updates
 
@@ -64,3 +65,17 @@
   `state.lastProject`, so its answer depends on config alone.
 - `--json` narrows Client SOW options to `{id, value}`; Jira also returns
   `disabled`, which is dropped so the shape stays a contract.
+- ADF handling moved out of `src/api/jira.ts` into `src/adf.ts` so the pure
+  parts are testable without the client: `toAdf`, its inverse `fromAdf`, and
+  `unsupportedAdfNodes`, which decides whether `ergon edit` may proceed.
+- `unsupportedAdfNodes` counts marks as well as node types. A bold run is an
+  ordinary `text` node carrying `marks: [{type: "strong"}]`, so checking node
+  types alone would let formatting be flattened without a word.
+- `ergon edit` reads the raw ADF through `getIssueFields(key, ["description"])`
+  rather than `getIssue`, because loss detection needs the document and
+  `JiraIssue.description` is a `string`. That field in `types.ts` is still dead.
+- Jira clears a rich-text field with `null`; an ADF doc with empty content is
+  rejected. `ergon edit --description ""` therefore sends `null`.
+- `edit` reads `state.lastIssueKey` but never writes it, matching `move`.
+  Commands that act _on_ an issue do not claim the slot; only ones that switch
+  _to_ an issue (`new`, `start`, `log`) do.

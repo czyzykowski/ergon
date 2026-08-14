@@ -1,3 +1,4 @@
+import { toAdf } from "../adf.ts";
 import type { JiraConfig, JiraIssue } from "../types.ts";
 
 const SEARCH_FIELDS = [
@@ -325,6 +326,21 @@ export class JiraClient {
     return response.transitions;
   }
 
+  /** Update an issue in place. `fields` is sent as-is, so callers send only
+   * what they mean to change — Jira leaves anything absent alone. */
+  async updateIssue(
+    issueKey: string,
+    fields: Record<string, unknown>,
+  ): Promise<void> {
+    await this.request<unknown>(
+      `/rest/api/3/issue/${encodeURIComponent(issueKey)}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({ fields }),
+      },
+    );
+  }
+
   async transitionIssue(issueKey: string, transitionId: string): Promise<void> {
     await this.request<unknown>(
       `/rest/api/3/issue/${encodeURIComponent(issueKey)}/transitions`,
@@ -366,20 +382,6 @@ export class JiraClient {
     if (!text) return undefined as T;
     return JSON.parse(text) as T;
   }
-}
-
-// Jira Cloud REST v3 requires rich-text fields as Atlassian Document Format
-// (ADF), not plain strings. Render each line as a paragraph (blank line -> empty
-// paragraph) so multi-line descriptions round-trip.
-function toAdf(text: string): Record<string, unknown> {
-  return {
-    type: "doc",
-    version: 1,
-    content: text.split("\n").map((line) => ({
-      type: "paragraph",
-      content: line.length > 0 ? [{ type: "text", text: line }] : [],
-    })),
-  };
 }
 
 function mapIssue(issue: JiraIssueResponse): JiraIssue {
