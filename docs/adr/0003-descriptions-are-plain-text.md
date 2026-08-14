@@ -1,5 +1,9 @@
 # Descriptions are plain text
 
+Narrowed to the write path by
+[ADR 0004](./0004-descriptions-read-richer-than-they-write.md): ergon renders
+any Description when reading one. Everything below concerns writing.
+
 Jira Cloud stores rich-text fields as Atlassian Document Format, a nested
 document tree that expresses lists, code blocks, links, tables, panels, and
 mentions. ergon writes only one shape of it: `toAdf` in `src/api/jira.ts` splits

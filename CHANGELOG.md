@@ -58,3 +58,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   reads the body from stdin. It refuses to rewrite a description holding lists,
   code, tables, or formatting rather than flattening it silently — `--force`
   overrides. See [ADR 0003](./docs/adr/0003-descriptions-are-plain-text.md).
+- Added `description` and `descriptionDegraded` to `ergon get --json`, so an
+  agent can read what an issue asks for. Any description is rendered to
+  markdown, whatever it was authored as, and anything whose shape markdown
+  cannot carry keeps its text and is named in `descriptionDegraded`. Previously
+  no command returned a body at all. See
+  [ADR 0004](./docs/adr/0004-descriptions-read-richer-than-they-write.md).
+- Added `labels`, `statusCategory`, `created`, and `updated` to the issue shape
+  returned by `ergon get --json`. `statusCategory` is the stable key (`new`,
+  `indeterminate`, `done`) rather than a per-project status name.

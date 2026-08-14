@@ -67,14 +67,23 @@ export interface JiraIssue {
   id: string;
   key: string;
   summary: string;
+  /** The rendered body, or null when the issue has none. */
+  description: string | null;
+  /** Node types whose structure the Description lost being read out. */
+  descriptionDegraded: string[];
   status: string;
+  /** The status category key — `new`, `indeterminate`, or `done`. */
+  statusCategory: string;
   issueType: string;
   projectKey: string;
   parentKey?: string;
   parentSummary?: string;
   assignee: string | null;
+  labels: string[];
   epicKey?: string;
   epicSummary?: string;
+  created: string;
+  updated: string;
   timeSpentSeconds: number | null;
   originalEstimateSeconds: number | null;
 }

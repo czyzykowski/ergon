@@ -51,6 +51,40 @@ ergon new "Fix login" --non-interactive --parent PCK-12
 Interactive runs are unaffected: the parent still pre-selects the Client SOW
 prompt, and the label prompt still appears when nothing supplied labels.
 
+### Reading an issue
+
+`ergon get <KEY> --json` returns an issue as a machine-readable object, and is
+the intended way for an agent to find out what an issue asks for:
+
+```json
+{
+  "key": "PCK-12",
+  "summary": "Fix login redirect",
+  "description": "- reproduce on staging\n- check the 302 target",
+  "descriptionDegraded": [],
+  "status": "In Progress",
+  "statusCategory": "indeterminate",
+  "labels": ["backend"],
+  "created": "2026-08-01T09:12:00.000+0100",
+  "updated": "2026-08-14T11:04:31.000+0100"
+}
+```
+
+- `description` is the issue body rendered to markdown, or `null` when there is
+  none. Lists, code blocks, headings, quotes, links, and mentions all survive.
+- `descriptionDegraded` names constructs whose shape markdown could not carry —
+  `["table"]` means the cells are all there and the grid is not. It is `[]` when
+  the body rendered cleanly. Text is never dropped without being reported here
+  ([ADR 0004](./docs/adr/0004-descriptions-read-richer-than-they-write.md)).
+- `statusCategory` is the stable key (`new`, `indeterminate`, `done`), so it can
+  be tested against without knowing a project's status names.
+- `created` and `updated` are Jira's own timestamps, passed through unparsed.
+- The rendering is one-way: text read here and passed back to
+  `ergon edit --description` is written as flat paragraphs, so a real list
+  becomes text shaped like one. Read with `get`, write with the source text.
+
+The human-readable `ergon get` output is unchanged and does not print the body.
+
 ### Editing an issue
 
 `ergon edit` changes an issue's description and summary. With no flags it opens

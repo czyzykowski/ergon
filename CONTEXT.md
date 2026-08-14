@@ -35,11 +35,19 @@ only for fields with enumerable values, where `none` cannot collide with a real
 one — a free-text field is cleared with an empty string instead. _Avoid_: empty,
 null, unset
 
-**Description**: The free-text body of an issue. ergon treats it as plain text,
-so an issue whose Description holds lists, code, or tables is one ergon will not
-rewrite unless forced to — see
-[ADR 0003](./docs/adr/0003-descriptions-are-plain-text.md). _Avoid_: body,
-details, notes
+**Description**: The free-text body of an issue, and where an agent reads what
+the issue asks for. ergon reads a Description more richly than it writes one:
+any Description can be read out, but only one made of plain paragraphs can be
+rewritten in place — see
+[ADR 0003](./docs/adr/0003-descriptions-are-plain-text.md) and
+[ADR 0004](./docs/adr/0004-descriptions-read-richer-than-they-write.md).
+_Avoid_: body, details, notes
+
+**Degraded**: Of a Description read out with its text whole but its structure
+reduced — a table whose rows survive as lines, a panel that reads as a quote.
+Degrading is never silent: whatever was flattened is named alongside the text.
+Distinct from the loss ergon refuses on write, which would destroy the text
+itself. _Avoid_: lossy, truncated, partial
 
 ### Invocation
 

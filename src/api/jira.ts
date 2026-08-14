@@ -1,4 +1,4 @@
-import { toAdf } from "../adf.ts";
+import { renderAdf, toAdf } from "../adf.ts";
 import type { JiraConfig, JiraIssue } from "../types.ts";
 
 const SEARCH_FIELDS = [
@@ -9,18 +9,24 @@ const SEARCH_FIELDS = [
   "parent",
   "assignee",
   "description",
+  "labels",
+  "created",
+  "updated",
   "timetracking",
   "customfield_10008",
 ];
 
 export interface JiraIssueFields {
   summary: string;
-  status: { name: string };
+  status: { name: string; statusCategory?: { key?: string } };
   issuetype: { name: string };
   project: { key: string };
   parent?: { key: string; fields: { summary: string } };
   assignee?: { displayName?: string };
   description?: unknown;
+  labels?: string[];
+  created?: string;
+  updated?: string;
   timetracking?: {
     timeSpentSeconds?: number;
     originalEstimateSeconds?: number;
@@ -387,19 +393,28 @@ export class JiraClient {
 function mapIssue(issue: JiraIssueResponse): JiraIssue {
   const fields = issue.fields ?? {} as JiraIssueFields;
   const epic = fields.customfield_10008?.[0];
+  const description = renderAdf(fields.description);
 
   return {
     id: issue.id,
     key: issue.key,
     summary: fields.summary ?? "",
+    // An empty document and an absent field are both "no body". Jira itself
+    // makes no distinction — clearing a description writes null.
+    description: description.text.length > 0 ? description.text : null,
+    descriptionDegraded: description.degraded,
     status: fields.status?.name ?? "",
+    statusCategory: fields.status?.statusCategory?.key ?? "",
     issueType: fields.issuetype?.name ?? "",
     projectKey: fields.project?.key ?? "",
     parentKey: fields.parent?.key,
     parentSummary: fields.parent?.fields.summary,
     assignee: fields.assignee?.displayName ?? null,
+    labels: fields.labels ?? [],
     epicKey: epic?.key,
     epicSummary: epic?.fields?.summary,
+    created: fields.created ?? "",
+    updated: fields.updated ?? "",
     timeSpentSeconds: fields.timetracking?.timeSpentSeconds ?? null,
     originalEstimateSeconds: fields.timetracking?.originalEstimateSeconds ??
       null,

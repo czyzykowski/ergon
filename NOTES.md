@@ -14,6 +14,7 @@
 - [x] New command required fields (Client SOW, labels)
 - [x] Parent inheritance for Client SOW and labels (non-interactive)
 - [x] Editing an issue's description and summary (`ergon edit`)
+- [x] Reading an issue's description via `ergon get --json` (`renderAdf`)
 
 ## Updates
 
@@ -72,10 +73,34 @@
   ordinary `text` node carrying `marks: [{type: "strong"}]`, so checking node
   types alone would let formatting be flattened without a word.
 - `ergon edit` reads the raw ADF through `getIssueFields(key, ["description"])`
-  rather than `getIssue`, because loss detection needs the document and
-  `JiraIssue.description` is a `string`. That field in `types.ts` is still dead.
+  rather than `getIssue`, because loss detection needs the document itself and
+  `JiraIssue.description` is text by the time `mapIssue` is done with it.
 - Jira clears a rich-text field with `null`; an ADF doc with empty content is
   rejected. `ergon edit --description ""` therefore sends `null`.
 - `edit` reads `state.lastIssueKey` but never writes it, matching `move`.
   Commands that act _on_ an issue do not claim the slot; only ones that switch
   _to_ an issue (`new`, `start`, `log`) do.
+- `renderAdf` is a second, read-only ADF renderer alongside `fromAdf`. They are
+  not redundant: `fromAdf` is `toAdf`'s exact inverse and exists so `ergon edit`
+  can prefill a buffer it can write back, while `renderAdf` reads any document
+  for `ergon get --json`. Reading and writing fail differently, which is the
+  whole of
+  [ADR 0004](./docs/adr/0004-descriptions-read-richer-than-they-write.md).
+- `renderAdf` joins blocks with a single newline rather than a blank line, so a
+  Description made only of paragraphs renders byte-identically to `fromAdf`. A
+  plain issue therefore reads the same through `get` as through `edit`.
+- Unknown ADF node types are not skipped. `renderAdf` names the type in
+  `degraded` and recurses into its content anyway, deciding inline vs block by
+  whether any child is an inline type. A future Jira node keeps its text.
+- `descriptionDegraded` and `unsupportedAdfNodes` answer different questions and
+  will disagree. A bullet list renders cleanly (empty `descriptionDegraded`) yet
+  `ergon edit` still refuses it, because `toAdf` cannot produce one.
+- `mapIssue` reports `description: null` for both an absent field and an empty
+  document. Jira makes no distinction either — clearing one writes `null`.
+- `getIssue` sends no `fields` param, so it already returned `labels`,
+  `created`, `updated`, and `status.statusCategory`; only `search` needed
+  `SEARCH_FIELDS` widening. `description` was being fetched on both paths and
+  dropped by `mapIssue` all along.
+- `statusCategory` carries the category key, not its name. `ls` already
+  hardcodes `"Ready for QA", "Ready for UAT", "UAT", "QA"` because status names
+  are per instance; the key is the part that means the same everywhere.
