@@ -4,6 +4,7 @@ import { registerClientSowsCommand } from "./commands/client_sows.ts";
 import { registerEditCommand } from "./commands/edit.ts";
 import { registerGetCommand } from "./commands/get.ts";
 import { registerLabelsCommand } from "./commands/labels.ts";
+import { registerLinkCommands } from "./commands/link.ts";
 import { registerLogCommand } from "./commands/log.ts";
 import { registerLsCommand } from "./commands/ls.ts";
 import { registerMenuCommand } from "./commands/menu.ts";
@@ -36,6 +37,7 @@ export function buildCommand(): Command {
   registerOpenCommand(program);
   registerMoveCommand(program);
   registerEditCommand(program);
+  registerLinkCommands(program);
   registerMenuCommand(program);
 
   return program;

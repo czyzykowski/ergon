@@ -104,3 +104,41 @@
 - `statusCategory` carries the category key, not its name. `ls` already
   hardcodes `"Ready for QA", "Ready for UAT", "UAT", "QA"` because status names
   are per instance; the key is the part that means the same everywhere.
+- Jira's link record names its two ends backwards from what they suggest. In a
+  `POST /rest/api/3/issueLink` body the `inwardIssue` is the end that reads with
+  the type's _outward_ phrase, so `{inwardIssue: A, outwardIssue: B}` on type
+  Blocks means **A blocks B**. Verified against a real link and both issues'
+  changelogs. Atlassian's own docs call `outwardIssue` "the from issue", which
+  reads the opposite way and is wrong; `createLinkBody` in `src/links.ts` is the
+  only place that has to know.
+- The per-issue view uses the opposite convention to the record. On issue X, an
+  `issuelinks` element carrying the counterpart in `outwardIssue` reads "X
+  ⟨type.outward⟩ Y", and one carrying it in `inwardIssue` reads "X ⟨type.inward⟩
+  Y". Exactly one of the two is ever present. So an issue is the record's
+  `inwardIssue` precisely when its own element holds the counterpart in
+  `outwardIssue`.
+- Creating a link twice is a silent no-op: Jira answers `201` with an empty body
+  and creates nothing. It returns no link id either — the only way to learn one
+  is to re-read `issuelinks`. `blocked-by` and `duplicates` therefore read the
+  subject's links first, which is what lets them say "already" instead of
+  reporting a create that did nothing.
+- `POST /rest/api/3/issueLink` answers `404` for five different situations:
+  linking disabled site-wide, either issue unviewable, no Link Issues
+  permission, either key missing, or the type missing. The status cannot tell
+  them apart, so the target is read first — a mistyped key then names itself
+  rather than arriving as an unattributed 404.
+- `getIssue` sends no `fields` param and so already returned `issuelinks`;
+  `mapIssue` dropped it, the same way it dropped `description`. `SEARCH_FIELDS`
+  does not list it, which is deliberate — `ls` and `search` would otherwise
+  carry a links payload on every row.
+- Link types are instance-level and effectively frozen; this instance's fourteen
+  have not changed in twelve years. That is the whole argument for hardcoding
+  commands rather than discovering types, and it is why the labels/client-sows
+  pattern does not apply here. See
+  [ADR 0005](./docs/adr/0005-one-command-per-writable-link-type.md).
+- Every inward and outward phrase in this instance is unique across all fourteen
+  types, so a phrase identifies a type and a direction on its own. Three types
+  are symmetric (`Relates`, `Gantt End to End`, `Gantt Start to Start`) and read
+  identically either way.
+- `blocked-by` and `duplicates` read `state.lastIssueKey` but never write it,
+  matching `move` and `edit`.

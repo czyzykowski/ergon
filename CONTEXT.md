@@ -17,6 +17,22 @@ parent ticket, container
 by key. It is a way of _picking_ a Parent, not a second kind of link. _Avoid_:
 initiative, theme
 
+**Link**: A named, directional relation between two issues that carries no
+hierarchy — an issue may have many, or none. Distinct from Parent, which is a
+single slot and drives Inherit; a Link never does. ergon writes two kinds and
+reads every kind Jira reports — see
+[ADR 0005](./docs/adr/0005-one-command-per-writable-link-type.md). _Avoid_:
+relation, reference, connection
+
+**Phrase**: How a Link reads from one end — `is blocked by` from one side,
+`blocks` from the other. One Link has two Phrases; which one ergon shows depends
+on which issue you asked about. _Avoid_: type, direction, label
+
+**Blocked**: The workflow status named Blocked, which is what `ls --blocked`
+filters. Not the same as carrying an `is blocked by` Link — an issue can have
+either without the other, and ergon never infers one from the other. _Avoid_:
+stuck, waiting
+
 **Inherit**: To take a field's value from the Parent when the invocation did not
 supply one. Inheritance is a fallback, never an override — anything given
 explicitly wins. _Avoid_: copy, propagate, cascade

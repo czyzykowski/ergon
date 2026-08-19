@@ -1,4 +1,5 @@
 import { renderAdf, toAdf } from "../adf.ts";
+import { type JiraIssueLink, renderLinks } from "../links.ts";
 import type { JiraConfig, JiraIssue } from "../types.ts";
 
 const SEARCH_FIELDS = [
@@ -32,6 +33,7 @@ export interface JiraIssueFields {
     originalEstimateSeconds?: number;
   };
   customfield_10008?: Array<{ key: string; fields?: { summary?: string } }>;
+  issuelinks?: JiraIssueLink[];
 }
 
 export interface JiraIssueResponse {
@@ -347,6 +349,41 @@ export class JiraClient {
     );
   }
 
+  /**
+   * The issue's raw Links, which carry the link ids removal needs. Fetching
+   * these also settles whether the issue exists before anything is written.
+   */
+  async getIssueLinks(issueKey: string): Promise<JiraIssueLink[]> {
+    const fields = await this.getIssueFields(issueKey, ["issuelinks"]);
+
+    return (fields.issuelinks as JiraIssueLink[] | undefined) ?? [];
+  }
+
+  async getIssueSummary(issueKey: string): Promise<string> {
+    const fields = await this.getIssueFields(issueKey, ["summary"]);
+
+    return (fields.summary as string | undefined) ?? "";
+  }
+
+  /**
+   * Create a Link. Jira treats a duplicate as a silent no-op — it answers 201
+   * with an empty body and creates nothing — so callers that want to report
+   * accurately have to check for the Link first.
+   */
+  async createIssueLink(body: Record<string, unknown>): Promise<void> {
+    await this.request<unknown>("/rest/api/3/issueLink", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  }
+
+  async deleteIssueLink(linkId: string): Promise<void> {
+    await this.request<unknown>(
+      `/rest/api/3/issueLink/${encodeURIComponent(linkId)}`,
+      { method: "DELETE" },
+    );
+  }
+
   async transitionIssue(issueKey: string, transitionId: string): Promise<void> {
     await this.request<unknown>(
       `/rest/api/3/issue/${encodeURIComponent(issueKey)}/transitions`,
@@ -379,9 +416,7 @@ export class JiraClient {
 
     if (!response.ok) {
       const body = await response.text();
-      throw new Error(
-        `Jira API request failed (${response.status}): ${body}`,
-      );
+      throw new Error(requestFailure(response.status, body));
     }
 
     const text = await response.text();
@@ -418,5 +453,24 @@ function mapIssue(issue: JiraIssueResponse): JiraIssue {
     timeSpentSeconds: fields.timetracking?.timeSpentSeconds ?? null,
     originalEstimateSeconds: fields.timetracking?.originalEstimateSeconds ??
       null,
+    links: renderLinks(fields.issuelinks),
   };
+}
+
+/**
+ * Jira reports failures in an `errorMessages` array. Surfacing that alone keeps
+ * HTTP plumbing out of what the operator reads; anything else falls back to the
+ * raw body, which is ugly but never lies.
+ */
+function requestFailure(status: number, body: string): string {
+  try {
+    const parsed = JSON.parse(body) as { errorMessages?: string[] };
+    const messages = parsed.errorMessages ?? [];
+
+    if (messages.length > 0) return messages.join(" ");
+  } catch {
+    // Not JSON at all, so there is nothing to unwrap.
+  }
+
+  return `Jira API request failed (${status}): ${body}`;
 }

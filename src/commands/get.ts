@@ -33,5 +33,14 @@ export function registerGetCommand(program: Command): void {
         );
       }
       console.log(`  assignee: ${issue.assignee ?? "Unassigned"}`);
+
+      if (issue.links.length > 0) {
+        console.log("  links:");
+        for (const link of issue.links) {
+          console.log(
+            `    ${link.phrase} ${link.key} [${link.status}] ${link.summary}`,
+          );
+        }
+      }
     });
 }

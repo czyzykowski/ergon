@@ -19,6 +19,8 @@ export function registerMenuCommand(program: Command): void {
           { name: "Open in browser", value: "open" },
           { name: "Move issue", value: "move" },
           { name: "Edit issue", value: "edit" },
+          { name: "Link as blocked by", value: "blocked-by" },
+          { name: "Link as duplicate", value: "duplicates" },
         ],
       });
 

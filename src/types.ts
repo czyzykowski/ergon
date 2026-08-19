@@ -63,6 +63,16 @@ export interface CacheState {
   sprints?: Record<string, CachedSprint[]>;
 }
 
+export interface IssueLink {
+  /** Jira's id for the Link itself, the only handle for removing it by hand. */
+  id: string;
+  /** How the Link reads from the issue it was read from. */
+  phrase: string;
+  key: string;
+  summary: string;
+  status: string;
+}
+
 export interface JiraIssue {
   id: string;
   key: string;
@@ -86,6 +96,8 @@ export interface JiraIssue {
   updated: string;
   timeSpentSeconds: number | null;
   originalEstimateSeconds: number | null;
+  /** Empty from a search: `issuelinks` is fetched for a single issue only. */
+  links: IssueLink[];
 }
 
 export interface ClockworkWorklog {

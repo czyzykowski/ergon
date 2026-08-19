@@ -67,3 +67,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Added `labels`, `statusCategory`, `created`, and `updated` to the issue shape
   returned by `ergon get --json`. `statusCategory` is the stable key (`new`,
   `indeterminate`, `done`) rather than a per-project status name.
+- Added `ergon blocked-by [ISSUE] BLOCKER` and
+  `ergon duplicates [ISSUE] ORIGINAL` to link two issues, with `--remove` to
+  take the link away. One key links the issue last worked on; the reverse
+  relation is the same command with the keys flipped. There is no generic link
+  command and no other link type is writable — see
+  [ADR 0005](./docs/adr/0005-one-command-per-writable-link-type.md).
+- Added `links` to `ergon get`, in both the plain output and `--json`. Every
+  link type Jira reports is shown, including ones no ergon command can create,
+  each labelled with the phrase that reads from the issue asked about.
+- Changed Jira API failures to report Jira's own `errorMessages` rather than the
+  status code and raw response body, falling back to the raw body when there is
+  nothing to unwrap.

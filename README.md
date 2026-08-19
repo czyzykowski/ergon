@@ -66,7 +66,16 @@ the intended way for an agent to find out what an issue asks for:
   "statusCategory": "indeterminate",
   "labels": ["backend"],
   "created": "2026-08-01T09:12:00.000+0100",
-  "updated": "2026-08-14T11:04:31.000+0100"
+  "updated": "2026-08-14T11:04:31.000+0100",
+  "links": [
+    {
+      "id": "33550",
+      "phrase": "is blocked by",
+      "key": "PCK-9",
+      "summary": "Pin the runner image",
+      "status": "Done"
+    }
+  ]
 }
 ```
 
@@ -79,11 +88,49 @@ the intended way for an agent to find out what an issue asks for:
 - `statusCategory` is the stable key (`new`, `indeterminate`, `done`), so it can
   be tested against without knowing a project's status names.
 - `created` and `updated` are Jira's own timestamps, passed through unparsed.
+- `links` holds every link Jira reports, each `phrase` reading from the issue
+  you asked about — `"is blocked by"` on one issue is `"blocks"` on the other.
+  Links only come back from `ergon get`; `ls` and `search` leave them out.
 - The rendering is one-way: text read here and passed back to
   `ergon edit --description` is written as flat paragraphs, so a real list
   becomes text shaped like one. Read with `get`, write with the source text.
 
-The human-readable `ergon get` output is unchanged and does not print the body.
+The human-readable `ergon get` output does not print the body, but does list
+links:
+
+```
+PCK-12 [In Progress] Fix login redirect
+  type:     Task
+  project:  PCK
+  assignee: Lukasz Czyzykowski
+  links:
+    is blocked by PCK-9 [Done] Pin the runner image
+    relates to PCK-31 [To Do] Audit CI secrets
+```
+
+### Linking issues
+
+```
+ergon blocked-by PCK-9           # the last issue is blocked by PCK-9
+ergon blocked-by PCK-12 PCK-9    # PCK-12 is blocked by PCK-9
+ergon blocked-by PCK-9 PCK-12    # the reverse, by flipping the keys
+ergon duplicates PCK-12 PCK-4    # PCK-12 duplicates PCK-4
+ergon blocked-by PCK-12 PCK-9 --remove
+```
+
+- With one key the issue is the last one worked on, like `ergon move`. With two,
+  the first is the issue and the second is the other end.
+- The relation always reads left to right, so there is no `blocks` command —
+  flip the two keys instead.
+- Running the same command twice is harmless: it reports the link was already
+  there rather than failing. `--remove` on a link that was never there says so
+  and also succeeds.
+- Only these two link types can be written. `ergon get` still shows every kind
+  Jira reports, including `relates to` and plugin-owned types, so an issue may
+  display links no ergon command could have created — remove those in Jira
+  ([ADR 0005](./docs/adr/0005-one-command-per-writable-link-type.md)).
+- Jira's Parent-Child link type is not ergon's Parent and is deliberately not
+  writable here. Set a Parent with `ergon new --parent`.
 
 ### Editing an issue
 
