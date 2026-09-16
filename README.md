@@ -157,6 +157,26 @@ ergon comment PCK-12
 - Comments are written as plain text, like descriptions
   ([ADR 0003](./docs/adr/0003-descriptions-are-plain-text.md)).
 
+Editing one corrects a past utterance, which is a different act from rewriting
+what the issue currently asks for — that is `ergon edit`.
+
+```
+ergon comment PCK-12 --id 10234            # opens that comment, prefilled
+ergon comment PCK-12 --id 10234 --body "…" # replaces it outright
+```
+
+- A comment is addressed by its Jira id and nothing else. There are no ordinals
+  and no `last`: adding one hands back its id, so the caller already holds it.
+  An id belonging to another issue is left to Jira, which 404s.
+- ergon refuses to rewrite a comment holding lists, code, tables, or formatting,
+  because it cannot reproduce them. `--force` with `--id` and `--body` replaces
+  such a comment outright; it is not available on the editor path, where you
+  would be amending a copy without seeing what was already lost.
+- A restriction on a comment survives the edit, and the receipt names it.
+  Restrictions are never authored — there is no `--visibility` flag.
+- Editing someone else's comment needs a Jira permission most people do not
+  hold; Jira's own 403 is what you get back.
+
 ### Reading comments
 
 `ergon comments` prints an issue's comments as a thread, oldest first.

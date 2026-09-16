@@ -154,3 +154,20 @@
   able to name". `edit` rewrites fields whose values the caller already holds;
   `comment` creates an id that did not exist and that editing later requires.
   Without it an agent would have to regex the id out of a receipt.
+- ADR 0003 and ADR 0004 were extended to Comments deliberately, and needed no
+  new reasoning: a Comment is a second rich-text field under decisions already
+  written for the first. ergon writes paragraphs, reads anything, and refuses to
+  rewrite what it cannot reproduce. `ergon comments` therefore lists a Comment
+  that `ergon comment --id` will still refuse to edit — the same disagreement
+  ADR 0004 already documents between `descriptionDegraded` and
+  `unsupportedAdfNodes`.
+- A Comment's `visibility` is echoed back verbatim on update rather than
+  omitted. Atlassian does not document the omission behaviour, and the field
+  evidence is that a body-only PUT _clears_ an existing restriction — dropping
+  the key is the reported way to unrestrict a comment. Omitting it would widen
+  who can see a note, silently, on a 200. `jsdPublic` is ignored outright: it is
+  a Jira Service Management construct and there are no JSM projects here.
+- cliffy 0.25.7 rejects an empty string for any `<value:string>` option with
+  "Missing value for option", before the action runs. So `--body ""` errors, as
+  the Comment design wants, but `ergon edit --description ""` cannot clear a
+  description the way README claims — pre-existing, untouched here.

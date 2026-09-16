@@ -387,6 +387,53 @@ export class JiraClient {
     return mapComment(response);
   }
 
+  /**
+   * One Comment as Jira holds it, body still in ADF. The caller needs the raw
+   * document to decide whether ergon can rewrite it, and the raw `visibility`
+   * to hand back unchanged.
+   */
+  async getComment(
+    issueKey: string,
+    commentId: string,
+  ): Promise<JiraCommentResponse> {
+    return await this.request<JiraCommentResponse>(
+      `/rest/api/3/issue/${encodeURIComponent(issueKey)}/comment/${
+        encodeURIComponent(commentId)
+      }`,
+      { method: "GET" },
+    );
+  }
+
+  /**
+   * Replace a Comment's body. `visibility` is echoed back from the fetched
+   * Comment rather than omitted: the reported way to unrestrict a comment is to
+   * drop the key, so omitting it would widen who can see a note on a 200.
+   */
+  async updateComment(input: {
+    issueKey: string;
+    commentId: string;
+    body: unknown;
+    visibility?: unknown;
+  }): Promise<JiraComment> {
+    const payload: Record<string, unknown> = { body: input.body };
+
+    if (input.visibility) {
+      payload.visibility = input.visibility;
+    }
+
+    const response = await this.request<JiraCommentResponse>(
+      `/rest/api/3/issue/${encodeURIComponent(input.issueKey)}/comment/${
+        encodeURIComponent(input.commentId)
+      }`,
+      {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      },
+    );
+
+    return mapComment(response);
+  }
+
   async getTransitions(issueKey: string): Promise<JiraTransition[]> {
     const response = await this.request<JiraTransitionsResponse>(
       `/rest/api/3/issue/${encodeURIComponent(issueKey)}/transitions`,

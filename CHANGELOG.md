@@ -87,3 +87,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   it inline, `--body -` from stdin, and with neither the editor opens on an
   empty buffer. The receipt names the new comment's id, and `--json` returns the
   comment itself.
+- Added `ergon comment [ISSUE] --id <ID>` to edit a comment already on an issue,
+  opening its current text in `$EDITOR` or replacing it with `--body`. It
+  refuses to rewrite a comment holding lists, code, tables, or formatting rather
+  than flattening it silently — `--force` overrides, but not on the editor path.
+  A comment's visibility restriction is preserved and named in the receipt.
