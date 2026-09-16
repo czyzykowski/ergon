@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- Fixed `ergon log --description`: the worklog comment now travels as ADF, so Jira stops rejecting the worklog as null.
 - Added initial Deno CLI skeleton with Cliffy.
 - Added YAML config loader with env var expansion.
 - Added Jira API client with issue mapping and search helpers.

@@ -314,29 +314,12 @@ export class JiraClient {
     return labels;
   }
 
-  async addWorklog(input: {
-    issueKey: string;
-    timeSpentSeconds: number;
-    startedAt?: string;
-    comment?: string;
-  }): Promise<JiraWorklogResponse> {
-    const body: Record<string, unknown> = {
-      timeSpentSeconds: input.timeSpentSeconds,
-    };
-
-    if (input.startedAt) {
-      body.started = input.startedAt;
-    }
-
-    if (input.comment) {
-      body.comment = input.comment;
-    }
-
+  async addWorklog(input: WorklogInput): Promise<JiraWorklogResponse> {
     const response = await this.request<JiraWorklogResponse>(
       `/rest/api/3/issue/${encodeURIComponent(input.issueKey)}/worklog`,
       {
         method: "POST",
-        body: JSON.stringify(body),
+        body: JSON.stringify(worklogBody(input)),
       },
     );
 
@@ -572,6 +555,30 @@ function mapIssue(issue: JiraIssueResponse): JiraIssue {
  * A Comment as ergon hands it out. Exported where `mapIssue` is not, because
  * this is the `ergon comments --json` contract and contracts get tests.
  */
+export interface WorklogInput {
+  issueKey: string;
+  timeSpentSeconds: number;
+  startedAt?: string;
+  comment?: string;
+}
+
+/**
+ * The POST body for `/rest/api/3/issue/{key}/worklog`. The comment travels as
+ * ADF: a bare string makes Jira reject the whole worklog as null.
+ */
+export function worklogBody(input: WorklogInput): Record<string, unknown> {
+  const body: Record<string, unknown> = {
+    timeSpentSeconds: input.timeSpentSeconds,
+  };
+  if (input.startedAt) {
+    body.started = input.startedAt;
+  }
+  if (input.comment) {
+    body.comment = toAdf(input.comment);
+  }
+  return body;
+}
+
 export function mapComment(comment: JiraCommentResponse): JiraComment {
   const body = renderAdf(comment.body);
   const mapped: JiraComment = {
