@@ -375,7 +375,10 @@ export class JiraClient {
   }
 
   /** Append a Comment. Jira returns the Comment it created, id and all. */
-  async addComment(issueKey: string, body: unknown): Promise<JiraComment> {
+  async addComment(
+    issueKey: string,
+    body: Record<string, unknown>,
+  ): Promise<JiraComment> {
     const response = await this.request<JiraCommentResponse>(
       `/rest/api/3/issue/${encodeURIComponent(issueKey)}/comment`,
       {
@@ -412,8 +415,8 @@ export class JiraClient {
   async updateComment(input: {
     issueKey: string;
     commentId: string;
-    body: unknown;
-    visibility?: unknown;
+    body: Record<string, unknown>;
+    visibility?: JiraCommentResponse["visibility"];
   }): Promise<JiraComment> {
     const payload: Record<string, unknown> = { body: input.body };
 

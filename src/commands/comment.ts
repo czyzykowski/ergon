@@ -1,8 +1,9 @@
 import type { Command } from "cliffy/command/mod.ts";
-import { fromAdf, toAdf, unsupportedAdfNodes } from "../adf.ts";
+import { fromAdf, toAdf } from "../adf.ts";
 import { JiraClient } from "../api/jira.ts";
 import { loadConfig } from "../config.ts";
 import { editInBuffer } from "../editor.ts";
+import { assertRewritable } from "../rewrite.ts";
 import { loadState } from "../state.ts";
 import type { JiraComment } from "../types.ts";
 
@@ -61,7 +62,11 @@ export function registerCommentCommand(program: Command): void {
         return;
       }
 
-      console.log(receipt(comment, key, options.id !== undefined));
+      console.log(
+        options.id === undefined
+          ? `Added comment ${comment.id} to ${key}`
+          : updateReceipt(comment, key),
+      );
     });
 }
 
@@ -100,27 +105,13 @@ async function editComment(
   options: CommentOptions,
 ): Promise<JiraComment | undefined> {
   const current = await jira.getComment(key, id);
-  const lost = unsupportedAdfNodes(current.body);
-
-  if (lost.length > 0) {
-    if (options.body === undefined) {
-      throw new Error(
-        `Comment ${id} on ${key} contains ${
-          lost.join(", ")
-        }, which ergon cannot edit in place. ` +
-          `Pass --body --force to replace it outright, or edit it in Jira.`,
-      );
-    }
-
-    if (!options.force) {
-      throw new Error(
-        `Comment ${id} on ${key} contains ${
-          lost.join(", ")
-        }, which would be lost. ` +
-          `Pass --force to replace it with plain text.`,
-      );
-    }
-  }
+  assertRewritable({
+    subject: `Comment ${id} on ${key}`,
+    doc: current.body,
+    supplied: options.body !== undefined,
+    force: options.force === true,
+    flag: "--body",
+  });
 
   const body = await resolveBody(options.body, {
     subject: `${key}-comment-${id}`,
@@ -145,23 +136,31 @@ async function editComment(
 /**
  * The Comment to write, or undefined when the operator wrote nothing. `-` means
  * stdin; with no `--body` at all the editor opens on `buffer`.
- *
- * An empty body is refused rather than treated as a clear, which is where the
- * `ergon edit --description ""` analogy deliberately stops: a Description can
- * be blank, a Comment cannot.
  */
 async function resolveBody(
   supplied: string | undefined,
   buffer: { subject: string; current: string; missingEditor: string },
 ): Promise<string | undefined> {
   if (supplied === undefined) {
-    return await editInBuffer(buffer);
+    const edited = await editInBuffer(buffer);
+
+    return edited === undefined ? undefined : refuseBlank(edited);
   }
 
   const body = supplied === "-"
     ? await new Response(Deno.stdin.readable).text()
     : supplied;
 
+  return refuseBlank(body);
+}
+
+/**
+ * An empty body is refused rather than treated as a clear, which is where the
+ * `ergon edit --description ""` analogy deliberately stops: a Description can
+ * be blank, a Comment cannot. An untouched editor buffer is a different thing —
+ * it never reaches here, and means "changed my mind".
+ */
+function refuseBlank(body: string): string {
   if (body.trim().length === 0) {
     throw new Error("A comment needs a body.");
   }
@@ -169,15 +168,13 @@ async function resolveBody(
   return body;
 }
 
-/** Names the restriction when there is one, so preserving it is not silent. */
-function receipt(
-  comment: JiraComment,
-  key: string,
-  edited: boolean,
-): string {
-  const line = edited
-    ? `Updated comment ${comment.id} on ${key}`
-    : `Added comment ${comment.id} to ${key}`;
+/**
+ * Names a restriction when the Comment carries one, so that preserving it
+ * through an edit is not silent. Adding never produces one — ergon does not
+ * author restrictions.
+ */
+function updateReceipt(comment: JiraComment, key: string): string {
+  const line = `Updated comment ${comment.id} on ${key}`;
 
   return comment.visibility
     ? `${line} (restricted: ${comment.visibility.type} ${comment.visibility.value})`

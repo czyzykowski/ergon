@@ -1,8 +1,9 @@
 import type { Command } from "cliffy/command/mod.ts";
-import { fromAdf, toAdf, unsupportedAdfNodes } from "../adf.ts";
+import { fromAdf, toAdf } from "../adf.ts";
 import { JiraClient } from "../api/jira.ts";
 import { loadConfig } from "../config.ts";
 import { editInBuffer } from "../editor.ts";
+import { assertRewritable } from "../rewrite.ts";
 import { loadState } from "../state.ts";
 
 interface EditOptions {
@@ -41,27 +42,13 @@ export function registerEditCommand(program: Command): void {
       const jira = new JiraClient(config.jira);
       const current = await jira.getIssueFields(key, ["description"]);
       const currentAdf = current.description;
-      const lost = unsupportedAdfNodes(currentAdf);
-
-      if (lost.length > 0) {
-        if (!supplied) {
-          throw new Error(
-            `${key}'s description contains ${
-              lost.join(", ")
-            }, which ergon cannot edit in place. ` +
-              `Pass --description --force to replace it outright, or edit it in Jira.`,
-          );
-        }
-
-        if (!options.force) {
-          throw new Error(
-            `${key}'s description contains ${
-              lost.join(", ")
-            }, which would be lost. ` +
-              `Pass --force to replace it with plain text.`,
-          );
-        }
-      }
+      assertRewritable({
+        subject: `${key}'s description`,
+        doc: currentAdf,
+        supplied,
+        force: options.force === true,
+        flag: "--description",
+      });
 
       const description = supplied
         ? await resolveDescription(options.description as string)
