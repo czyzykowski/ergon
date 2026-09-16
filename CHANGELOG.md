@@ -83,3 +83,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `--json` for the whole history as data. Bodies render however they were
   authored, naming anything the terminal could not reproduce, and every page is
   fetched so a partial history never reads as a whole one.
+- Added `ergon comment [ISSUE]` to append a comment to an issue. `--body` takes
+  it inline, `--body -` from stdin, and with neither the editor opens on an
+  empty buffer. The receipt names the new comment's id, and `--json` returns the
+  comment itself.

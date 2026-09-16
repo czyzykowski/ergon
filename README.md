@@ -132,6 +132,31 @@ ergon blocked-by PCK-12 PCK-9 --remove
 - Jira's Parent-Child link type is not ergon's Parent and is deliberately not
   writable here. Set a Parent with `ergon new --parent`.
 
+### Commenting on an issue
+
+`ergon comment` appends a comment to an issue. With no `--body` it opens an
+empty buffer in `$VISUAL` or `$EDITOR`; quitting without typing posts nothing.
+
+```
+ergon comment PCK-12 --body "Deployed to staging; waiting on QA."
+ergon comment PCK-12 --body - <<'EOF'
+Reproduced on staging.
+The 302 target is wrong.
+EOF
+ergon comment PCK-12
+```
+
+- The issue key is optional and falls back to the last one, like `ergon edit`.
+- The body is a flag rather than a positional argument, because the key is
+  optional: `ergon comment "some text"` would otherwise be ambiguous.
+- `--body ""` is an error, not a clear. A description can be blank; a comment
+  cannot.
+- The receipt names the id of the comment it created, which is the handle every
+  later operation needs. `--json` returns the comment itself, in the same shape
+  `ergon comments --json` lists.
+- Comments are written as plain text, like descriptions
+  ([ADR 0003](./docs/adr/0003-descriptions-are-plain-text.md)).
+
 ### Reading comments
 
 `ergon comments` prints an issue's comments as a thread, oldest first.

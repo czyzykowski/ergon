@@ -374,6 +374,19 @@ export class JiraClient {
     return comments;
   }
 
+  /** Append a Comment. Jira returns the Comment it created, id and all. */
+  async addComment(issueKey: string, body: unknown): Promise<JiraComment> {
+    const response = await this.request<JiraCommentResponse>(
+      `/rest/api/3/issue/${encodeURIComponent(issueKey)}/comment`,
+      {
+        method: "POST",
+        body: JSON.stringify({ body }),
+      },
+    );
+
+    return mapComment(response);
+  }
+
   async getTransitions(issueKey: string): Promise<JiraTransition[]> {
     const response = await this.request<JiraTransitionsResponse>(
       `/rest/api/3/issue/${encodeURIComponent(issueKey)}/transitions`,

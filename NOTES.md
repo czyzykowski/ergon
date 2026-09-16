@@ -148,3 +148,9 @@
   is set — so the decision of whether anything came back worth writing stays in
   one place. `comment` starts from an empty buffer, which is why the starting
   text is a parameter rather than a field read beforehand.
+- `ergon comment` has `--json` where `ergon edit` deliberately does not, and the
+  two are principled rather than inconsistent. The test is not "do mutations
+  return data" but "did this mutation mint an identifier the caller must now be
+  able to name". `edit` rewrites fields whose values the caller already holds;
+  `comment` creates an id that did not exist and that editing later requires.
+  Without it an agent would have to regex the id out of a receipt.
