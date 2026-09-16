@@ -15,6 +15,7 @@
 - [x] Parent inheritance for Client SOW and labels (non-interactive)
 - [x] Editing an issue's description and summary (`ergon edit`)
 - [x] Reading an issue's description via `ergon get --json` (`renderAdf`)
+- [x] Commenting on an issue (`ergon comment`, `ergon comments`)
 
 ## Updates
 

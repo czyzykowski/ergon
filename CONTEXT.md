@@ -65,6 +65,12 @@ Degrading is never silent: whatever was flattened is named alongside the text.
 Distinct from the loss ergon refuses on write, which would destroy the text
 itself. _Avoid_: lossy, truncated, partial
 
+**Comment**: A dated, authored remark appended to an issue. Comments
+accumulate rather than replace: a new one never overwrites the last, and editing
+one corrects a past utterance rather than restating what the issue currently
+asks for. Distinct from a Description, which is the issue's current statement of
+itself and is rewritten in place. _Avoid_: note, remark, update
+
 ### Invocation
 
 **Interactive**: A run permitted to prompt. It may ask the operator to resolve
