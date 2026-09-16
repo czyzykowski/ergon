@@ -100,6 +100,27 @@ export interface JiraIssue {
   links: IssueLink[];
 }
 
+/** Who a Comment is restricted to, when it is restricted at all. */
+export interface CommentVisibility {
+  type: string;
+  value: string;
+}
+
+export interface JiraComment {
+  /** Jira's own id, and the only handle for editing the Comment. */
+  id: string;
+  /** The author's display name; ergon does not resolve account identity. */
+  author: string;
+  /** The rendered body. */
+  body: string;
+  /** Node and mark types whose structure the body lost being read out. */
+  bodyDegraded: string[];
+  created: string;
+  updated: string;
+  /** Present only when the Comment carries a restriction. */
+  visibility?: CommentVisibility;
+}
+
 export interface ClockworkWorklog {
   id?: string | number;
   issueKey?: string;

@@ -79,3 +79,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Changed Jira API failures to report Jira's own `errorMessages` rather than the
   status code and raw response body, falling back to the raw body when there is
   nothing to unwrap.
+- Added `ergon comments [ISSUE]` to read an issue's comments as a thread, with
+  `--json` for the whole history as data. Bodies render however they were
+  authored, naming anything the terminal could not reproduce, and every page is
+  fetched so a partial history never reads as a whole one.

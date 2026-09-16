@@ -132,6 +132,37 @@ ergon blocked-by PCK-12 PCK-9 --remove
 - Jira's Parent-Child link type is not ergon's Parent and is deliberately not
   writable here. Set a Parent with `ergon new --parent`.
 
+### Reading comments
+
+`ergon comments` prints an issue's comments as a thread, oldest first.
+
+```
+ergon comments PCK-12
+ergon comments PCK-12 --json
+```
+
+```
+10234  Lukasz Czyzykowski  2026-08-14 11:04
+  Deployed to staging.
+  Waiting on QA.
+
+10235  Ada Lovelace  2026-08-15 09:20  (edited 2026-08-15 09:22)  (degraded: table)
+  Results below
+  Case | Result
+```
+
+- The issue key is optional and falls back to the last one, like `ergon edit`.
+- Bodies print whole. There is no command that shows a single comment, so a
+  truncated listing would leave nothing able to read one.
+- `(edited ...)` appears only when a comment has been revised since it was
+  written, and `(degraded: ...)` names anything whose formatting could not be
+  reproduced in the terminal — read those in Jira
+  ([ADR 0004](./docs/adr/0004-descriptions-read-richer-than-they-write.md)).
+- Every page is fetched, so the thread is never a partial history.
+- `--json` returns the comments as an array, each carrying `id`, `author`,
+  `body`, `bodyDegraded`, and Jira's own `created`/`updated` timestamps.
+  `visibility` is present only on a restricted comment.
+
 ### Editing an issue
 
 `ergon edit` changes an issue's description and summary. With no flags it opens

@@ -1,6 +1,6 @@
 import { renderAdf, toAdf } from "../adf.ts";
 import { type JiraIssueLink, renderLinks } from "../links.ts";
-import type { JiraConfig, JiraIssue } from "../types.ts";
+import type { JiraComment, JiraConfig, JiraIssue } from "../types.ts";
 
 const SEARCH_FIELDS = [
   "summary",
@@ -87,6 +87,23 @@ export interface JiraLabelResponse {
   startAt?: number;
   maxResults?: number;
   isLast?: boolean;
+  total?: number;
+}
+
+/** One element of Jira's comment payload, as the v3 API returns it. */
+export interface JiraCommentResponse {
+  id: string;
+  author?: { displayName?: string };
+  body?: unknown;
+  created?: string;
+  updated?: string;
+  visibility?: { type?: string; value?: string };
+}
+
+export interface JiraCommentsResponse {
+  comments?: JiraCommentResponse[];
+  startAt?: number;
+  maxResults?: number;
   total?: number;
 }
 
@@ -326,6 +343,37 @@ export class JiraClient {
     return response;
   }
 
+  /**
+   * Every Comment on the issue, oldest first. Paginated to completion: a
+   * partial history read as a whole one is the failure ADR 0004 is about.
+   */
+  async listComments(issueKey: string): Promise<JiraComment[]> {
+    const comments: JiraComment[] = [];
+    let startAt = 0;
+
+    while (true) {
+      const params = new URLSearchParams({
+        startAt: startAt.toString(),
+        maxResults: "100",
+        orderBy: "created",
+      });
+      const response = await this.request<JiraCommentsResponse>(
+        `/rest/api/3/issue/${encodeURIComponent(issueKey)}/comment?${params}`,
+        { method: "GET" },
+      );
+
+      const page = response.comments ?? [];
+      comments.push(...page.map(mapComment));
+
+      if (page.length === 0) break;
+
+      startAt += page.length;
+      if (response.total !== undefined && startAt >= response.total) break;
+    }
+
+    return comments;
+  }
+
   async getTransitions(issueKey: string): Promise<JiraTransition[]> {
     const response = await this.request<JiraTransitionsResponse>(
       `/rest/api/3/issue/${encodeURIComponent(issueKey)}/transitions`,
@@ -455,6 +503,32 @@ function mapIssue(issue: JiraIssueResponse): JiraIssue {
       null,
     links: renderLinks(fields.issuelinks),
   };
+}
+
+/**
+ * A Comment as ergon hands it out. Exported where `mapIssue` is not, because
+ * this is the `ergon comments --json` contract and contracts get tests.
+ */
+export function mapComment(comment: JiraCommentResponse): JiraComment {
+  const body = renderAdf(comment.body);
+  const mapped: JiraComment = {
+    id: comment.id,
+    author: comment.author?.displayName ?? "",
+    body: body.text,
+    bodyDegraded: body.degraded,
+    created: comment.created ?? "",
+    updated: comment.updated ?? "",
+  };
+
+  // Absent rather than null when unrestricted, which is the normal case.
+  if (comment.visibility?.type && comment.visibility.value) {
+    mapped.visibility = {
+      type: comment.visibility.type,
+      value: comment.visibility.value,
+    };
+  }
+
+  return mapped;
 }
 
 /**
