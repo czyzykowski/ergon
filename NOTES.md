@@ -142,3 +142,9 @@
   identically either way.
 - `blocked-by` and `duplicates` read `state.lastIssueKey` but never write it,
   matching `move` and `edit`.
+- The `$EDITOR` buffer lives in `src/editor.ts` rather than inside `edit`,
+  because both `edit` and `comment` open one. Only three things vary — the
+  starting text, what names the buffer, and the sentence thrown when no editor
+  is set — so the decision of whether anything came back worth writing stays in
+  one place. `comment` starts from an empty buffer, which is why the starting
+  text is a parameter rather than a field read beforehand.

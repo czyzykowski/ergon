@@ -2,6 +2,7 @@ import type { Command } from "cliffy/command/mod.ts";
 import { fromAdf, toAdf, unsupportedAdfNodes } from "../adf.ts";
 import { JiraClient } from "../api/jira.ts";
 import { loadConfig } from "../config.ts";
+import { editInBuffer } from "../editor.ts";
 import { loadState } from "../state.ts";
 
 interface EditOptions {
@@ -64,7 +65,12 @@ export function registerEditCommand(program: Command): void {
 
       const description = supplied
         ? await resolveDescription(options.description as string)
-        : await editDescription(key, fromAdf(currentAdf));
+        : await editInBuffer({
+          subject: key,
+          current: fromAdf(currentAdf),
+          missingEditor:
+            "Set $EDITOR (or $VISUAL) to edit a description, or pass --description.",
+        });
 
       const fields: Record<string, unknown> = {};
       const changed: string[] = [];
@@ -94,51 +100,6 @@ async function resolveDescription(value: string): Promise<string> {
   if (value !== "-") return value;
 
   return await new Response(Deno.stdin.readable).text();
-}
-
-/**
- * Put the current description in front of the operator in `$EDITOR`. Returns
- * undefined when nothing should be written — the editor failed, or the buffer
- * came back exactly as it went in.
- */
-async function editDescription(
-  key: string,
-  current: string,
-): Promise<string | undefined> {
-  const editor = Deno.env.get("VISUAL") ?? Deno.env.get("EDITOR");
-
-  if (!editor) {
-    throw new Error(
-      "Set $EDITOR (or $VISUAL) to edit a description, or pass --description.",
-    );
-  }
-
-  const path = await Deno.makeTempFile({
-    prefix: `ergon-${key}-`,
-    suffix: ".txt",
-  });
-
-  try {
-    await Deno.writeTextFile(path, current);
-
-    const [command, ...args] = editor.split(/\s+/);
-    const status = await new Deno.Command(command, {
-      args: [...args, path],
-      stdin: "inherit",
-      stdout: "inherit",
-      stderr: "inherit",
-    }).output();
-
-    if (!status.success) {
-      throw new Error(`Editor exited with ${status.code}; ${key} unchanged.`);
-    }
-
-    const edited = await Deno.readTextFile(path);
-
-    return edited === current ? undefined : edited;
-  } finally {
-    await Deno.remove(path).catch(() => {});
-  }
 }
 
 /**
