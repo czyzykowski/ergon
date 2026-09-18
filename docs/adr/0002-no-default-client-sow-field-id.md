@@ -35,7 +35,10 @@ surfaces on first use rather than silently.
 The decision covers Client SOW alone. `DEFAULT_SPRINT_FIELD_ID` still defaults
 in `src/commands/new.ts`, which is deliberate rather than an oversight — no
 discovery command depends on the sprint field's semantics, so it has not earned
-the same strictness yet.
+the same strictness yet. _Superseded by
+[ADR 0007](./0007-sprint-field-id-is-required.md), which was reached on exactly
+the condition this paragraph named: reading an issue's Sprints made the sprint
+field's semantics something ergon reports._
 
 The "does this plan need a field?" question lives in one pure function,
 `requireClientSowFieldId` in `src/commands/new_fields.ts`, so the boundary

@@ -44,12 +44,37 @@ single-select Jira custom field whose id varies per project, so it is always
 referred to by configured field id rather than by name. _Avoid_: SOW value,
 contract, engagement
 
-**None**: The literal word a flag takes to mean "explicitly empty", as distinct
-from omitting the flag, which means "decide for me". `--client-sow none` clears
-the field; leaving `--client-sow` off lets it be inherited. The convention holds
-only for fields with enumerable values, where `none` cannot collide with a real
-one — a free-text field is cleared with an empty string instead. _Avoid_: empty,
-null, unset
+**Sprint**: A named, time-boxed iteration on a board. An issue carries a
+_history_ of them rather than a slot: a ticket carried over twice reports three,
+and one planned ahead reports a Sprint it is not yet working in. This is the
+mirror of Parent, which is one slot and nothing more. ergon reports the history
+and leaves the reading of it to the caller, because "the" Sprint of an issue is
+a question only the caller can answer. _Avoid_: iteration, cycle, milestone
+
+**Rank**: The board's own ordering, the one set by dragging. A Rank is
+meaningful only within a board — dragging expresses how two issues on the same
+board compare and never how an issue on one board compares to an issue on
+another — so ordering by Rank across boards produces an order nobody chose. It
+is what the operator means by priority; the Jira Priority field is read and
+reported but never ordered by. See
+[ADR 0009](./docs/adr/0009-rank-does-not-cross-boards.md). _Avoid_: priority,
+position, backlog order
+
+**None**: The literal word a flag takes to mean "explicitly empty".
+`--client-sow none` clears the field, `--due none` clears the due date. What
+_omitting_ the flag means belongs to the command and never to the word — Inherit
+on `ergon new`, leave-alone on `ergon edit` — so None says only "make this
+empty, deliberately". The convention holds wherever `none` cannot collide with a
+real value of the field; a free-text field, where it can, is cleared with an
+empty string instead. _Avoid_: empty, null, unset
+
+**Absent**: Of a field ergon did not fetch, as distinct from one it fetched and
+found empty. An Absent field is missing from the JSON entirely; an empty one is
+`null`. The distinction is what stops "I did not look" reading as "there is
+nothing there" — the read side's counterpart to None, and the reason a Link
+never appears on an issue that came from a search. See
+[ADR 0006](./docs/adr/0006-absent-means-not-fetched.md). _Avoid_: missing,
+unset, undefined
 
 **Description**: The free-text body of an issue, and where an agent reads what
 the issue asks for. ergon reads a Description more richly than it writes one:
@@ -65,11 +90,22 @@ Degrading is never silent: whatever was flattened is named alongside the text.
 Distinct from the loss ergon refuses on write, which would destroy the text
 itself. _Avoid_: lossy, truncated, partial
 
-**Comment**: A dated, authored remark appended to an issue. Comments
-accumulate rather than replace: a new one never overwrites the last, and editing
-one corrects a past utterance rather than restating what the issue currently
-asks for. Distinct from a Description, which is the issue's current statement of
+**Comment**: A dated, authored remark appended to an issue. Comments accumulate
+rather than replace: a new one never overwrites the last, and editing one
+corrects a past utterance rather than restating what the issue currently asks
+for. Distinct from a Description, which is the issue's current statement of
 itself and is rewritten in place. _Avoid_: note, remark, update
+
+### Time
+
+**Worklog**: A record of time spent on an issue. Jira holds them, and every way
+of creating one ends there — Clockwork's timer writes a Worklog, `ergon log`
+writes a Worklog, and so does anyone typing into the Jira UI. Jira is therefore
+the only vantage point from which a day is whole, which is why ergon reads time
+from Jira even though it writes it through Clockwork — see
+[ADR 0008](./docs/adr/0008-jira-is-the-record-of-logged-time.md). Distinct from
+a Comment, which records what happened rather than how long it took. _Avoid_:
+time entry, log, timesheet
 
 ### Invocation
 
@@ -89,6 +125,9 @@ human picked, so it is Interactive-only in both directions — see
 _Avoid_: cache, history, session
 
 **Cache**: Jira metadata saved locally to avoid refetching — epics, labels,
-boards, sprints, field options. Distinct from Remembered state: a Cache holds
+boards, field options. A Cache holds only facts that change when someone changes
+Jira's configuration. A fact with a shelf life is never cached, however cheap it
+would be to keep: which Sprint is active was cached once and went on being
+reported as current for months. Distinct from Remembered state: a Cache holds
 facts about Jira, Remembered state holds the operator's past choices. _Avoid_:
 store, snapshot

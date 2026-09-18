@@ -1,5 +1,10 @@
 # Edit Issue Command
 
+> Partly superseded by [edit-issue-fields.md](./edit-issue-fields.md), which
+> adds `--due` and `--sprint` and changes when the editor opens and when the
+> Description is fetched. This file remains the record of what originally
+> shipped.
+
 ## Objective
 
 Add an `edit` command to ergon that updates a Jira issue's description and
