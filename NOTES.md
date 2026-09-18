@@ -172,3 +172,9 @@
   "Missing value for option", before the action runs. So `--body ""` errors, as
   the Comment design wants, but `ergon edit --description ""` cannot clear a
   description the way README claims — pre-existing, untouched here.
+- What may be cached: epics, labels, boards and Client SOW options — facts that
+  change when someone changes Jira's configuration. Which sprint is active is
+  not one of them, and caching it left `--sprint current` writing a closed
+  sprint for months. A TTL was rejected: any TTL is wrong at a sprint boundary,
+  which is the one moment the answer changes and the one moment it matters. The
+  rule now lives in `CONTEXT.md`'s **Cache** entry.

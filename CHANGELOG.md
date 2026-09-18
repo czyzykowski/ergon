@@ -93,3 +93,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   refuses to rewrite a comment holding lists, code, tables, or formatting rather
   than flattening it silently — `--force` overrides, but not on the editor path.
   A comment's visibility restriction is preserved and named in the receipt.
+- Fixed `--sprint current`, which resolved from a cache that never expired and
+  so kept naming a sprint that had closed months earlier. The active sprint is
+  now fetched at the moment of the write and never cached.
+- Changed `--sprint current` to refuse a project with several boards and no
+  configured `sprintBoardId`, rather than silently taking whichever board Jira
+  returned first. It is the refusal `--sprint <name>` already made.

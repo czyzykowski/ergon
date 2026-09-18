@@ -7,11 +7,11 @@ import type {
   CachedBoard,
   CachedIssue,
   CachedOption,
-  CachedSprint,
   CacheState,
   JiraIssue,
 } from "../types.ts";
 import { loadConfig } from "../config.ts";
+import { normalizeBoardId, resolveSprintId } from "../sprint.ts";
 import { loadState, saveState } from "../state.ts";
 import {
   optionPayload,
@@ -144,18 +144,6 @@ async function promptClientSow(
   return { id: selected.id, value: selected.value };
 }
 
-function normalizeBoardId(value?: number | string): number | undefined {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return value;
-  }
-
-  if (typeof value === "string" && /^\d+$/.test(value.trim())) {
-    return Number(value.trim());
-  }
-
-  return undefined;
-}
-
 function parseSprintId(value?: string): number | undefined {
   if (!value) {
     return undefined;
@@ -179,14 +167,6 @@ function toCachedOptions(options: JiraFieldOption[]): CachedOption[] {
 
 function toCachedBoards(boards: JiraBoard[]): CachedBoard[] {
   return boards.map((board) => ({ id: board.id, name: board.name }));
-}
-
-function toCachedSprints(sprints: JiraSprint[]): CachedSprint[] {
-  return sprints.map((sprint) => ({
-    id: sprint.id,
-    name: sprint.name,
-    state: sprint.state,
-  }));
 }
 
 async function promptSprintBoard(
@@ -225,7 +205,7 @@ async function promptSprintBoard(
 }
 
 async function promptSprint(
-  sprints: CachedSprint[],
+  sprints: JiraSprint[],
   sprintName?: string,
 ): Promise<number | undefined> {
   if (sprints.length === 0) {
@@ -539,11 +519,12 @@ export function registerNewCommand(program: Command): void {
           }
         }
 
-        let boardId: number | undefined;
         if (sprintCurrent) {
-          // 'current' just needs any board's active sprint; don't prompt.
-          boardId = normalizeBoardId(fieldDefaults?.sprintBoardId) ??
-            availableBoards[0]?.id;
+          sprintId = await resolveSprintId({
+            jira,
+            boards: availableBoards,
+            configuredBoardId: fieldDefaults?.sprintBoardId,
+          });
         } else {
           if (
             !interactive && !normalizeBoardId(fieldDefaults?.sprintBoardId) &&
@@ -553,47 +534,22 @@ export function registerNewCommand(program: Command): void {
               "Multiple boards found; set a default sprintBoardId or pass a numeric --sprint id.",
             );
           }
-          boardId = await promptSprintBoard(
+
+          const boardId = await promptSprintBoard(
             availableBoards,
             fieldDefaults?.sprintBoardId,
           );
-        }
 
-        if (!boardId) {
-          if (sprintNameOverride || sprintCurrent) {
-            throw new Error(
-              "No board available to resolve the sprint.",
-            );
-          }
-        } else {
-          const boardKey = boardId.toString();
-          let availableSprints = useCache
-            ? cache.sprints?.[boardKey]
-            : undefined;
-
-          if (!availableSprints) {
-            const sprints = await jira.listActiveSprints(boardId);
-            availableSprints = toCachedSprints(sprints);
-
-            if (useCache) {
-              cache.sprints = {
-                ...(cache.sprints ?? {}),
-                [boardKey]: availableSprints,
-              };
+          if (!boardId) {
+            if (sprintNameOverride) {
+              throw new Error("No board available to resolve the sprint.");
             }
-          }
-
-          if (sprintCurrent) {
-            if (availableSprints.length === 0) {
-              throw new Error("No active sprint found for the board.");
-            }
-            const current = availableSprints[0];
-            sprintId = current.id;
-            console.error(
-              `Using active sprint: ${current.name} (${current.id})`,
-            );
           } else {
-            sprintId = await promptSprint(availableSprints, sprintNameOverride);
+            // Never cached: an active Sprint is a fact with a shelf life.
+            sprintId = await promptSprint(
+              await jira.listActiveSprints(boardId),
+              sprintNameOverride,
+            );
           }
         }
       }
