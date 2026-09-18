@@ -148,6 +148,36 @@ ergon ls --since 2026-09-17 --json         # only what has moved since
   an issue from an unknown project still returns it, with `sprints` and
   `clientSow` missing.
 
+### Reading a day's time
+
+```
+ergon worklogs                     # today, by issue
+ergon worklogs --date 2026-09-17
+ergon worklogs --json
+```
+
+```
+PCK-12  09:14  1h      Paired on the redirect bug
+PCK-12  11:02  45m     Reviewed the fix
+PGR-4   14:30  2h 15m  Sprint planning
+
+Total: 4h
+```
+
+- One line per worklog, not per issue: two blocks on the same ticket at
+  different times of day are two facts.
+- `--json` gives `[{"issueKey", "started", "timeSpentSeconds", "description"}]`,
+  ordered earliest first. `started` is Jira's own timestamp, passed through
+  unparsed, and `description` is `null` when the worklog carries no comment.
+- Only your own worklogs on the day asked for are listed.
+- ergon writes time through Clockwork and reads it back from Jira. Jira sees
+  every worklog — the Clockwork timer, `ergon log`, and anything typed into the
+  Jira UI — so it is the only place a day is whole
+  ([ADR 0008](./docs/adr/0008-jira-is-the-record-of-logged-time.md)).
+- `ergon status` gets today's total from the same reading, so the two cannot
+  disagree. It keeps its own subject — the running timer — and takes no
+  `--date`, because a timer only means anything now.
+
 ### Linking issues
 
 ```

@@ -17,6 +17,7 @@ import { registerSearchCommand } from "./commands/search.ts";
 import { registerStartCommand } from "./commands/start.ts";
 import { registerStatusCommand } from "./commands/status.ts";
 import { registerStopCommand } from "./commands/stop.ts";
+import { registerWorklogsCommand } from "./commands/worklogs.ts";
 
 export const MAIN_DESCRIPTION = "CLI for Jira + Clockwork workflows.";
 
@@ -31,6 +32,7 @@ export function buildCommand(): Command {
   registerStopCommand(program);
   registerStatusCommand(program);
   registerLogCommand(program);
+  registerWorklogsCommand(program);
   registerLsCommand(program);
   registerGetCommand(program);
   registerLabelsCommand(program);

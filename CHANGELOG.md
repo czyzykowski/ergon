@@ -119,3 +119,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   editor, where `--summary` used to open one. A bare `ergon edit` still opens
   the description. The description is fetched, and ADR 0003's refusal applied,
   only when the description is in play.
+- Added `ergon worklogs [--date YYYY-MM-DD] [--json]`, a day's logged time
+  broken down by issue with start times, descriptions and a total.
+- Fixed `ergon status` totals, which came from the Clockwork timer alone and so
+  omitted every hour logged with `ergon log` or typed into the Jira UI. Today's
+  total now comes from Jira, from the same reading `ergon worklogs` renders.

@@ -1,5 +1,6 @@
 import { renderAdf, toAdf } from "../adf.ts";
 import { type JiraIssueLink, renderLinks } from "../links.ts";
+import type { JiraWorklogEntry } from "../worklogs.ts";
 import type {
   IssueSprint,
   JiraComment,
@@ -353,6 +354,30 @@ export class JiraClient {
     }
 
     return labels;
+  }
+
+  /**
+   * The authenticated user's account id. Jira Cloud omits `emailAddress` from
+   * user objects under default profile visibility, so a Worklog's author is
+   * matched by account id rather than against the configured email.
+   */
+  async getMyAccountId(): Promise<string> {
+    const response = await this.request<{ accountId?: string }>(
+      "/rest/api/3/myself",
+      { method: "GET" },
+    );
+
+    return response.accountId ?? "";
+  }
+
+  /** Every Worklog on an issue, by any author. Filtering is the caller's. */
+  async listIssueWorklogs(issueKey: string): Promise<JiraWorklogEntry[]> {
+    const response = await this.request<{ worklogs?: JiraWorklogEntry[] }>(
+      `/rest/api/3/issue/${encodeURIComponent(issueKey)}/worklog`,
+      { method: "GET" },
+    );
+
+    return response.worklogs ?? [];
   }
 
   async addWorklog(input: WorklogInput): Promise<JiraWorklogResponse> {

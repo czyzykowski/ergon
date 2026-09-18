@@ -16,6 +16,9 @@
 - [x] Editing an issue's description and summary (`ergon edit`)
 - [x] Reading an issue's description via `ergon get --json` (`renderAdf`)
 - [x] Commenting on an issue (`ergon comment`, `ergon comments`)
+- [x] Listing issues as data (`ergon ls --json`, `--order`, `--since`)
+- [x] Editing an issue's due date and sprint (`ergon edit --due`, `--sprint`)
+- [x] Reading a day's logged time (`ergon worklogs`)
 
 ## Updates
 
@@ -178,3 +181,15 @@
   sprint for months. A TTL was rejected: any TTL is wrong at a sprint boundary,
   which is the one moment the answer changes and the one moment it matters. The
   rule now lives in `CONTEXT.md`'s **Cache** entry.
+- ergon writes time through Clockwork and reads it back from Jira. The asymmetry
+  looks like an oversight and is not: Clockwork is a Jira app, so its timers
+  land as Jira worklogs, and Jira also sees `ergon log` and anything typed into
+  the Jira UI. Clockwork sees one of the three. Reading both and reconciling was
+  rejected — it adds a matching rule that exists only to be got wrong when one
+  source is a superset of the other. See ADR 0008.
+- Jira has no by-user-by-date worklog read. A day costs a JQL search for the
+  issues carrying this author's worklogs on the date, then one worklog read per
+  issue found. A normal day is a handful of requests, paid by `status` and
+  `worklogs`, neither of which is on a hot path.
+- `ClockworkClient.getWorklogs` is now unused. Left in place rather than removed
+  as unrelated cleanup.

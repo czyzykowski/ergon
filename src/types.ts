@@ -134,6 +134,16 @@ export interface JiraComment {
   visibility?: CommentVisibility;
 }
 
+/** A record of time spent on an issue, as ergon hands it out. */
+export interface Worklog {
+  issueKey: string;
+  /** Jira's own timestamp, offset and all, passed through unparsed. */
+  started: string;
+  timeSpentSeconds: number;
+  /** The worklog comment rendered to text, or null when there is none. */
+  description: string | null;
+}
+
 export interface ClockworkWorklog {
   id?: string | number;
   issueKey?: string;

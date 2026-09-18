@@ -1,7 +1,9 @@
 import type { Command } from "cliffy/command/mod.ts";
-import { ClockworkClient, formatDuration } from "../api/clockwork.ts";
+import { formatDuration } from "../api/clockwork.ts";
+import { JiraClient } from "../api/jira.ts";
 import { loadConfig } from "../config.ts";
 import { loadState } from "../state.ts";
+import { readDay, today, totalSeconds } from "../worklogs.ts";
 
 interface StatusOutput {
   timer?: {
@@ -20,29 +22,16 @@ export function registerStatusCommand(program: Command): void {
     .option("--json", "Output JSON")
     .action(async (options) => {
       const config = await loadConfig();
-      const clockwork = new ClockworkClient(config.clockwork);
       const state = await loadState();
-      const today = new Date();
-      const dateLabel = today.toISOString().slice(0, 10);
+      const jira = new JiraClient(config.jira, config.defaults?.projects);
 
-      const worklogs = await clockwork.getWorklogs({
-        from: dateLabel,
-        to: dateLabel,
-        userQuery: config.clockwork.userQuery,
-      });
-      const todayWorklogs = worklogs.filter((log) => {
-        const startedAt = log.startedAt ?? log.started;
-        if (!startedAt) {
-          return false;
-        }
-
-        return startedAt.startsWith(dateLabel);
-      });
-      const todaySeconds = todayWorklogs.reduce((total, log) => {
-        return total + (log.timeSpentSeconds ?? 0);
-      }, 0);
+      // Read from Jira, which sees the Clockwork timer, `ergon log`, and the
+      // Jira UI. Clockwork saw only the first — see docs/adr/0008.
+      const todaySeconds = totalSeconds(await readDay(jira, today()));
 
       const output: StatusOutput = {
+        // A running timer is Clockwork's, and is not a Worklog until it stops,
+        // which is why Jira cannot report it.
         timer: state.timer,
         todaySeconds,
         todayFormatted: formatDuration(todaySeconds),

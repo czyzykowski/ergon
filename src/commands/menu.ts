@@ -14,6 +14,7 @@ export function registerMenuCommand(program: Command): void {
           { name: "Status", value: "status" },
           { name: "New issue", value: "new" },
           { name: "Log work", value: "log" },
+          { name: "Show worklogs", value: "worklogs" },
           { name: "List issues", value: "ls" },
           { name: "Search issues", value: "search" },
           { name: "Open in browser", value: "open" },
