@@ -83,3 +83,29 @@ Deno.test("a project with no declared sprint field id cannot be written to", () 
     "defaults.projects.PGR.fields.sprintFieldId",
   );
 });
+
+Deno.test("a sprint asked for by name is matched among the active ones", async () => {
+  const sprintId = await resolveSprintId({
+    jira: sprintSource([
+      { id: 7, name: "Sep 14 - 19", state: "active" },
+      { id: 8, name: "Sep 14 - 19 (support)", state: "active" },
+    ]),
+    boards: [DELIVERY],
+    name: "sep 14 - 19",
+  });
+
+  assertEquals(sprintId, 7);
+});
+
+Deno.test("a sprint name matching nothing active refuses", async () => {
+  await assertRejects(
+    () =>
+      resolveSprintId({
+        jira: sprintSource([{ id: 7, name: "Sep 14 - 19", state: "active" }]),
+        boards: [DELIVERY],
+        name: "Sep 21 - 25",
+      }),
+    Error,
+    'Active sprint "Sep 21 - 25" not found.',
+  );
+});

@@ -112,3 +112,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Changed configuration: a project declared under `defaults.projects` must now
   declare `fields.sprintFieldId`, checked when config loads. The hard-coded
   `customfield_10010` fallback in `ergon new` is gone.
+- Added `ergon edit --due <YYYY-MM-DD|none>` and
+  `ergon edit --sprint <current|none|id|name>`, so a board gap found by a sweep
+  can be closed with one command.
+- Changed `ergon edit`: naming a field writes that field and never opens an
+  editor, where `--summary` used to open one. A bare `ergon edit` still opens
+  the description. The description is fetched, and ADR 0003's refusal applied,
+  only when the description is in play.

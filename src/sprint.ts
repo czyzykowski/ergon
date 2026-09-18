@@ -82,17 +82,31 @@ export function selectSprintBoard(
 }
 
 /**
- * The id of the board's active Sprint, asked of Jira at the moment of the
- * write. `listActiveSprints` filters `state=active` server-side, so the first
- * answer is an active one by construction.
+ * The id of a board's Sprint, asked of Jira at the moment of the write: the
+ * active one, or the one going by `name`. `listActiveSprints` filters
+ * `state=active` server-side, so an answer is an active one by construction.
  */
 export async function resolveSprintId(input: {
   jira: ActiveSprintSource;
   boards: readonly BoardRef[];
   configuredBoardId?: number | string;
+  /** A Sprint to match by name among the active ones, instead of the first. */
+  name?: string;
 }): Promise<number> {
   const boardId = selectSprintBoard(input.boards, input.configuredBoardId);
   const sprints = await input.jira.listActiveSprints(boardId);
+
+  if (input.name !== undefined) {
+    const match = sprints.find((sprint) =>
+      sprint.name.toLowerCase() === input.name?.toLowerCase()
+    );
+
+    if (!match) {
+      throw new Error(`Active sprint "${input.name}" not found.`);
+    }
+
+    return match.id;
+  }
 
   if (sprints.length === 0) {
     throw new Error("No active sprint found for the board.");

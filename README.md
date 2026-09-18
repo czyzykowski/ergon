@@ -250,13 +250,17 @@ ergon comments PCK-12 --json
 
 ### Editing an issue
 
-`ergon edit` changes an issue's description and summary. With no flags it opens
-the current description in `$VISUAL` or `$EDITOR`; saving an unchanged buffer
+Name a field and `ergon edit` writes that field; name none and it opens the
+current description in `$VISUAL` or `$EDITOR`, where saving an unchanged buffer
 writes nothing.
 
 ```
 ergon edit PCK-12
 ergon edit PCK-12 --summary "Fix login redirect"
+ergon edit PCK-12 --due 2026-09-20
+ergon edit PCK-12 --due none
+ergon edit PCK-12 --sprint current
+ergon edit PCK-12 --sprint none
 ergon edit PCK-12 --description - <<'EOF'
 Steps to reproduce:
 1. Log in
@@ -264,15 +268,24 @@ EOF
 ```
 
 - The issue key is optional and falls back to the last one, like `ergon move`.
-- `--description ""` clears the description. `none` is not a sentinel here — it
-  is only meaningful for fields with enumerable values.
+- A field write never opens an editor, so it is safe to run unattended, and the
+  receipt names what was sent: `Updated PCK-12 (due, sprint)`.
+- `--due` takes `YYYY-MM-DD`, or `none` to clear the date.
+- `--sprint` takes a sprint id, a sprint name, `current` for the board's active
+  sprint, or `none` to take the issue out of its sprint. `current` asks Jira at
+  the moment of the write, and refuses when the project has several boards and
+  no configured `sprintBoardId`.
+- `--description ""` clears the description. `none` is not a sentinel here: it
+  would collide with a real description.
 - ergon writes descriptions as plain text. It refuses to rewrite one containing
   lists, code, tables, or formatting, because it cannot reproduce them; pass
   `--force` with `--description` to replace such a description outright, or edit
   it in Jira. `--force` is not available on the editor path
-  ([ADR 0003](./docs/adr/0003-descriptions-are-plain-text.md)).
+  ([ADR 0003](./docs/adr/0003-descriptions-are-plain-text.md)). That refusal
+  applies only when the description is in play — setting a due date on an issue
+  whose description holds a table is not refused.
 - Other fields stay where they were: status is `ergon move`, and labels, Client
-  SOW, Epic, and sprint are set at creation by `ergon new`.
+  SOW and Epic are set at creation by `ergon new`.
 
 ## Configuration
 
