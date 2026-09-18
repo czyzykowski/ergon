@@ -176,8 +176,13 @@ Cases to cover:
 - **Caching with a TTL**, in any form.
 - **Removing the other caches.** Epics, labels, boards and field options stay
   cached; they are durable, which is the point of the sharpened definition.
-- **`--sprint <name>` resolution.** Unchanged, including its interactive-mode
-  requirement.
+- **`--sprint <name>` resolution in `ergon new`.** Unchanged, including its
+  interactive-mode requirement and its board prompt. The shared resolver did
+  gain a name lookup, for `ergon edit`, which has no non-interactive mode and so
+  cannot answer a prompt with a refusal the way `new` does: it matches the name
+  among the board's active Sprints and raises
+  `Active sprint "<name>" not
+  found.`
 - **Choosing a board interactively for `current`.** `current` exists to avoid a
   prompt; a prompt would defeat it, and `standup` cannot answer one.
 - **Reading an issue's Sprints.** That is `specs/list-issues.md`.

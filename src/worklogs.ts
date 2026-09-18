@@ -8,31 +8,13 @@
  */
 
 import { renderAdf } from "./adf.ts";
-import type { JiraClient } from "./api/jira.ts";
+import type { JiraClient, JiraWorklogEntry } from "./api/jira.ts";
 import type { Worklog } from "./types.ts";
-
-/** One worklog as Jira's per-issue endpoint returns it. */
-export interface JiraWorklogEntry {
-  author?: { accountId?: string };
-  started?: string;
-  timeSpentSeconds?: number;
-  comment?: unknown;
-}
 
 /** An issue's worklogs, which is how Jira's API is shaped: one read per issue. */
 export interface IssueWorklogs {
   issueKey: string;
   worklogs: JiraWorklogEntry[];
-}
-
-/** Today in the operator's own timezone, which is the day they mean. */
-export function today(): string {
-  const now = new Date();
-  const pad = (value: number): string => String(value).padStart(2, "0");
-
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${
-    pad(now.getDate())
-  }`;
 }
 
 /**

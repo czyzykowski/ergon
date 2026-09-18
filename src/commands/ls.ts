@@ -1,6 +1,7 @@
 import type { Command } from "cliffy/command/mod.ts";
 import { JiraClient } from "../api/jira.ts";
 import { loadConfig, requireDeclaredProject } from "../config.ts";
+import { isDate } from "../dates.ts";
 
 export interface LsOptions {
   sprint?: boolean;
@@ -13,8 +14,6 @@ export interface LsOptions {
   order?: string;
   since?: string;
 }
-
-const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 export function registerLsCommand(program: Command): void {
   program
@@ -99,7 +98,7 @@ export function buildJql(options: LsOptions): string {
   }
 
   if (options.since) {
-    if (!DATE_PATTERN.test(options.since)) {
+    if (!isDate(options.since)) {
       // JQL rejects an ISO-8601 instant outright, and a bare date-time is read
       // in the Jira user's timezone, which ergon does not hold.
       throw new Error("--since must be a date in YYYY-MM-DD format.");

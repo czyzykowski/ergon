@@ -1,6 +1,5 @@
 import { renderAdf, toAdf } from "../adf.ts";
 import { type JiraIssueLink, renderLinks } from "../links.ts";
-import type { JiraWorklogEntry } from "../worklogs.ts";
 import type {
   IssueSprint,
   JiraComment,
@@ -141,6 +140,14 @@ export interface JiraCommentsResponse {
   startAt?: number;
   maxResults?: number;
   total?: number;
+}
+
+/** One worklog as Jira's per-issue endpoint returns it. */
+export interface JiraWorklogEntry {
+  author?: { accountId?: string };
+  started?: string;
+  timeSpentSeconds?: number;
+  comment?: unknown;
 }
 
 export interface JiraWorklogResponse {
@@ -367,7 +374,15 @@ export class JiraClient {
       { method: "GET" },
     );
 
-    return response.accountId ?? "";
+    if (!response.accountId) {
+      // Silence here would empty the day rather than fail it, and an empty day
+      // is what `wrapup` proposes logging a second time — see docs/adr/0008.
+      throw new Error(
+        "Jira did not report the authenticated user's account id.",
+      );
+    }
+
+    return response.accountId;
   }
 
   /** Every Worklog on an issue, by any author. Filtering is the caller's. */
@@ -676,7 +691,6 @@ function optionDisplayValue(value: unknown): string | null {
   return null;
 }
 
-/** A Comment as ergon hands it out, and the `ergon comments --json` contract. */
 export interface WorklogInput {
   issueKey: string;
   timeSpentSeconds: number;
@@ -701,6 +715,7 @@ export function worklogBody(input: WorklogInput): Record<string, unknown> {
   return body;
 }
 
+/** A Comment as ergon hands it out, and the `ergon comments --json` contract. */
 export function mapComment(comment: JiraCommentResponse): JiraComment {
   const body = renderAdf(comment.body);
   const mapped: JiraComment = {

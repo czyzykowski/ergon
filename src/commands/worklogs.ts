@@ -2,15 +2,14 @@ import type { Command } from "cliffy/command/mod.ts";
 import { formatDuration } from "../api/clockwork.ts";
 import { JiraClient } from "../api/jira.ts";
 import { loadConfig } from "../config.ts";
+import { isDate, today } from "../dates.ts";
 import type { Worklog } from "../types.ts";
-import { readDay, today, totalSeconds } from "../worklogs.ts";
+import { readDay, totalSeconds } from "../worklogs.ts";
 
 interface WorklogsOptions {
   date?: string;
   json?: boolean;
 }
-
-const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 export function registerWorklogsCommand(program: Command): void {
   program
@@ -21,7 +20,7 @@ export function registerWorklogsCommand(program: Command): void {
     .action(async (options: WorklogsOptions) => {
       const date = options.date ?? today();
 
-      if (!DATE_PATTERN.test(date)) {
+      if (!isDate(date)) {
         throw new Error("--date must be a date in YYYY-MM-DD format.");
       }
 

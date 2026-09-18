@@ -10,7 +10,7 @@ import type {
   CacheState,
   JiraIssue,
 } from "../types.ts";
-import { loadConfig } from "../config.ts";
+import { loadConfig, requireDeclaredProject } from "../config.ts";
 import {
   normalizeBoardId,
   requireSprintFieldId,
@@ -324,6 +324,10 @@ export function registerNewCommand(program: Command): void {
       if (!projectKey) {
         throw new Error("Project key is required.");
       }
+
+      // Creating an issue in a project asserts ergon is configured for it —
+      // see docs/adr/0007.
+      requireDeclaredProject(config.defaults?.projects, projectKey);
 
       const issueType = options.type ?? config.defaults?.issueType ?? "Task";
       const useCache = !options.noCache;

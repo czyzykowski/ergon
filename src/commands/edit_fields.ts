@@ -1,3 +1,4 @@
+import { isDate } from "../dates.ts";
 import { isNoneValue } from "./new_fields.ts";
 
 /** Which Sprint a `--sprint` value asks for, before Jira has been consulted. */
@@ -29,8 +30,6 @@ export interface EditOptions {
   sprint?: string;
   force?: boolean;
 }
-
-const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
  * What an invocation writes: name a field and `edit` writes that field, name
@@ -77,7 +76,7 @@ export function planEdit(options: EditOptions): EditPlan {
 function parseDue(value: string): string | null {
   if (isNoneValue(value)) return null;
 
-  if (!DATE_PATTERN.test(value.trim())) {
+  if (!isDate(value)) {
     throw new Error("--due must be a date in YYYY-MM-DD format, or 'none'.");
   }
 

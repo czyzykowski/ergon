@@ -251,8 +251,10 @@ twenty.
   the constant becomes the fixed part of that list.
 - `config.ts`'s `validateRequired` gains the declared-project rule. No new seam:
   the function and its tests already exist.
-- `types.ts` gains `JiraSprint` in the `{name, state}` shape the issue carries,
-  distinct from the richer `JiraSprint` the agile API returns.
+- `types.ts` gains the `{name, state}` shape the issue carries, distinct from
+  the richer sprint the agile API returns. Shipped as `IssueSprint`: the two
+  modules import each other, so two exported types called `JiraSprint` would
+  shadow rather than merely differ.
 
 ## Testing Decisions
 

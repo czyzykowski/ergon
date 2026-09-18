@@ -191,5 +191,7 @@
   issues carrying this author's worklogs on the date, then one worklog read per
   issue found. A normal day is a handful of requests, paid by `status` and
   `worklogs`, neither of which is on a hot path.
-- `ClockworkClient.getWorklogs` is now unused. Left in place rather than removed
-  as unrelated cleanup.
+- `ClockworkClient.getWorklogs` is now unused, and with it `clockwork.userQuery`
+  in config and `ClockworkWorklog`'s read side. Left in place rather than
+  removed as unrelated cleanup; the timer path still uses the rest of the
+  client.

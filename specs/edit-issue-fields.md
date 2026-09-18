@@ -140,8 +140,10 @@ flow is smaller and leaves the CLI with one verb for "change this issue".
   [resolve-current-sprint.md](./resolve-current-sprint.md), including its
   refusal to choose among several boards and the reason it is never cached.
 - `none` clears the field.
-- A numeric value is taken as a sprint id. A name requires interactive mode, as
-  it does in `ergon new`, and errors otherwise with the same sentence.
+- A numeric value is taken as a sprint id. A name is matched among the board's
+  active Sprints. `ergon new` requires interactive mode for that because it may
+  have to prompt for a board; `edit` has no non-interactive mode and refuses an
+  ambiguous board outright, so the lookup is deterministic and needs no prompt.
 - The project's `sprintFieldId` comes from config and is required per
   [ADR 0007](../docs/adr/0007-sprint-field-id-is-required.md). `edit` names an
   issue rather than a project, so the project key comes from the fetched issue;
