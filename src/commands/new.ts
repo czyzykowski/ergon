@@ -11,7 +11,11 @@ import type {
   JiraIssue,
 } from "../types.ts";
 import { loadConfig } from "../config.ts";
-import { normalizeBoardId, resolveSprintId } from "../sprint.ts";
+import {
+  normalizeBoardId,
+  requireSprintFieldId,
+  resolveSprintId,
+} from "../sprint.ts";
 import { loadState, saveState } from "../state.ts";
 import {
   optionPayload,
@@ -36,7 +40,6 @@ interface NewOptions {
 }
 
 const PARENT_REQUIRED_TYPES = new Set(["Task", "Sub-task"]);
-const DEFAULT_SPRINT_FIELD_ID = "customfield_10010";
 const EPIC_NONE_VALUE = "__none__";
 const SPRINT_NONE_VALUE = "__none__";
 
@@ -307,7 +310,7 @@ export function registerNewCommand(program: Command): void {
     )
     .action(async (options: NewOptions, summaryArg?: string) => {
       const config = await loadConfig();
-      const jira = new JiraClient(config.jira);
+      const jira = new JiraClient(config.jira, config.defaults?.projects);
       const state = await loadState();
 
       const interactive = !options.nonInteractive;
@@ -478,8 +481,6 @@ export function registerNewCommand(program: Command): void {
         }
       }
 
-      const sprintFieldId = fieldDefaults?.sprintFieldId ??
-        DEFAULT_SPRINT_FIELD_ID;
       const sprintOverride = options.sprint;
       const sprintKeyword = sprintOverride?.trim().toLowerCase();
       const sprintNone = sprintKeyword === "none";
@@ -563,7 +564,9 @@ export function registerNewCommand(program: Command): void {
       }
 
       if (typeof sprintId === "number" && Number.isFinite(sprintId)) {
-        customFields[sprintFieldId] = sprintId;
+        customFields[
+          requireSprintFieldId(fieldDefaults?.sprintFieldId, projectKey)
+        ] = sprintId;
       }
 
       const issue = await jira.createIssue({

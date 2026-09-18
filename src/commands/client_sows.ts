@@ -26,7 +26,7 @@ export function registerClientSowsCommand(program: Command): void {
         );
       }
 
-      const jira = new JiraClient(config.jira);
+      const jira = new JiraClient(config.jira, config.defaults?.projects);
       // Deliberately uncached: the point of the command is what Jira accepts
       // now, and the metadata cache has no expiry.
       const sows = await jira.getFieldOptions(fieldId);

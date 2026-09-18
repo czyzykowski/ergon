@@ -39,7 +39,7 @@ export function registerEditCommand(program: Command): void {
         throw new Error("--force applies only to --description.");
       }
 
-      const jira = new JiraClient(config.jira);
+      const jira = new JiraClient(config.jira, config.defaults?.projects);
       const current = await jira.getIssueFields(key, ["description"]);
       const currentAdf = current.description;
       assertRewritable({

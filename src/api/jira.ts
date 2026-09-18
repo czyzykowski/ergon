@@ -1,7 +1,19 @@
 import { renderAdf, toAdf } from "../adf.ts";
 import { type JiraIssueLink, renderLinks } from "../links.ts";
-import type { JiraComment, JiraConfig, JiraIssue } from "../types.ts";
+import type {
+  IssueSprint,
+  JiraComment,
+  JiraConfig,
+  JiraIssue,
+  ProjectDefaults,
+} from "../types.ts";
 
+/**
+ * The fields every search asks for. Custom field ids vary per project and are
+ * added per search; `issuelinks` is deliberately not here, so that listing
+ * twenty issues does not fetch twenty link graphs nobody asked for — see
+ * [ADR 0006](../../docs/adr/0006-absent-means-not-fetched.md).
+ */
 const SEARCH_FIELDS = [
   "summary",
   "status",
@@ -14,8 +26,29 @@ const SEARCH_FIELDS = [
   "created",
   "updated",
   "timetracking",
+  "priority",
+  "duedate",
   "customfield_10008",
 ];
+
+/**
+ * The fixed field list plus every declared project's custom field ids. Jira
+ * silently omits a custom field a project does not have, so asking for all of
+ * them costs nothing and keeps one search able to span projects.
+ */
+export function searchFields(
+  projects: Record<string, ProjectDefaults> = {},
+): string[] {
+  const custom = new Set<string>();
+
+  for (const project of Object.values(projects)) {
+    const fields = project?.fields;
+    if (fields?.sprintFieldId) custom.add(fields.sprintFieldId);
+    if (fields?.clientSowFieldId) custom.add(fields.clientSowFieldId);
+  }
+
+  return [...SEARCH_FIELDS, ...custom];
+}
 
 export interface JiraIssueFields {
   summary: string;
@@ -33,6 +66,8 @@ export interface JiraIssueFields {
     originalEstimateSeconds?: number;
   };
   customfield_10008?: Array<{ key: string; fields?: { summary?: string } }>;
+  priority?: { name?: string } | null;
+  duedate?: string | null;
   issuelinks?: JiraIssueLink[];
 }
 
@@ -127,11 +162,17 @@ export class JiraClient {
   readonly baseUrl: string;
   readonly email: string;
   readonly apiToken: string;
+  /** Declared projects, for the per-project custom field ids an issue carries. */
+  readonly projects: Record<string, ProjectDefaults>;
 
-  constructor(config: JiraConfig) {
+  constructor(
+    config: JiraConfig,
+    projects: Record<string, ProjectDefaults> = {},
+  ) {
     this.baseUrl = config.baseUrl.replace(/\/$/, "");
     this.email = config.email;
     this.apiToken = config.apiToken;
+    this.projects = projects;
   }
 
   async createIssue(input: {
@@ -175,7 +216,7 @@ export class JiraClient {
       },
     );
 
-    return mapIssue(response);
+    return mapIssue(response, this.projects);
   }
 
   async getIssue(key: string): Promise<JiraIssue> {
@@ -186,7 +227,7 @@ export class JiraClient {
       },
     );
 
-    return mapIssue(issue);
+    return mapIssue(issue, this.projects);
   }
 
   async search(jql: string, maxResults = 50): Promise<JiraIssue[]> {
@@ -197,12 +238,12 @@ export class JiraClient {
         body: JSON.stringify({
           jql,
           maxResults,
-          fields: SEARCH_FIELDS,
+          fields: searchFields(this.projects),
         }),
       },
     );
 
-    return response.issues.map(mapIssue);
+    return response.issues.map((issue) => mapIssue(issue, this.projects));
   }
 
   async listEpics(projectKey: string): Promise<JiraIssue[]> {
@@ -519,12 +560,25 @@ export class JiraClient {
   }
 }
 
-function mapIssue(issue: JiraIssueResponse): JiraIssue {
+/**
+ * An issue as ergon hands it out, and so the `--json` contract both `ergon get`
+ * and `ergon ls` are read through. Exported for the same reason `mapComment` is:
+ * a contract gets tests.
+ *
+ * Which fields are Absent is decided here, from the raw payload and the
+ * project's declared field ids alone, so the decision stays pure.
+ */
+export function mapIssue(
+  issue: JiraIssueResponse,
+  projects: Record<string, ProjectDefaults> = {},
+): JiraIssue {
   const fields = issue.fields ?? {} as JiraIssueFields;
+  const raw = fields as unknown as Record<string, unknown>;
   const epic = fields.customfield_10008?.[0];
   const description = renderAdf(fields.description);
+  const fieldIds = projects[fields.project?.key ?? ""]?.fields;
 
-  return {
+  const mapped: JiraIssue = {
     id: issue.id,
     key: issue.key,
     summary: fields.summary ?? "",
@@ -547,14 +601,57 @@ function mapIssue(issue: JiraIssueResponse): JiraIssue {
     timeSpentSeconds: fields.timetracking?.timeSpentSeconds ?? null,
     originalEstimateSeconds: fields.timetracking?.originalEstimateSeconds ??
       null,
-    links: renderLinks(fields.issuelinks),
+    priority: fields.priority?.name ?? null,
+    dueDate: fields.duedate ?? null,
   };
+
+  // Absent unless it was fetched: a key that is missing says "ergon did not
+  // look", which is never what an empty array or a null should be read as.
+  if ("issuelinks" in raw) {
+    mapped.links = renderLinks(fields.issuelinks);
+  }
+
+  if (fieldIds?.sprintFieldId) {
+    mapped.sprints = issueSprints(raw[fieldIds.sprintFieldId]);
+  }
+
+  if (fieldIds?.clientSowFieldId) {
+    mapped.clientSow = optionDisplayValue(raw[fieldIds.clientSowFieldId]);
+  }
+
+  return mapped;
 }
 
 /**
- * A Comment as ergon hands it out. Exported where `mapIssue` is not, because
- * this is the `ergon comments --json` contract and contracts get tests.
+ * The Sprints an issue carries, in the order Jira returned them — which is the
+ * board's order and not chronology, so nothing here sorts or picks one.
  */
+function issueSprints(value: unknown): IssueSprint[] {
+  if (!Array.isArray(value)) return [];
+
+  return value.map((sprint) => {
+    const record = (sprint ?? {}) as Record<string, unknown>;
+
+    return {
+      name: typeof record.name === "string" ? record.name : "",
+      state: typeof record.state === "string" ? record.state : "",
+    };
+  });
+}
+
+/** A single-select custom field's display value, however Jira shaped it. */
+function optionDisplayValue(value: unknown): string | null {
+  if (typeof value === "string") return value;
+
+  if (value && typeof value === "object") {
+    const option = value as Record<string, unknown>;
+    if (typeof option.value === "string") return option.value;
+  }
+
+  return null;
+}
+
+/** A Comment as ergon hands it out, and the `ergon comments --json` contract. */
 export interface WorklogInput {
   issueKey: string;
   timeSpentSeconds: number;

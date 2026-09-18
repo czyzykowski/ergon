@@ -56,6 +56,16 @@ export interface CacheState {
   boards?: Record<string, CachedBoard[]>;
 }
 
+/**
+ * A Sprint as an issue carries it. An issue holds a history rather than a slot,
+ * in the board's own order, so ergon reports the list and leaves the reading of
+ * it to the caller.
+ */
+export interface IssueSprint {
+  name: string;
+  state: string;
+}
+
 export interface IssueLink {
   /** Jira's id for the Link itself, the only handle for removing it by hand. */
   id: string;
@@ -89,8 +99,18 @@ export interface JiraIssue {
   updated: string;
   timeSpentSeconds: number | null;
   originalEstimateSeconds: number | null;
-  /** Empty from a search: `issuelinks` is fetched for a single issue only. */
-  links: IssueLink[];
+  /** The Priority name, read and reported; ergon orders by Rank instead. */
+  priority: string | null;
+  dueDate: string | null;
+  /**
+   * Absent when ergon does not know the project's sprint field id, which after
+   * ADR 0007 means a project config has never heard of. See ADR 0006.
+   */
+  sprints?: IssueSprint[];
+  /** Absent when the project declares no Client SOW field id. */
+  clientSow?: string | null;
+  /** Absent from a search: `issuelinks` is fetched for a single issue only. */
+  links?: IssueLink[];
 }
 
 /** Who a Comment is restricted to, when it is restricted at all. */

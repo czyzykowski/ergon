@@ -13,7 +13,7 @@ export function registerGetCommand(program: Command): void {
     .option("--json", "Output raw JSON")
     .action(async (options: GetOptions, issueKey: string) => {
       const config = await loadConfig();
-      const jira = new JiraClient(config.jira);
+      const jira = new JiraClient(config.jira, config.defaults?.projects);
       const issue = await jira.getIssue(issueKey);
 
       if (options.json) {
@@ -34,7 +34,7 @@ export function registerGetCommand(program: Command): void {
       }
       console.log(`  assignee: ${issue.assignee ?? "Unassigned"}`);
 
-      if (issue.links.length > 0) {
+      if (issue.links && issue.links.length > 0) {
         console.log("  links:");
         for (const link of issue.links) {
           console.log(

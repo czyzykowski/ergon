@@ -34,6 +34,26 @@ export function normalizeBoardId(value?: number | string): number | undefined {
 }
 
 /**
+ * The field id to write a Sprint to, or an error naming the config key. A
+ * project ergon cannot locate the field for is an error rather than a write to
+ * a guessed field — see docs/adr/0007.
+ */
+export function requireSprintFieldId(
+  fieldId: string | undefined,
+  projectKey: string,
+): string {
+  if (!fieldId) {
+    throw new Error(
+      `No sprint field configured for ${projectKey}. Set ` +
+        `defaults.projects.${projectKey}.fields.sprintFieldId in ` +
+        `~/.config/ergon/config.yaml.`,
+    );
+  }
+
+  return fieldId;
+}
+
+/**
  * The board to resolve a Sprint from. A configured id wins outright — Jira is
  * the authority on whether it is usable — and a single board needs no
  * configuration. Anything else is an ambiguity ergon refuses rather than

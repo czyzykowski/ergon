@@ -44,7 +44,7 @@ async function link(
 ): Promise<void> {
   const config = await loadConfig();
   const [subject, target] = await resolveIssues(first, second);
-  const jira = new JiraClient(config.jira);
+  const jira = new JiraClient(config.jira, config.defaults?.projects);
   const existing = findLink(await jira.getIssueLinks(subject), kind, target);
 
   if (options.remove) {

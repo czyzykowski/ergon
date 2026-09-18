@@ -22,7 +22,7 @@ export function registerCommentsCommand(program: Command): void {
         throw new Error("Provide an issue key or run from a previous issue.");
       }
 
-      const jira = new JiraClient(config.jira);
+      const jira = new JiraClient(config.jira, config.defaults?.projects);
       const comments = await jira.listComments(key);
 
       if (options.json) {

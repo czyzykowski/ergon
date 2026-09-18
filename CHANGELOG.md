@@ -6,7 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-- Fixed `ergon log --description`: the worklog comment now travels as ADF, so Jira stops rejecting the worklog as null.
+- Fixed `ergon log --description`: the worklog comment now travels as ADF, so
+  Jira stops rejecting the worklog as null.
 - Added initial Deno CLI skeleton with Cliffy.
 - Added YAML config loader with env var expansion.
 - Added Jira API client with issue mapping and search helpers.
@@ -99,3 +100,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Changed `--sprint current` to refuse a project with several boards and no
   configured `sprintBoardId`, rather than silently taking whichever board Jira
   returned first. It is the refusal `--sprint <name>` already made.
+- Added `ergon ls --json`, emitting an array of the same issue shape
+  `ergon get --json` returns, so a sweep is one request rather than one per key.
+- Added `ergon ls --order rank|updated`. `rank` is the board's own order and
+  requires `--project`; `updated` stays the default.
+- Added `ergon ls --since YYYY-MM-DD`, bounding a list to issues that have
+  moved.
+- Added `priority`, `dueDate`, `sprints` and `clientSow` to the issue JSON. A
+  field ergon did not fetch is now missing from the JSON rather than empty, so
+  `links` has no key at all on an issue that came from a search.
+- Changed configuration: a project declared under `defaults.projects` must now
+  declare `fields.sprintFieldId`, checked when config loads. The hard-coded
+  `customfield_10010` fallback in `ergon new` is gone.

@@ -17,7 +17,7 @@ export function registerStartCommand(program: Command): void {
         throw new Error("Provide an issue key or run from a previous issue.");
       }
 
-      const jira = new JiraClient(config.jira);
+      const jira = new JiraClient(config.jira, config.defaults?.projects);
       const clockwork = new ClockworkClient(config.clockwork, {
         timerBaseUrl: config.clockwork.timerBaseUrl,
       });

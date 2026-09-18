@@ -1,5 +1,14 @@
-import { assertEquals, assertRejects } from "https://deno.land/std@0.224.0/testing/asserts.ts";
-import { ConfigError, loadConfig, resolveConfigPath } from "../src/config.ts";
+import {
+  assertEquals,
+  assertRejects,
+  assertThrows,
+} from "https://deno.land/std@0.224.0/testing/asserts.ts";
+import {
+  ConfigError,
+  loadConfig,
+  requireDeclaredProject,
+  resolveConfigPath,
+} from "../src/config.ts";
 
 Deno.test({
   name: "resolveConfigPath uses baseDir",
@@ -207,4 +216,104 @@ Deno.test({
       await Deno.remove(tempDir, { recursive: true });
     }
   },
+});
+
+Deno.test({
+  name: "loadConfig rejects a declared project with no sprint field id",
+  permissions: { read: true, write: true },
+  async fn() {
+    const tempDir = await Deno.makeTempDir({ dir: Deno.cwd() });
+    const configPath = resolveConfigPath(tempDir);
+
+    try {
+      await Deno.mkdir(
+        new URL(".", new URL(`file://${configPath}`)).pathname,
+        { recursive: true },
+      );
+      await Deno.writeTextFile(
+        configPath,
+        [
+          "jira:",
+          "  baseUrl: https://example.atlassian.net",
+          "  email: test@example.com",
+          "  apiToken: token",
+          "clockwork:",
+          "  baseUrl: https://clock.example",
+          "  apiToken: token",
+          "defaults:",
+          "  projects:",
+          "    PCK:",
+          "      fields:",
+          "        clientSowFieldId: customfield_10200",
+        ].join("\n"),
+      );
+
+      await assertRejects(
+        () => loadConfig(tempDir),
+        ConfigError,
+        "defaults.projects.PCK.fields.sprintFieldId",
+      );
+    } finally {
+      await Deno.remove(tempDir, { recursive: true });
+    }
+  },
+});
+
+Deno.test({
+  name: "loadConfig accepts a declared project with no Client SOW field id",
+  permissions: { read: true, write: true },
+  async fn() {
+    const tempDir = await Deno.makeTempDir({ dir: Deno.cwd() });
+    const configPath = resolveConfigPath(tempDir);
+
+    try {
+      await Deno.mkdir(
+        new URL(".", new URL(`file://${configPath}`)).pathname,
+        { recursive: true },
+      );
+      await Deno.writeTextFile(
+        configPath,
+        [
+          "jira:",
+          "  baseUrl: https://example.atlassian.net",
+          "  email: test@example.com",
+          "  apiToken: token",
+          "clockwork:",
+          "  baseUrl: https://clock.example",
+          "  apiToken: token",
+          "defaults:",
+          "  projects:",
+          "    PCK:",
+          "      fields:",
+          "        sprintFieldId: customfield_10010",
+        ].join("\n"),
+      );
+
+      const config = await loadConfig(tempDir);
+
+      assertEquals(
+        config.defaults?.projects?.PCK.fields?.sprintFieldId,
+        "customfield_10010",
+      );
+    } finally {
+      await Deno.remove(tempDir, { recursive: true });
+    }
+  },
+});
+
+Deno.test("naming an undeclared project is an error that names the key", () => {
+  assertThrows(
+    () => requireDeclaredProject({ PCK: {} }, "PGR"),
+    ConfigError,
+    "defaults.projects.PGR.fields.sprintFieldId",
+  );
+});
+
+Deno.test("naming a declared project returns its configuration", () => {
+  const fields = { sprintFieldId: "customfield_10010" };
+
+  assertEquals(
+    requireDeclaredProject({ PCK: { fields } }, "PCK").fields,
+    fields,
+  );
 });

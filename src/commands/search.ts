@@ -17,7 +17,7 @@ export function registerSearchCommand(program: Command): void {
     .option("--limit <limit:number>", "Max results", { default: 20 })
     .action(async (options: SearchOptions, query: string) => {
       const config = await loadConfig();
-      const jira = new JiraClient(config.jira);
+      const jira = new JiraClient(config.jira, config.defaults?.projects);
       const jql = buildJql(query, options.project, options.status);
       const issues = await jira.search(jql, options.limit);
 

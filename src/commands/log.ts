@@ -18,7 +18,7 @@ export function registerLogCommand(program: Command): void {
     .option("--time <time:string>", "Start time (HH:MM), used with --date")
     .action(async (options: LogOptions, issueKey: string, duration: string) => {
       const config = await loadConfig();
-      const jira = new JiraClient(config.jira);
+      const jira = new JiraClient(config.jira, config.defaults?.projects);
       const state = await loadState();
 
       const timeSpentSeconds = parseDuration(duration);

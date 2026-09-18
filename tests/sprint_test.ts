@@ -3,7 +3,11 @@ import {
   assertRejects,
   assertThrows,
 } from "https://deno.land/std@0.224.0/testing/asserts.ts";
-import { resolveSprintId, selectSprintBoard } from "../src/sprint.ts";
+import {
+  requireSprintFieldId,
+  resolveSprintId,
+  selectSprintBoard,
+} from "../src/sprint.ts";
 import type { JiraSprint } from "../src/api/jira.ts";
 
 const DELIVERY = { id: 12, name: "Delivery" };
@@ -69,5 +73,13 @@ Deno.test("a board with no active sprint refuses", async () => {
       }),
     Error,
     "No active sprint found for the board.",
+  );
+});
+
+Deno.test("a project with no declared sprint field id cannot be written to", () => {
+  assertThrows(
+    () => requireSprintFieldId(undefined, "PGR"),
+    Error,
+    "defaults.projects.PGR.fields.sprintFieldId",
   );
 });

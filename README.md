@@ -67,6 +67,10 @@ the intended way for an agent to find out what an issue asks for:
   "labels": ["backend"],
   "created": "2026-08-01T09:12:00.000+0100",
   "updated": "2026-08-14T11:04:31.000+0100",
+  "priority": "Medium",
+  "dueDate": "2026-08-20",
+  "sprints": [{ "name": "Aug 17 - 21", "state": "active" }],
+  "clientSow": "Peacock: Marketing",
   "links": [
     {
       "id": "33550",
@@ -88,9 +92,21 @@ the intended way for an agent to find out what an issue asks for:
 - `statusCategory` is the stable key (`new`, `indeterminate`, `done`), so it can
   be tested against without knowing a project's status names.
 - `created` and `updated` are Jira's own timestamps, passed through unparsed.
+- `priority` is the Jira Priority name, or `null`. It is reported but never
+  ordered by: the ordering the board carries is `rank`.
+- `dueDate` is Jira's due date as `YYYY-MM-DD`, or `null`.
+- `sprints` is the issue's whole sprint history in the board's own order, not
+  chronology — a ticket carried over twice reports three, and one planned ahead
+  reports a sprint it is not yet working in. `[]` means no sprint.
+- `clientSow` is the Client SOW's display value, or `null`.
 - `links` holds every link Jira reports, each `phrase` reading from the issue
   you asked about — `"is blocked by"` on one issue is `"blocks"` on the other.
   Links only come back from `ergon get`; `ls` and `search` leave them out.
+- A field ergon did not fetch is **missing** rather than `null`: `links` has no
+  key at all on an issue that came from `ls`, and `sprints`/`clientSow` have
+  none for a project config has never heard of. `null` always means ergon looked
+  and Jira had nothing
+  ([ADR 0006](./docs/adr/0006-absent-means-not-fetched.md)).
 - The rendering is one-way: text read here and passed back to
   `ergon edit --description` is written as flat paragraphs, so a real list
   becomes text shaped like one. Read with `get`, write with the source text.
@@ -107,6 +123,30 @@ PCK-12 [In Progress] Fix login redirect
     is blocked by PCK-9 [Done] Pin the runner image
     relates to PCK-31 [To Do] Audit CI secrets
 ```
+
+### Listing issues
+
+```
+ergon ls --json                            # the same issue shape, as an array
+ergon ls --project PCK --order rank        # the board's own order
+ergon ls --sprint --json
+ergon ls --since 2026-09-17 --json         # only what has moved since
+```
+
+- `--json` emits an array of the object `ergon get --json` returns, so one
+  parser handles both, and one request replaces one `get` per key. An empty
+  result is `[]`; without `--json` it stays `No issues found.`
+- `--order` takes `rank` or `updated`, and defaults to `updated`. `rank` is the
+  order set by dragging on the board, and it requires `--project`: a rank
+  compares two issues on one board and says nothing across boards
+  ([ADR 0009](./docs/adr/0009-rank-does-not-cross-boards.md)). `--sprint` does
+  not change the ordering.
+- `--since` takes a date, not an instant, and bounds the list to issues updated
+  on or after it.
+- Naming a project asserts ergon is configured for it, so `--project` on an
+  undeclared project is an error. A cross-project sweep that happens to return
+  an issue from an unknown project still returns it, with `sprints` and
+  `clientSow` missing.
 
 ### Linking issues
 

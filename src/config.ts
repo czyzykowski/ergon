@@ -1,6 +1,6 @@
 import { parse } from "yaml/mod.ts";
 import { join } from "path/mod.ts";
-import type { ErgonConfig } from "./types.ts";
+import type { ErgonConfig, ProjectDefaults } from "./types.ts";
 
 const CONFIG_RELATIVE_PATH = ".config/ergon/config.yaml";
 
@@ -88,6 +88,40 @@ function validateRequired(
       `Config at ${configPath} must include clockwork.baseUrl, clockwork.apiToken.`,
     );
   }
+
+  // A declared project is declared completely. Jira omits an unknown custom
+  // field rather than erroring, so a half-configured project reports empty
+  // sprints instead of failing — see docs/adr/0007.
+  for (
+    const [key, project] of Object.entries(config.defaults?.projects ?? {})
+  ) {
+    if (!project?.fields?.sprintFieldId) {
+      throw new ConfigError(
+        `Project ${key} is declared in ${configPath} without ` +
+          `defaults.projects.${key}.fields.sprintFieldId. Add it, or remove the project.`,
+      );
+    }
+  }
+}
+
+/**
+ * The project's configuration, or an error naming what to add. Naming a project
+ * on the command line asserts that ergon is configured for it.
+ */
+export function requireDeclaredProject(
+  projects: Record<string, ProjectDefaults> | undefined,
+  projectKey: string,
+): ProjectDefaults {
+  const project = projects?.[projectKey];
+
+  if (!project) {
+    throw new ConfigError(
+      `No configuration for project ${projectKey}. Add ` +
+        `defaults.projects.${projectKey}.fields.sprintFieldId to ~/.config/ergon/config.yaml.`,
+    );
+  }
+
+  return project;
 }
 
 const ENV_VAR_PATTERN = /\$\{([A-Z0-9_]+)\}/g;

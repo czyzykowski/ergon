@@ -50,7 +50,7 @@ export function registerCommentCommand(program: Command): void {
         );
       }
 
-      const jira = new JiraClient(config.jira);
+      const jira = new JiraClient(config.jira, config.defaults?.projects);
       const comment = options.id === undefined
         ? await addComment(jira, key, options)
         : await editComment(jira, key, options.id, options);

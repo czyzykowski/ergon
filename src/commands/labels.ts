@@ -18,7 +18,7 @@ export function registerLabelsCommand(program: Command): void {
     .option("--json", "Output raw JSON")
     .action(async (options: LabelsOptions) => {
       const config = await loadConfig();
-      const jira = new JiraClient(config.jira);
+      const jira = new JiraClient(config.jira, config.defaults?.projects);
       const labels = await jira.listLabels();
 
       const filter = options.filter?.toLowerCase();

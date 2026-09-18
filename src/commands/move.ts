@@ -18,7 +18,7 @@ export function registerMoveCommand(program: Command): void {
         throw new Error("Provide an issue key or run from a previous issue.");
       }
 
-      const jira = new JiraClient(config.jira);
+      const jira = new JiraClient(config.jira, config.defaults?.projects);
       const transitions = await jira.getTransitions(key);
 
       let transition;
@@ -31,7 +31,9 @@ export function registerMoveCommand(program: Command): void {
 
         if (!transition) {
           throw new Error(
-            `No transition found for '${target}'. Available: ${transitions.map((t) => t.name).join(", ")}`,
+            `No transition found for '${target}'. Available: ${
+              transitions.map((t) => t.name).join(", ")
+            }`,
           );
         }
       } else {
