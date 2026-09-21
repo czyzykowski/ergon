@@ -4,6 +4,12 @@ Supersedes the parts of [edit-issue.md](./edit-issue.md) concerned with when the
 editor opens and when the Description is fetched. Everything else in that spec
 stands.
 
+> Its own reliance on ADR 0003 is superseded by
+> [ADR 0010](../docs/adr/0010-markdown-is-ergons-rich-text-format.md) and
+> [rich-text-as-markdown.md](./rich-text-as-markdown.md), which replace the
+> round-trip check's mechanism. The narrowing this spec made — the guard fires
+> only when the Description is actually being written — stands.
+
 ## Problem Statement
 
 `ergon edit` writes two fields, summary and description, and it is built around
@@ -238,7 +244,8 @@ Cases to cover:
 - **Editing a field through the editor buffer.** The buffer remains
   Description-only.
 - **Changing ADR 0003.** Its refusal is unchanged; it simply stops firing where
-  there is nothing to flatten.
+  there is nothing to flatten. _Superseded by ADR 0010, which keeps the
+  refusal's trigger and replaces the question it asks._
 - **Unit tests for the command module**, which needs live Jira.
 
 ## Further Notes

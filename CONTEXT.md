@@ -77,24 +77,38 @@ never appears on an issue that came from a search. See
 unset, undefined
 
 **Description**: The free-text body of an issue, and where an agent reads what
-the issue asks for. ergon reads a Description more richly than it writes one:
-any Description can be read out, but only one made of plain paragraphs can be
-rewritten in place — see
-[ADR 0003](./docs/adr/0003-descriptions-are-plain-text.md) and
-[ADR 0004](./docs/adr/0004-descriptions-read-richer-than-they-write.md).
-_Avoid_: body, details, notes
+the issue asks for. A Description is markdown: read out as markdown, written
+back as markdown, and Expressible in both directions — see
+[ADR 0010](./docs/adr/0010-markdown-is-ergons-rich-text-format.md). _Avoid_:
+body, details, notes
 
-**Degraded**: Of a Description read out with its text whole but its structure
-reduced — a table whose rows survive as lines, a panel that reads as a quote.
+**Degraded**: Of content read out with its text whole but its structure reduced
+— a panel that reads as a quote, an attachment that reads as its filename.
 Degrading is never silent: whatever was flattened is named alongside the text.
-Distinct from the loss ergon refuses on write, which would destroy the text
-itself. _Avoid_: lossy, truncated, partial
+Strictly a read-side word. Nothing is Degraded on write, because a construct
+ergon cannot express is refused rather than reduced. To be Degraded and to be
+Expressible are opposites: what reads out whole is what can be written back.
+_Avoid_: lossy, truncated, partial
+
+**Expressible**: Of a construct ergon carries in both directions — markdown it
+can turn into ADF, and ADF it can turn back into that same markdown. One set
+rather than two, deliberately: what ergon writes is defined to be what it reads
+without Degrading, so the two directions cannot drift apart. Markdown outside
+the set is refused rather than approximated, and carries no override — the draft
+is the caller's own and can simply be rewritten. _Avoid_: supported, convertible
+
+**Replacement**: A write that overwrites existing content rather than creating
+it — editing a Description, editing a Comment. Only a Replacement is guarded,
+because only a Replacement can destroy something Jira cannot restore. Creating
+an issue or adding a Comment has nothing to overwrite and is never guarded.
+_Avoid_: update, overwrite, edit
 
 **Comment**: A dated, authored remark appended to an issue. Comments accumulate
 rather than replace: a new one never overwrites the last, and editing one
 corrects a past utterance rather than restating what the issue currently asks
-for. Distinct from a Description, which is the issue's current statement of
-itself and is rewritten in place. _Avoid_: note, remark, update
+for. Its body is markdown on the same terms as a Description. Distinct from a
+Description, which is the issue's current statement of itself and is rewritten
+in place. _Avoid_: note, remark, update
 
 ### Time
 

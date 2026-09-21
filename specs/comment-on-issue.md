@@ -1,5 +1,11 @@
 # Comment on an Issue
 
+> Its markdown-conversion exclusion is superseded by
+> [ADR 0010](../docs/adr/0010-markdown-is-ergons-rich-text-format.md) and
+> [rich-text-as-markdown.md](./rich-text-as-markdown.md): a Comment body is
+> markdown on the same terms as a Description. Everything else here stands,
+> including the guard's trigger and `--force`'s meaning.
+
 ## Problem Statement
 
 An issue's Description says what the issue asks for. It is the issue's current
@@ -158,7 +164,8 @@ what keeps `ergon edit` and `ergon comment` from growing into each other.
   so that one letter of difference does not change how the key resolves.
 - Neither writes `state.lastIssueKey`. Both act _on_ an issue rather than
   switching _to_ one, matching `edit` and `move`.
-- Missing key throws the existing sentence: `"Provide an issue key or run from a
+- Missing key throws the existing sentence:
+  `"Provide an issue key or run from a
   previous issue."`
 - `menu` gains `Comment on issue` → `comment`. It does not gain `comments`;
   discovery commands (`get`, `labels`, `client-sows`) are not in the menu.
@@ -206,12 +213,12 @@ what keeps `ergon edit` and `ergon comment` from growing into each other.
 
 Legal in exactly one combination — `--id` together with a supplied body:
 
-| Invocation                              | Behaviour                                        |
-| --------------------------------------- | ------------------------------------------------ |
-| `comment KEY --body "…"`                | Posts. `--force` throws — nothing to destroy.    |
-| `comment KEY --id N --body "…"`         | Refuses on rich ADF; `--force` overrides.        |
-| `comment KEY --id N` (editor)           | Refuses on rich ADF; `--force` is itself an error. |
-| `comment KEY` (editor, add)             | Empty buffer, no fetch, nothing to lose.         |
+| Invocation                      | Behaviour                                          |
+| ------------------------------- | -------------------------------------------------- |
+| `comment KEY --body "…"`        | Posts. `--force` throws — nothing to destroy.      |
+| `comment KEY --id N --body "…"` | Refuses on rich ADF; `--force` overrides.          |
+| `comment KEY --id N` (editor)   | Refuses on rich ADF; `--force` is itself an error. |
+| `comment KEY` (editor, add)     | Empty buffer, no fetch, nothing to lose.           |
 
 - The editor carve-out is ADR 0003's, carried across: prefilling a buffer from a
   document ergon cannot render faithfully means editing a corrupted copy without
@@ -225,8 +232,8 @@ Legal in exactly one combination — `--id` together with a supplied body:
 ### Identity
 
 - A Comment is addressed by its Jira id and nothing else. No ordinals — they are
-  positional against a list that changes, and telling an ordinal from an id means
-  comparing magnitudes, which is guesswork.
+  positional against a list that changes, and telling an ordinal from an id
+  means comparing magnitudes, which is guesswork.
 - No `--id last`. Resolving "mine" needs an account id, and the add path returns
   the new id anyway, so the caller already holds it.
 - No remembered last-comment id. That would be Remembered state, which
@@ -289,14 +296,15 @@ wrapping in an object:
   anywhere, and narrowing the shape is the same call `client-sows --json` made
   when it dropped `disabled`.
 - `visibility` is present only when the Comment carries a restriction, as
-  `{ "type": "role", "value": "…" }`. Absent otherwise, which is the normal case.
+  `{ "type": "role", "value": "…" }`. Absent otherwise, which is the normal
+  case.
 - `created`/`updated` are Jira's own timestamps, passed through unparsed, as
   `get --json` already does.
-- Oldest-first, which is Jira's own order and the order the conversation happened
-  in.
-- Paginated to completion, matching `listLabels`. A silently truncated history is
-  the failure ADR 0004 was written about: an agent seeing part of a thread and
-  proceeding as though it were whole.
+- Oldest-first, which is Jira's own order and the order the conversation
+  happened in.
+- Paginated to completion, matching `listLabels`. A silently truncated history
+  is the failure ADR 0004 was written about: an agent seeing part of a thread
+  and proceeding as though it were whole.
 - Note that this listing is deliberately richer than what `ergon comment --id`
   will accept back. A Comment holding a mention renders cleanly here and still
   refuses to edit. That is the disagreement ADR 0004 already documents between
@@ -353,8 +361,8 @@ Updated comment 10234 on PCK-12 (restricted: role Developers)
 ### Modules
 
 - `types.ts` gains `JiraComment`, beside `JiraIssue`.
-- `JiraClient` gains `listComments` (paginating to completion), `addComment`, and
-  `updateComment`, all returning `JiraComment`.
+- `JiraClient` gains `listComments` (paginating to completion), `addComment`,
+  and `updateComment`, all returning `JiraComment`.
 - `mapComment` sits beside `mapIssue` in the Jira client, but is **exported**
   where `mapIssue` is not. It is the `--json` contract, and contracts in this
   repo get tests.
@@ -367,11 +375,11 @@ Updated comment 10234 on PCK-12 (restricted: role Developers)
 ## Testing Decisions
 
 A good test here exercises external behaviour — what the CLI returns and prints
-— not how it got there. The command modules themselves are not unit-tested:
-they need live Jira, which is the precedent set in `specs/move-issue-status.md`
-and `specs/edit-issue.md`. So anything worth testing is pulled into a pure
-function first, exactly as `resolveFields` was pulled out of `new` and the ADF
-helpers were pulled out of the client.
+— not how it got there. The command modules themselves are not unit-tested: they
+need live Jira, which is the precedent set in `specs/move-issue-status.md` and
+`specs/edit-issue.md`. So anything worth testing is pulled into a pure function
+first, exactly as `resolveFields` was pulled out of `new` and the ADF helpers
+were pulled out of the client.
 
 Two seams, both pure, one feeding the other:
 
@@ -416,13 +424,15 @@ The ADF behaviour itself needs no new tests; `unsupportedAdfNodes` and
 - **Worklog comments.** `ergon log --description` writes a different thing to a
   different endpoint. Including the bare-string body at the worklog call site,
   which looks wrong against the v3 API and is left alone here.
-- **`--append` on `ergon edit`.** Superseded rather than deferred: `ergon
+- **`--append` on `ergon edit`.** Superseded rather than deferred:
+  `ergon
   comment` is the answer that deferral pointed at.
 - **A Comment count on `ergon get --json`.** Jira's issue GET returns the
   comment field as a paginated payload rather than a count, so it is not free,
   and `get` stays bounded.
 - **Markdown-to-ADF conversion**, in either direction, for Comments as for
-  Descriptions. ADR 0003 stands.
+  Descriptions. ADR 0003 stands. _Superseded by ADR 0010: it is now done, for
+  Comments on the same terms as for Descriptions._
 - **Unit tests for the command modules**, which need live Jira.
 
 ## Further Notes

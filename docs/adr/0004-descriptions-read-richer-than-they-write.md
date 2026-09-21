@@ -1,5 +1,11 @@
 # Descriptions read richer than they write
 
+> **Superseded by** [ADR 0010](./0010-markdown-is-ergons-rich-text-format.md),
+> which removes the asymmetry this ADR named: ergon now writes what it reads.
+> The rule established here — never drop content silently — is what made
+> reversing [ADR 0003](./0003-descriptions-are-plain-text.md) defensible, and
+> 0010 applies it to the write direction verbatim.
+
 [ADR 0003](./0003-descriptions-are-plain-text.md) declined a markdown converter
 and settled that a Description is plain text as far as ergon is concerned. That
 holds for writing. It does not hold for reading: `ergon get --json` now renders

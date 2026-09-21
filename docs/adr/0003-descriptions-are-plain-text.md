@@ -1,5 +1,12 @@
 # Descriptions are plain text
 
+> **Superseded by** [ADR 0010](./0010-markdown-is-ergons-rich-text-format.md),
+> which makes markdown ergon's format for every ADF-backed field in both
+> directions. This ADR's objection was to a converter that drops constructs
+> silently; 0010 answers it by refusing what it cannot express. Kept as the
+> record of why the refusal exists at all, which 0010 carries forward for a
+> Replacement.
+
 Narrowed to the write path by
 [ADR 0004](./0004-descriptions-read-richer-than-they-write.md): ergon renders
 any Description when reading one. Everything below concerns writing.
