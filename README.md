@@ -83,12 +83,15 @@ the intended way for an agent to find out what an issue asks for:
 }
 ```
 
-- `description` is the issue body rendered to markdown, or `null` when there is
-  none. Lists, code blocks, headings, quotes, links, and mentions all survive.
+- `description` is the issue body as markdown, or `null` when there is none.
+  Headings, lists, checklists, quotes, rules, code blocks, tables, links and the
+  bold/italic/code/strikethrough marks all survive, and can be written straight
+  back with `ergon edit --description`.
 - `descriptionDegraded` names constructs whose shape markdown could not carry —
-  `["table"]` means the cells are all there and the grid is not. It is `[]` when
-  the body rendered cleanly. Text is never dropped without being reported here
-  ([ADR 0004](./docs/adr/0004-descriptions-read-richer-than-they-write.md)).
+  `["panel"]` means the text is all there and the panel is not. It is `[]` when
+  the body rendered cleanly, which is also when the body can be written back.
+  Text is never dropped without being reported here
+  ([ADR 0010](./docs/adr/0010-markdown-is-ergons-rich-text-format.md)).
 - `statusCategory` is the stable key (`new`, `indeterminate`, `done`), so it can
   be tested against without knowing a project's status names.
 - `created` and `updated` are Jira's own timestamps, passed through unparsed.
@@ -224,8 +227,8 @@ ergon comment PCK-12
 - The receipt names the id of the comment it created, which is the handle every
   later operation needs. `--json` returns the comment itself, in the same shape
   `ergon comments --json` lists.
-- Comments are written as plain text, like descriptions
-  ([ADR 0003](./docs/adr/0003-descriptions-are-plain-text.md)).
+- Comment bodies are markdown, on the same terms as descriptions
+  ([ADR 0010](./docs/adr/0010-markdown-is-ergons-rich-text-format.md)).
 
 Editing one corrects a past utterance, which is a different act from rewriting
 what the issue currently asks for — that is `ergon edit`.
@@ -272,7 +275,7 @@ ergon comments PCK-12 --json
 - `(edited ...)` appears only when a comment has been revised since it was
   written, and `(degraded: ...)` names anything whose formatting could not be
   reproduced in the terminal — read those in Jira
-  ([ADR 0004](./docs/adr/0004-descriptions-read-richer-than-they-write.md)).
+  ([ADR 0010](./docs/adr/0010-markdown-is-ergons-rich-text-format.md)).
 - Every page is fetched, so the thread is never a partial history.
 - `--json` returns the comments as an array, each carrying `id`, `author`,
   `body`, `bodyDegraded`, and Jira's own `created`/`updated` timestamps.
@@ -307,13 +310,17 @@ EOF
   no configured `sprintBoardId`.
 - `--description ""` clears the description. `none` is not a sentinel here: it
   would collide with a real description.
-- ergon writes descriptions as plain text. It refuses to rewrite one containing
-  lists, code, tables, or formatting, because it cannot reproduce them; pass
-  `--force` with `--description` to replace such a description outright, or edit
-  it in Jira. `--force` is not available on the editor path
-  ([ADR 0003](./docs/adr/0003-descriptions-are-plain-text.md)). That refusal
-  applies only when the description is in play — setting a due date on an issue
-  whose description holds a table is not refused.
+- Descriptions are markdown. Markdown ergon cannot express — an image, raw HTML,
+  or a nesting Jira's schema forbids such as a table inside a list item — is
+  refused by name, with no flag to override it: the draft is yours, so rewrite
+  it. There is no way to write literal unformatted text; fence it instead.
+- Rewriting a description ergon could not reproduce is refused separately, since
+  that content is someone else's and Jira keeps no undo. Pass `--force` with
+  `--description` to replace it outright, or edit it in Jira; `--force` is not
+  available on the editor path
+  ([ADR 0010](./docs/adr/0010-markdown-is-ergons-rich-text-format.md)). That
+  refusal applies only when the description is in play — setting a due date on
+  an issue whose description holds a panel is not refused.
 - Other fields stay where they were: status is `ergon move`, and labels, Client
   SOW and Epic are set at creation by `ergon new`.
 

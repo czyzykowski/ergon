@@ -1,5 +1,5 @@
 import type { Command } from "cliffy/command/mod.ts";
-import { fromAdf, toAdf } from "../adf.ts";
+import { renderAdf, toAdf } from "../adf.ts";
 import { JiraClient } from "../api/jira.ts";
 import { loadConfig } from "../config.ts";
 import { editInBuffer } from "../editor.ts";
@@ -93,7 +93,7 @@ async function addComment(
 /**
  * Replacing a Comment destroys whatever ergon could not reproduce in the
  * buffer, so the Comment is read first and the write refused when it holds
- * anything richer than paragraphs — the same guard `ergon edit` gives a
+ * anything markdown cannot carry back — the same guard `ergon edit` gives a
  * Description, for the same reason: Jira keeps no field-level undo.
  *
  * An `--id` from another issue is left to Jira, which 404s on the mismatch.
@@ -115,7 +115,7 @@ async function editComment(
 
   const body = await resolveBody(options.body, {
     subject: `${key}-comment-${id}`,
-    current: fromAdf(current.body),
+    current: renderAdf(current.body).text,
     missingEditor:
       "Set $EDITOR (or $VISUAL) to edit a comment, or pass --body.",
   });

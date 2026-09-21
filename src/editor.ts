@@ -35,7 +35,7 @@ export async function editInBuffer(
 
   const path = await Deno.makeTempFile({
     prefix: `ergon-${edit.subject}-`,
-    suffix: ".txt",
+    suffix: ".md",
   });
 
   try {

@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- Changed rich-text fields to markdown in both directions: a description, a
+  comment body and a worklog comment are parsed as markdown on the way in and
+  read out as markdown a parser can take back. Headings, lists, checklists,
+  quotes, rules, code blocks, tables, links and the bold/italic/code/strike
+  marks all survive a round trip. Markdown ergon cannot express is refused by
+  name rather than dropped. **Breaking**: `ergon get --json`,
+  `ergon comments --json` and `ergon worklogs` separate blocks with a blank
+  line, tables read out as real tables, and `table` no longer appears in
+  `descriptionDegraded`/`bodyDegraded` while `mention`, `emoji` and `inlineCard`
+  now do. See
+  [ADR 0010](./docs/adr/0010-markdown-is-ergons-rich-text-format.md).
+- Changed the rewrite guard to the round trip itself, so `ergon edit` and
+  `ergon comment --id` now open a description or comment holding lists,
+  headings, code or tables, and still refuse one holding a panel, a mention, or
+  a table with merged cells.
 - Fixed `ergon log --description`: the worklog comment now travels as ADF, so
   Jira stops rejecting the worklog as null.
 - Added initial Deno CLI skeleton with Cliffy.

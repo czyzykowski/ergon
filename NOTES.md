@@ -19,6 +19,8 @@
 - [x] Listing issues as data (`ergon ls --json`, `--order`, `--since`)
 - [x] Editing an issue's due date and sprint (`ergon edit --due`, `--sprint`)
 - [x] Reading a day's logged time (`ergon worklogs`)
+- [x] Markdown as ergon's rich-text format, both directions
+      (`toAdf`/`renderAdf`)
 
 ## Updates
 
@@ -84,21 +86,39 @@
 - `edit` reads `state.lastIssueKey` but never writes it, matching `move`.
   Commands that act _on_ an issue do not claim the slot; only ones that switch
   _to_ an issue (`new`, `start`, `log`) do.
-- `renderAdf` is a second, read-only ADF renderer alongside `fromAdf`. They are
-  not redundant: `fromAdf` is `toAdf`'s exact inverse and exists so `ergon edit`
-  can prefill a buffer it can write back, while `renderAdf` reads any document
-  for `ergon get --json`. Reading and writing fail differently, which is the
-  whole of
-  [ADR 0004](./docs/adr/0004-descriptions-read-richer-than-they-write.md).
-- `renderAdf` joins blocks with a single newline rather than a blank line, so a
-  Description made only of paragraphs renders byte-identically to `fromAdf`. A
-  plain issue therefore reads the same through `get` as through `edit`.
+- `renderAdf` and `toAdf` are deliberate inverses over the Expressible set, and
+  `fromAdf`/`unsupportedAdfNodes` are gone — they existed only because the two
+  directions disagreed. See
+  [ADR 0010](./docs/adr/0010-markdown-is-ergons-rich-text-format.md).
+- `renderAdf` joins blocks with a blank line. The single newline ADR 0004 chose
+  was fine as decoration and lossy the moment anything parsed the output: under
+  CommonMark two paragraphs one newline apart are one paragraph.
 - Unknown ADF node types are not skipped. `renderAdf` names the type in
   `degraded` and recurses into its content anyway, deciding inline vs block by
   whether any child is an inline type. A future Jira node keeps its text.
-- `descriptionDegraded` and `unsupportedAdfNodes` answer different questions and
-  will disagree. A bullet list renders cleanly (empty `descriptionDegraded`) yet
-  `ergon edit` still refuses it, because `toAdf` cannot produce one.
+- `descriptionDegraded` is now the Expressible set stated from the read side: an
+  empty one means the body can be written back. That is the point of defining
+  one set rather than two.
+- The Replacement guard is the round trip itself, not a table of node types. A
+  table with merged cells holds only Expressible node types, so a type check
+  would wave it through and lose `colspan` with no undo.
+- Sameness is directional containment — the original may carry nothing `toAdf`
+  would have produced — with two normalisations that are not attributes
+  (adjacent text runs coalesce, mark arrays compare unordered) and one strip by
+  provenance (`localId`, which Jira mints).
+- Adjacent lists alternate their marker — `-` then `*`, `1.` then `1)` — because
+  two lists written one after the other under the same marker are one list when
+  read back. That is what lets a checklist sit next to a bullet list.
+- Markdown cannot express two emphasised runs written side by side, nor an
+  emphasised run whose first or last character is punctuation sitting against a
+  letter: the delimiters stop flanking. Those documents read fine and the guard
+  refuses to rewrite them, which is the safe direction.
+- An empty paragraph is dropped on both sides rather than refused. Markdown has
+  no way to spell one — blank lines are separators — and the Jira UI produces
+  them constantly, so refusing would put most hand-written Descriptions out of
+  reach.
+- `toAdf` mints `localId` for a task list and its items. Jira mints its own, but
+  its validator wants one present, and the guard strips them either way.
 - `mapIssue` reports `description: null` for both an absent field and an empty
   document. Jira makes no distinction either — clearing one writes `null`.
 - `getIssue` sends no `fields` param, so it already returned `labels`,
@@ -160,11 +180,9 @@
   Without it an agent would have to regex the id out of a receipt.
 - ADR 0003 and ADR 0004 were extended to Comments deliberately, and needed no
   new reasoning: a Comment is a second rich-text field under decisions already
-  written for the first. ergon writes paragraphs, reads anything, and refuses to
-  rewrite what it cannot reproduce. `ergon comments` therefore lists a Comment
-  that `ergon comment --id` will still refuse to edit — the same disagreement
-  ADR 0004 already documents between `descriptionDegraded` and
-  `unsupportedAdfNodes`.
+  written for the first. That still holds under
+  [ADR 0010](./docs/adr/0010-markdown-is-ergons-rich-text-format.md), which
+  replaced those decisions without changing which fields they cover.
 - A Comment's `visibility` is echoed back verbatim on update rather than
   omitted. Atlassian does not document the omission behaviour, and the field
   evidence is that a body-only PUT _clears_ an existing restriction — dropping

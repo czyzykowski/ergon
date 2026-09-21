@@ -74,7 +74,7 @@ Deno.test("a plain comment maps to its text with nothing degraded", () => {
   assertEquals(mapComment(PLAIN), {
     id: "10234",
     author: "Lukasz Czyzykowski",
-    body: "Deployed to staging.\nWaiting on QA.",
+    body: "Deployed to staging.\n\nWaiting on QA.",
     bodyDegraded: [],
     created: "2026-08-14T11:04:31.000+0100",
     updated: "2026-08-14T11:04:31.000+0100",
@@ -84,7 +84,10 @@ Deno.test("a plain comment maps to its text with nothing degraded", () => {
 Deno.test("a comment Jira renders richer keeps its text and names what it lost", () => {
   const mapped = mapComment(TABULAR);
 
-  assertEquals(mapped.body, "Results below\nCase | Result");
+  assertEquals(
+    mapped.body,
+    "Results below\n\n| Case | Result |\n| --- | --- |",
+  );
   assertEquals(mapped.bodyDegraded, ["table"]);
 });
 
@@ -116,6 +119,7 @@ Deno.test("a thread prints a header per comment and indents the body", () => {
     [
       "10234  Lukasz Czyzykowski  2026-08-14 11:04",
       "  Deployed to staging.",
+      "",
       "  Waiting on QA.",
     ].join("\n"),
   );

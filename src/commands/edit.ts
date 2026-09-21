@@ -1,5 +1,5 @@
 import type { Command } from "cliffy/command/mod.ts";
-import { fromAdf, toAdf } from "../adf.ts";
+import { renderAdf, toAdf } from "../adf.ts";
 import { JiraClient } from "../api/jira.ts";
 import { loadConfig } from "../config.ts";
 import { editInBuffer } from "../editor.ts";
@@ -68,7 +68,7 @@ export function registerEditCommand(program: Command): void {
       if (plan.opensEditor) {
         const edited = await editInBuffer({
           subject: key,
-          current: fromAdf(current.description),
+          current: renderAdf(current.description).text,
           missingEditor:
             "Set $EDITOR (or $VISUAL) to edit a description, or pass --description.",
         });
