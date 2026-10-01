@@ -195,7 +195,7 @@ function blocksFrom(nodes: MdNode[], parent: string): AdfNode[] {
   const container = CONTAINERS[parent];
 
   return nodes.map((node) => {
-    const block = blockFrom(node, parent);
+    const block = blockFrom(node);
 
     if (!container.allows.has(typeString(block))) {
       throw new UnexpressibleError(
@@ -209,7 +209,7 @@ function blocksFrom(nodes: MdNode[], parent: string): AdfNode[] {
   });
 }
 
-function blockFrom(node: MdNode, parent: string): AdfNode {
+function blockFrom(node: MdNode): AdfNode {
   switch (node.type) {
     case "paragraph":
       return { type: "paragraph", content: inlineFrom(node.children ?? []) };
