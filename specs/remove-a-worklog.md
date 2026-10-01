@@ -278,3 +278,64 @@ worklog tests do.
   delete default really does restore the remaining estimate. The first is only
   ergon's second line of defence, since the lookup runs first, but the second is
   what ADR 0011's cancellation rests on.
+
+## Outcome
+
+Implemented in `1bde80c`, on the language and decision recorded in `6df0bcd`.
+194 tests pass; `deno check`, `deno fmt` and `deno lint` are clean on everything
+touched.
+
+### User stories
+
+- [x] 1 — remove a Worklog logged against the wrong issue
+- [x] 2 — remove the duplicate when a day was already covered
+- [x] 3 — remove the stray entry a mis-started timer left
+- [x] 4 — see each entry's id in `ergon worklogs`
+- [x] 5 — be told what was removed, well enough to re-log it
+- [x] 6 — `ergon worklogs --json` carries each entry's id
+- [x] 7 — ergon will not remove a colleague's Worklog
+
+### Done differently
+
+- **The receipt carries `YYYY-MM-DD HH:MM`, not the bare start time** this
+  spec's `Human output` section specified. `ergon log` defaults `--date` to
+  today, so a time alone would have satisfied story 5 only for corrections made
+  to today — any other day could not be re-logged from the output.
+- **The gate throws rather than returning the entry or a reason.** AGENTS.md
+  says "prefer `throws` and propagate errors upward", and `assertRewritable` and
+  `requireSprintFieldId` are the house shape; the result union's only consumer
+  unwrapped it into a `throw` one line later, and its tests paid for the unwrap
+  three times.
+- **`JiraWorklogEntry.id` and `.started` are required, not optional.** This spec
+  observed that Jira has always returned the id; coalescing a missing one to
+  `""` would have contradicted that by emitting an id `ergon unlog` can never
+  match, and a receipt reading `at` with no time.
+- **`Modules` grew.** `worklogPath`, `author.displayName`, the `startTime` move
+  plus `startStamp`, the shared `toWorklog`, and `removeWorklog` over a narrow
+  `WorklogRemover` were all needed and are none of them in the section as first
+  written. That section has been rewritten above to describe what exists, and
+  README, CHANGELOG and NOTES — which the section also omitted — were updated.
+- **Renamed from "Delete a Worklog".** A spec that introduces Removal and lists
+  `delete` under `_Avoid_` should not be titled with the word it rules out.
+
+### Not done
+
+- [ ] **The two checks against the live API that `Further Notes` asks for
+      first.** Neither has been run: that `DELETE` with a valid worklog id on
+      the _wrong_ issue fails rather than succeeding, and that Jira's delete
+      default really restores the remaining estimate. The first is only a second
+      line of defence, since `requireRemovableWorklog` matches the id against
+      the issue's own worklogs before anything is sent. The second is what ADR
+      0011's cancellation argument rests on, so it is the one that matters: if
+      Jira's default does not restore the estimate, remove-then-re-log drains
+      it. `NOTES.md` records both as unmeasured.
+
+### Known limitation, not addressed
+
+`toWorklog` drops `renderAdf(...).degraded`, so a Worklog whose comment held
+structure ergon cannot express reads out as text with nothing naming what was
+flattened — against **Degraded**'s "degrading is never silent". This predates
+the change on `ergon worklogs`, but ADR 0011 makes it newly load-bearing: the
+receipt is what a re-log is typed from, so a degraded comment produces a receipt
+that cannot be re-logged faithfully. Carrying `degraded` onto `Worklog` would
+widen the `--json` contract and was left for its own change.
