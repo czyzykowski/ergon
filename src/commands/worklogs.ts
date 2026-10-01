@@ -4,7 +4,7 @@ import { JiraClient } from "../api/jira.ts";
 import { loadConfig } from "../config.ts";
 import { isDate, today } from "../dates.ts";
 import type { Worklog } from "../types.ts";
-import { readDay, totalSeconds } from "../worklogs.ts";
+import { readDay, startTime, totalSeconds } from "../worklogs.ts";
 
 interface WorklogsOptions {
   date?: string;
@@ -41,6 +41,11 @@ export function registerWorklogsCommand(program: Command): void {
  * The day as it reads in a terminal: one line per Worklog, because two blocks
  * on the same ticket at different times of day are two facts, and a total,
  * because "and how much is that" always follows.
+ *
+ * The id goes after the key rather than first, unlike `ergon comments`: a
+ * thread has no key column so there the id is the only handle, where a day
+ * reads by issue. Second also puts `ergon unlog`'s two tokens side by side in
+ * the order they are typed.
  */
 export function renderWorklogs(worklogs: readonly Worklog[]): string {
   if (worklogs.length === 0) return "No worklogs found.";
@@ -49,11 +54,13 @@ export function renderWorklogs(worklogs: readonly Worklog[]): string {
     formatDuration(entry.timeSpentSeconds)
   );
   const keyWidth = widest(worklogs.map((entry) => entry.issueKey));
+  const idWidth = widest(worklogs.map((entry) => entry.id));
   const durationWidth = widest(durations);
 
   const lines = worklogs.map((entry, index) =>
     [
       entry.issueKey.padEnd(keyWidth),
+      entry.id.padEnd(idWidth),
       startTime(entry.started),
       durations[index].padEnd(durationWidth),
       entry.description ?? "",
@@ -66,13 +73,4 @@ export function renderWorklogs(worklogs: readonly Worklog[]): string {
 
 function widest(values: readonly string[]): number {
   return values.reduce((width, value) => Math.max(width, value.length), 0);
-}
-
-/**
- * `HH:MM`, sliced out of Jira's own string rather than parsed, the way
- * `ergon comments` reads a timestamp: it already carries the offset it was
- * written at.
- */
-function startTime(started: string): string {
-  return started.slice(11, 16);
 }

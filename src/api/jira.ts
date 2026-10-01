@@ -144,8 +144,10 @@ export interface JiraCommentsResponse {
 
 /** One worklog as Jira's per-issue endpoint returns it. */
 export interface JiraWorklogEntry {
-  author?: { accountId?: string };
-  started?: string;
+  id: string;
+  started: string;
+  /** Absent when profile visibility hides the author, which Jira permits. */
+  author?: { accountId?: string; displayName?: string };
   timeSpentSeconds?: number;
   comment?: unknown;
 }
@@ -397,7 +399,7 @@ export class JiraClient {
 
   async addWorklog(input: WorklogInput): Promise<JiraWorklogResponse> {
     const response = await this.request<JiraWorklogResponse>(
-      `/rest/api/3/issue/${encodeURIComponent(input.issueKey)}/worklog`,
+      worklogPath(input.issueKey),
       {
         method: "POST",
         body: JSON.stringify(worklogBody(input)),
@@ -405,6 +407,14 @@ export class JiraClient {
     );
 
     return response;
+  }
+
+  /** Remove a Worklog. The caller has already established it may be removed. */
+  async deleteWorklog(issueKey: string, worklogId: string): Promise<void> {
+    await this.request<unknown>(
+      worklogPath(issueKey, worklogId),
+      { method: "DELETE" },
+    );
   }
 
   /**
@@ -696,6 +706,26 @@ export interface WorklogInput {
   timeSpentSeconds: number;
   startedAt?: string;
   comment?: string;
+}
+
+/**
+ * The path a Worklog is written or removed at. Both directions pass
+ * `notifyUsers=false`: writing and removing are ergon's own bookkeeping, and an
+ * issue's watchers do not need an email because a timer was corrected.
+ *
+ * Neither passes `adjustEstimate`, so Jira's defaults apply — a write
+ * decrements the remaining estimate and a removal restores it, which is what
+ * makes remove-then-re-log cancel out. See
+ * [ADR 0011](../../docs/adr/0011-a-worklog-is-removed-and-re-logged.md).
+ */
+export function worklogPath(issueKey: string, worklogId?: string): string {
+  const worklog = worklogId === undefined
+    ? "worklog"
+    : `worklog/${encodeURIComponent(worklogId)}`;
+
+  return `/rest/api/3/issue/${
+    encodeURIComponent(issueKey)
+  }/${worklog}?notifyUsers=false`;
 }
 
 /**

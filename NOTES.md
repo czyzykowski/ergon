@@ -21,6 +21,7 @@
 - [x] Reading a day's logged time (`ergon worklogs`)
 - [x] Markdown as ergon's rich-text format, both directions
       (`toAdf`/`renderAdf`)
+- [x] Removing a worklog (`ergon unlog`)
 
 ## Updates
 
@@ -213,3 +214,38 @@
   in config and `ClockworkWorklog`'s read side. Left in place rather than
   removed as unrelated cleanup; the timer path still uses the rest of the
   client.
+- `Worklog` gains `id`, which Jira has always returned on every worklog entry
+  and `assembleDay` used to discard. Without it nothing ergon printed could name
+  an entry, so no removal could be scripted.
+- `JiraWorklogEntry.id` and `.started` are required rather than optional, unlike
+  the rest of that interface. Jira always sends both, and coalescing them to
+  `""` produced an id `ergon unlog` can never match and a receipt reading `at`
+  with no time — the failure `getMyAccountId` already refuses to have.
+- `requireRemovableWorklog` in `src/worklogs.ts` is the gate on a Removal, pure
+  so that both refusals — id not on the issue, author not you — are provable
+  without a client, and throwing rather than returning a result union, per
+  AGENTS.md's "prefer `throws`" and the `assertRewritable`/
+  `requireSprintFieldId` gates. `tests/worklogs_test.ts` asserts no `DELETE` is
+  issued when it refuses, which is the test that matters: a refusal that still
+  removes is the only unrecoverable bug here.
+- The receipt carries `YYYY-MM-DD HH:MM`, not just the time, because `ergon log`
+  defaults `--date` to today: a time alone cannot re-log a correction made to
+  any other day. `startStamp` sits beside `startTime` in `src/worklogs.ts`.
+- `worklogPath` in `src/api/jira.ts` builds both worklog write paths, so
+  `notifyUsers=false` and the deliberate absence of `adjustEstimate` are stated
+  once. `adjustEstimate` is omitted so Jira's defaults cancel across
+  remove-then-re-log; `adjustEstimate=leave` looks safer and would decrement the
+  remaining estimate twice for the same hours — see
+  `docs/adr/0011-a-worklog-is-removed-and-re-logged.md`.
+- `ergon log` no longer notifies watchers either. Both worklog writes are
+  ergon's own bookkeeping.
+- `startTime` moved from `src/commands/worklogs.ts` into `src/worklogs.ts`,
+  since `ergon worklogs` and `ergon unlog` now both read a Worklog's start the
+  same way. `ergon comments` keeps its own `timestamp`, which is a different
+  format.
+- Unverified against the live API, and the spec says so: that `DELETE` with a
+  valid worklog id on the wrong issue fails rather than succeeding. It is only
+  the second line of defence — `requireRemovableWorklog` runs first — but
+  nothing here has confirmed Jira's behaviour.
+- Also unverified: that Jira's delete default restores the remaining estimate.
+  ADR 0011's cancellation argument rests on it.

@@ -1,5 +1,5 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/testing/asserts.ts";
-import { worklogBody } from "../src/api/jira.ts";
+import { worklogBody, worklogPath } from "../src/api/jira.ts";
 
 Deno.test("worklogBody sends the comment as an ADF document", () => {
   assertEquals(
@@ -28,4 +28,25 @@ Deno.test("worklogBody leaves out what was not given", () => {
   assertEquals(worklogBody({ issueKey: "PGR-642", timeSpentSeconds: 900 }), {
     timeSpentSeconds: 900,
   });
+});
+
+Deno.test("logging asks Jira not to notify, and leaves the estimate to Jira", () => {
+  assertEquals(
+    worklogPath("PGR-642"),
+    "/rest/api/3/issue/PGR-642/worklog?notifyUsers=false",
+  );
+});
+
+Deno.test("a removal names the worklog and is just as quiet", () => {
+  assertEquals(
+    worklogPath("PGR-642", "45231"),
+    "/rest/api/3/issue/PGR-642/worklog/45231?notifyUsers=false",
+  );
+});
+
+Deno.test("an issue key with a character needing escaping is encoded", () => {
+  assertEquals(
+    worklogPath("PGR 642", "45231"),
+    "/rest/api/3/issue/PGR%20642/worklog/45231?notifyUsers=false",
+  );
 });

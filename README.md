@@ -160,18 +160,21 @@ ergon worklogs --json
 ```
 
 ```
-PCK-12  09:14  1h      Paired on the redirect bug
-PCK-12  11:02  45m     Reviewed the fix
-PGR-4   14:30  2h 15m  Sprint planning
+PCK-12  45188  09:14  1h      Paired on the redirect bug
+PCK-12  45231  11:02  45m     Reviewed the fix
+PGR-4   45302  14:30  2h 15m  Sprint planning
 
 Total: 4h
 ```
 
 - One line per worklog, not per issue: two blocks on the same ticket at
   different times of day are two facts.
-- `--json` gives `[{"issueKey", "started", "timeSpentSeconds", "description"}]`,
-  ordered earliest first. `started` is Jira's own timestamp, passed through
-  unparsed, and `description` is `null` when the worklog carries no comment.
+- The second column is the worklog's Jira id, which is what `ergon unlog` takes.
+  Key then id is the order it is typed in.
+- `--json` gives
+  `[{"id", "issueKey", "started", "timeSpentSeconds", "description"}]`, ordered
+  earliest first. `started` is Jira's own timestamp, passed through unparsed,
+  and `description` is `null` when the worklog carries no comment.
 - Only your own worklogs on the day asked for are listed.
 - ergon writes time through Clockwork and reads it back from Jira. Jira sees
   every worklog — the Clockwork timer, `ergon log`, and anything typed into the
@@ -180,6 +183,38 @@ Total: 4h
 - `ergon status` gets today's total from the same reading, so the two cannot
   disagree. It keeps its own subject — the running timer — and takes no
   `--date`, because a timer only means anything now.
+
+### Removing a worklog
+
+```
+ergon unlog PCK-12 45188
+```
+
+```
+Removed 1h on PCK-12 at 2026-09-17 09:14 (45188): Paired on the redirect bug
+```
+
+- Both the issue key and the worklog id are required, and the id is the one
+  `ergon worklogs` prints. Unlike `ergon edit` or `ergon comment`, the key does
+  not fall back to the last issue worked on: here it is half of Jira's address
+  for the worklog rather than the subject of the command, and a stale fallback
+  would report "no such worklog" for an id that exists.
+- There is no confirmation prompt. The id is the deliberate act — it is read off
+  a listing, not typed from memory — and an id naming no worklog on that issue
+  is refused before anything is removed.
+- The receipt is the only record of what went: Jira cannot restore a worklog, so
+  the line is what a re-log is typed from. It carries the date as well as the
+  time, because `ergon log` defaults `--date` to today.
+- Only your own worklogs can be removed. A colleague's is refused by naming
+  them, with no flag to override, so `ergon unlog` cannot reach a worklog that
+  `ergon worklogs` is unable to show you.
+- A worklog cannot be edited, only removed and logged again
+  ([ADR 0011](./docs/adr/0011-a-worklog-is-removed-and-re-logged.md)). Neither
+  command sends `adjustEstimate`, so Jira's own defaults apply in both
+  directions, which is what should make the pair cancel on an issue's remaining
+  estimate. That cancellation is reasoned from Jira's documented defaults and
+  has not been measured against this instance.
+- Neither `ergon log` nor `ergon unlog` notifies the issue's watchers.
 
 ### Linking issues
 

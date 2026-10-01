@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- Added `ergon unlog <ISSUE> <WORKLOG_ID>`, which removes a worklog and prints
+  what it removed so the entry can be logged again. A worklog is removed and
+  re-logged rather than edited in place
+  ([ADR 0011](./docs/adr/0011-a-worklog-is-removed-and-re-logged.md)); a worklog
+  logged by anyone else is refused.
+- Added the worklog's Jira id to `ergon worklogs`, as a new second column and a
+  new `id` field on `ergon worklogs --json`. The field is additive, but the
+  human output is a column wider.
+- Changed `ergon log` to stop notifying the issue's watchers. Both writing and
+  removing a worklog now pass `notifyUsers=false`.
+
 - Changed rich-text fields to markdown in both directions: a description, a
   comment body and a worklog comment are parsed as markdown on the way in and
   read out as markdown a parser can take back. Headings, lists, checklists,

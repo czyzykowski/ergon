@@ -136,6 +136,8 @@ export interface JiraComment {
 
 /** A record of time spent on an issue, as ergon hands it out. */
 export interface Worklog {
+  /** Jira's own id, and the only handle `ergon unlog` has on the Worklog. */
+  id: string;
   issueKey: string;
   /** Jira's own timestamp, offset and all, passed through unparsed. */
   started: string;
