@@ -98,10 +98,19 @@ the set is refused rather than approximated, and carries no override — the dra
 is the caller's own and can simply be rewritten. _Avoid_: supported, convertible
 
 **Replacement**: A write that overwrites existing content rather than creating
-it — editing a Description, editing a Comment. Only a Replacement is guarded,
-because only a Replacement can destroy something Jira cannot restore. Creating
-an issue or adding a Comment has nothing to overwrite and is never guarded.
-_Avoid_: update, overwrite, edit
+it — editing a Description, editing a Comment. A Replacement is guarded because
+nothing in the invocation names the content it is about to destroy, and Jira
+cannot restore it. Creating an issue or adding a Comment has nothing to
+overwrite and is never guarded. The mirror of Removal, which destroys a whole
+record and needs no guard. _Avoid_: update, overwrite, edit
+
+**Removal**: The deletion of a whole record rather than a rewrite of its content
+— a Link unlinked, a Worklog unlogged. A Removal is never guarded, because
+naming the record by its own id is the guard: an id is read off a listing rather
+than typed from memory, and one that names nothing on the issue refuses instead
+of removing a neighbour. The mirror of Replacement, which overwrites content in
+place and is guarded precisely because nothing names what it overwrites.
+_Avoid_: delete, destroy, drop
 
 **Comment**: A dated, authored remark appended to an issue. Comments accumulate
 rather than replace: a new one never overwrites the last, and editing one
