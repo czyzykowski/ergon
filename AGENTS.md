@@ -11,6 +11,15 @@ rules for every change you make.
 - Update the progress tracker in `NOTES.md` when milestones change.
 - Prefer small, focused changes; avoid unrelated cleanup.
 - Rebuild the installed binary after any substantial change (see Build).
+- When a command, flag or `--json` field is added, changed or removed, say so in
+  your summary and suggest updating the Claude skills that drive ergon: `jira`
+  for ticket work and `worktime` for time. Those skills carry their own ergon
+  command references and procedures, and they go stale silently — an agent
+  follows a skill's instruction without checking it against the CLI, so a
+  command the skill does not know about is a command that never gets used, and
+  an instruction the CLI has outgrown becomes a confident wrong answer. ergon
+  has no way to notice this itself; the change that creates the drift is the
+  only moment anyone is looking.
 
 ## Repo Overview
 
