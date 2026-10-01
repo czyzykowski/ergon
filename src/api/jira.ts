@@ -713,19 +713,25 @@ export interface WorklogInput {
  * `notifyUsers=false`: writing and removing are ergon's own bookkeeping, and an
  * issue's watchers do not need an email because a timer was corrected.
  *
- * Neither passes `adjustEstimate`, so Jira's defaults apply — a write
- * decrements the remaining estimate and a removal restores it, which is what
- * makes remove-then-re-log cancel out. See
+ * A removal passes `adjustEstimate=leave`, which is not Jira's default and is
+ * deliberate. Jira's default adds the removed time to the issue's remaining
+ * estimate unconditionally, while logging only subtracts down to a floor of
+ * zero, so on an issue carrying no estimate the two do not cancel: measured on
+ * this instance, logging 1m moved the remaining estimate from absent to zero
+ * and removing that worklog moved it to 1m. Remove-then-re-log would ratchet an
+ * invented estimate upward on every correction. See
  * [ADR 0011](../../docs/adr/0011-a-worklog-is-removed-and-re-logged.md).
  */
 export function worklogPath(issueKey: string, worklogId?: string): string {
-  const worklog = worklogId === undefined
-    ? "worklog"
-    : `worklog/${encodeURIComponent(worklogId)}`;
+  const issue = `/rest/api/3/issue/${encodeURIComponent(issueKey)}`;
 
-  return `/rest/api/3/issue/${
-    encodeURIComponent(issueKey)
-  }/${worklog}?notifyUsers=false`;
+  if (worklogId === undefined) {
+    return `${issue}/worklog?notifyUsers=false`;
+  }
+
+  return `${issue}/worklog/${
+    encodeURIComponent(worklogId)
+  }?notifyUsers=false&adjustEstimate=leave`;
 }
 
 /**

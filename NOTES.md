@@ -231,21 +231,42 @@
 - The receipt carries `YYYY-MM-DD HH:MM`, not just the time, because `ergon log`
   defaults `--date` to today: a time alone cannot re-log a correction made to
   any other day. `startStamp` sits beside `startTime` in `src/worklogs.ts`.
-- `worklogPath` in `src/api/jira.ts` builds both worklog write paths, so
-  `notifyUsers=false` and the deliberate absence of `adjustEstimate` are stated
-  once. `adjustEstimate` is omitted so Jira's defaults cancel across
-  remove-then-re-log; `adjustEstimate=leave` looks safer and would decrement the
-  remaining estimate twice for the same hours — see
-  `docs/adr/0011-a-worklog-is-removed-and-re-logged.md`.
+- `worklogPath` in `src/api/jira.ts` builds both worklog write paths, so the
+  query parameters are stated once. Both pass `notifyUsers=false`; only the
+  removal passes `adjustEstimate=leave`, which is not Jira's default — see
+  `docs/adr/0011-a-worklog-is-removed-and-re-logged.md` and the measurement
+  below.
 - `ergon log` no longer notifies watchers either. Both worklog writes are
   ergon's own bookkeeping.
 - `startTime` moved from `src/commands/worklogs.ts` into `src/worklogs.ts`,
   since `ergon worklogs` and `ergon unlog` now both read a Worklog's start the
   same way. `ergon comments` keeps its own `timestamp`, which is a different
   format.
-- Unverified against the live API, and the spec says so: that `DELETE` with a
-  valid worklog id on the wrong issue fails rather than succeeding. It is only
-  the second line of defence — `requireRemovableWorklog` runs first — but
-  nothing here has confirmed Jira's behaviour.
-- Also unverified: that Jira's delete default restores the remaining estimate.
-  ADR 0011's cancellation argument rests on it.
+- Measured against the live instance on 2026-10-01, using a throwaway worklog on
+  PGR-1882. **Jira does not verify the issue key in a worklog delete.**
+  `DELETE /issue/PGR-1916/worklog/83101` removed worklog 83101, which lived on
+  PGR-1882. So the issue key in `ergon unlog`'s arguments buys no safety from
+  Jira, and `requireRemovableWorklog` is the whole of the protection rather than
+  a better error message. The gate was then checked live: removing a PGR-1882
+  worklog id via PGR-1916 was refused with `No worklog 83103 on
+  PGR-1916.` and
+  nothing was sent.
+- Measured at the same time. **Jira's `adjustEstimate` defaults do not cancel
+  across remove-then-re-log.** Logging 1m on PGR-1882, which carried no
+  estimate, moved its remaining estimate from absent to 0; removing that worklog
+  moved it to 60s. The create default subtracts with a floor at zero, the delete
+  default adds with no ceiling, so they are inverse only where the remaining
+  estimate already covers the time removed. None of the fifteen most recent
+  issues this operator has logged against carries an estimate, so the default
+  would have invented one on every correction. `unlog` therefore sends
+  `adjustEstimate=leave`, verified to hold the estimate at 0 across a
+  log-then-remove cycle.
+
+- `Worklog` carries `descriptionDegraded`, matching `descriptionDegraded` on an
+  issue and `bodyDegraded` on a Comment. Dropping it would have made a worklog
+  comment the one place content degrades silently, which **Degraded** forbids —
+  and ADR 0011 makes it load-bearing, since the receipt is what a re-log is
+  typed from, so a panel that quietly became a quote would be re-logged as a
+  quote.
+- `blockFrom` in `src/adf.ts` lost an unused `parent` parameter it never read.
+  `blocksFrom` still needs its own, for the container rule and the refusal text.

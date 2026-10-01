@@ -63,12 +63,26 @@ export function renderWorklogs(worklogs: readonly Worklog[]): string {
       entry.id.padEnd(idWidth),
       startTime(entry.started),
       durations[index].padEnd(durationWidth),
-      entry.description ?? "",
+      describe(entry),
     ].join("  ").trimEnd()
   );
 
   return [...lines, "", `Total: ${formatDuration(totalSeconds(worklogs))}`]
     .join("\n");
+}
+
+/**
+ * The comment, and what it lost. Degrading is never silent, so a Worklog whose
+ * comment held a panel says so rather than quietly reading as a quote.
+ */
+function describe(worklog: Worklog): string {
+  const parts = [worklog.description ?? ""];
+
+  if (worklog.descriptionDegraded.length > 0) {
+    parts.push(`(degraded: ${worklog.descriptionDegraded.join(", ")})`);
+  }
+
+  return parts.join(" ").trim();
 }
 
 function widest(values: readonly string[]): number {

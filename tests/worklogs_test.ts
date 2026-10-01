@@ -66,6 +66,7 @@ Deno.test("a day is assembled earliest first, whatever order Jira answered in", 
       started: "2026-09-17T09:14:00.000+0100",
       timeSpentSeconds: 3600,
       description: "Paired on the redirect bug",
+      descriptionDegraded: [],
     },
     {
       id: "45231",
@@ -73,6 +74,7 @@ Deno.test("a day is assembled earliest first, whatever order Jira answered in", 
       started: "2026-09-17T11:02:00.000+0100",
       timeSpentSeconds: 2700,
       description: "Reviewed the fix",
+      descriptionDegraded: [],
     },
     {
       id: "45302",
@@ -80,6 +82,7 @@ Deno.test("a day is assembled earliest first, whatever order Jira answered in", 
       started: "2026-09-17T14:30:00.000+0100",
       timeSpentSeconds: 8100,
       description: null,
+      descriptionDegraded: [],
     },
   ]);
 });
@@ -216,6 +219,7 @@ Deno.test("a narrow id is padded to the widest in the day", () => {
       started: "2026-09-17T09:00:00.000+0100",
       timeSpentSeconds: 1800,
       description: null,
+      descriptionDegraded: [],
     },
     {
       id: "45302",
@@ -223,6 +227,7 @@ Deno.test("a narrow id is padded to the widest in the day", () => {
       started: "2026-09-17T10:00:00.000+0100",
       timeSpentSeconds: 1800,
       description: null,
+      descriptionDegraded: [],
     },
   ]);
 
@@ -315,6 +320,7 @@ Deno.test("a removal answers with the worklog it removed, for re-logging", async
     started: "2026-09-17T09:14:00.000+0100",
     timeSpentSeconds: 3600,
     description: "Paired on the redirect bug",
+    descriptionDegraded: [],
   });
   assertEquals(jira.deleted, [["PCK-12", "45188"]]);
 });
@@ -339,4 +345,51 @@ Deno.test("an id on no worklog of the issue is not deleted, only refused", async
     "No worklog 99999 on PCK-12.",
   );
   assertEquals(jira.deleted, []);
+});
+
+const PANEL_COMMENT = {
+  type: "doc",
+  version: 1,
+  content: [{
+    type: "panel",
+    attrs: { panelType: "info" },
+    content: [{
+      type: "paragraph",
+      content: [{ type: "text", text: "Billed to the retainer" }],
+    }],
+  }],
+};
+
+Deno.test("a worklog comment that lost structure says what it lost", () => {
+  const day = assembleDay(
+    [{
+      issueKey: "PCK-12",
+      worklogs: [{
+        id: "45401",
+        author: { accountId: ME },
+        started: "2026-09-17T09:00:00.000+0100",
+        timeSpentSeconds: 1800,
+        comment: PANEL_COMMENT,
+      }],
+    }],
+    ME,
+    "2026-09-17",
+  );
+
+  assertEquals(day[0].description, "> Billed to the retainer");
+  assertEquals(day[0].descriptionDegraded, ["panel"]);
+});
+
+Deno.test("the listing names what a comment lost, beside the text", () => {
+  assertEquals(
+    renderWorklogs([{
+      id: "45401",
+      issueKey: "PCK-12",
+      started: "2026-09-17T09:00:00.000+0100",
+      timeSpentSeconds: 1800,
+      description: "> Billed to the retainer",
+      descriptionDegraded: ["panel"],
+    }]).split("\n")[0],
+    "PCK-12  45401  09:00  30m  > Billed to the retainer (degraded: panel)",
+  );
 });

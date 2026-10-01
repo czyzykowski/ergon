@@ -31,7 +31,11 @@ export function renderRemoval(worklog: Worklog): string {
     formatDuration(worklog.timeSpentSeconds)
   } on ${worklog.issueKey} at ${startStamp(worklog.started)} (${worklog.id})`;
 
+  const tail = worklog.descriptionDegraded.length > 0
+    ? ` (degraded: ${worklog.descriptionDegraded.join(", ")})`
+    : "";
+
   return worklog.description === null
-    ? head
-    : `${head}: ${worklog.description}`;
+    ? `${head}${tail}`
+    : `${head}: ${worklog.description}${tail}`;
 }

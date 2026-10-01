@@ -14,8 +14,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Added the worklog's Jira id to `ergon worklogs`, as a new second column and a
   new `id` field on `ergon worklogs --json`. The field is additive, but the
   human output is a column wider.
+- Added `descriptionDegraded` to `ergon worklogs --json`, and the matching
+  `(degraded: panel)` suffix to the human listing and to `ergon unlog`'s output.
+  A worklog comment that loses structure on the way out now says so, as a
+  description and a comment body already did.
 - Changed `ergon log` to stop notifying the issue's watchers. Both writing and
   removing a worklog now pass `notifyUsers=false`.
+- `ergon unlog` passes `adjustEstimate=leave`, so removing a worklog does not
+  touch the issue's remaining estimate. Jira's default would add the removed
+  time back, which is not the inverse of logging it: logging only subtracts down
+  to zero, so on an issue carrying no estimate a remove-and-re-log would invent
+  a remaining estimate out of the hours it had just removed.
 
 - Changed rich-text fields to markdown in both directions: a description, a
   comment body and a worklog comment are parsed as markdown on the way in and

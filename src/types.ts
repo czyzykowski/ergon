@@ -144,6 +144,8 @@ export interface Worklog {
   timeSpentSeconds: number;
   /** The worklog comment rendered to text, or null when there is none. */
   description: string | null;
+  /** What the comment lost on the way out, empty when it lost nothing. */
+  descriptionDegraded: string[];
 }
 
 export interface ClockworkWorklog {

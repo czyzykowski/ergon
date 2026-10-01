@@ -172,9 +172,14 @@ Total: 4h
 - The second column is the worklog's Jira id, which is what `ergon unlog` takes.
   Key then id is the order it is typed in.
 - `--json` gives
-  `[{"id", "issueKey", "started", "timeSpentSeconds", "description"}]`, ordered
-  earliest first. `started` is Jira's own timestamp, passed through unparsed,
-  and `description` is `null` when the worklog carries no comment.
+  `[{"id", "issueKey", "started", "timeSpentSeconds", "description",
+  "descriptionDegraded"}]`,
+  ordered earliest first. `started` is Jira's own timestamp, passed through
+  unparsed, and `description` is `null` when the worklog carries no comment.
+- `descriptionDegraded` names what a worklog comment lost on the way out — a
+  panel that reads as a quote, an attachment that reads as its filename — and is
+  empty when it lost nothing. The human listing appends the same thing as
+  `(degraded: panel)`, because degrading is never silent.
 - Only your own worklogs on the day asked for are listed.
 - ergon writes time through Clockwork and reads it back from Jira. Jira sees
   every worklog — the Clockwork timer, `ergon log`, and anything typed into the
@@ -201,7 +206,11 @@ Removed 1h on PCK-12 at 2026-09-17 09:14 (45188): Paired on the redirect bug
   would report "no such worklog" for an id that exists.
 - There is no confirmation prompt. The id is the deliberate act — it is read off
   a listing, not typed from memory — and an id naming no worklog on that issue
-  is refused before anything is removed.
+  is refused before anything is removed. That refusal is the whole of the
+  protection, not a nicer error: Jira does not check the issue key in a worklog
+  delete, so addressing one issue's worklog id to another issue removes it
+  anyway. ergon resolves the id against the issue's own worklogs first, and
+  never sends a `DELETE` it has not already found.
 - The receipt is the only record of what went: Jira cannot restore a worklog, so
   the line is what a re-log is typed from. It carries the date as well as the
   time, because `ergon log` defaults `--date` to today.
@@ -209,11 +218,12 @@ Removed 1h on PCK-12 at 2026-09-17 09:14 (45188): Paired on the redirect bug
   them, with no flag to override, so `ergon unlog` cannot reach a worklog that
   `ergon worklogs` is unable to show you.
 - A worklog cannot be edited, only removed and logged again
-  ([ADR 0011](./docs/adr/0011-a-worklog-is-removed-and-re-logged.md)). Neither
-  command sends `adjustEstimate`, so Jira's own defaults apply in both
-  directions, which is what should make the pair cancel on an issue's remaining
-  estimate. That cancellation is reasoned from Jira's documented defaults and
-  has not been measured against this instance.
+  ([ADR 0011](./docs/adr/0011-a-worklog-is-removed-and-re-logged.md)).
+- Removing sends `adjustEstimate=leave`, so it does not touch the issue's
+  remaining estimate. Jira's default would add the removed time back, which
+  sounds like the inverse of logging but is not: logging only subtracts down to
+  zero, so on an issue carrying no estimate a remove-then-re-log invents a
+  remaining estimate out of the hours it just removed.
 - Neither `ergon log` nor `ergon unlog` notifies the issue's watchers.
 
 ### Linking issues

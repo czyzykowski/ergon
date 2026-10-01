@@ -27,17 +27,37 @@ the only thing.
 
 ## Consequences
 
-`unlog` sends no `adjustEstimate`, so Jira's default applies and the removal
-_increases_ the issue's remaining estimate by the removed time. That is the
-exact inverse of the logging that created it, because `addWorklog` sends no
-`adjustEstimate` either and Jira's create default decrements. The pair cancels,
-and a correction leaves the estimate where it started.
+`unlog` sends `adjustEstimate=leave`, against Jira's default, because the
+reasoning that first chose the default turned out to be wrong.
 
-This is correct only because correction is remove-then-re-log. Sending
-`adjustEstimate=leave` looks more conservative and is the trap: the removal
-would leave the estimate alone, then the re-log would decrement it a second time
-for hours nobody worked. Anything that amends a Worklog in future has to revisit
-that, and has to decide which rule authors `started`.
+That reasoning was symmetry. Jira's delete default adds the removed time back to
+the remaining estimate and its create default subtracts, so remove-then-re-log
+should cancel and leave the estimate where it started. Measured against this
+instance, it does not. Logging 1m on an issue carrying no estimate moved its
+remaining estimate from absent to zero; removing that same worklog moved it to
+1m. The subtraction has a floor at zero and the addition has no ceiling, so the
+two are only inverse on an issue whose remaining estimate already covers the
+time being removed. Of fifteen issues this operator has logged time against,
+none carries an estimate at all — so under the default every correction would
+have invented a remaining estimate equal to the hours it had just removed, and
+repeated corrections would have ratcheted it upward.
+
+`leave` makes a removal leave the estimate untouched. Its cost is the trap the
+original reasoning was trying to avoid: on an issue that does carry a real
+estimate, a correction decrements it twice for the same hours, once per log.
+That is the lesser error — it understates the time left on work that was
+genuinely done, where the default overstates it on work nobody did — and on this
+instance it is unreachable.
+
+Jira also does not verify the issue key in a worklog delete: a `DELETE`
+addressed to one issue removes a worklog belonging to another. That makes
+`requireRemovableWorklog` the whole of the protection rather than a better error
+message, which is why it resolves the id against the issue's own worklogs before
+anything is sent.
+
+Anything that amends a Worklog in future inherits none of the estimate problem,
+because an amendment has nothing to cancel. It still has to decide which rule
+authors `started`.
 
 A correction costs two commands, and the second needs the first one's details.
 That is why `ergon unlog` prints what it removed rather than only that it

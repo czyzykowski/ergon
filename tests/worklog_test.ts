@@ -37,16 +37,18 @@ Deno.test("logging asks Jira not to notify, and leaves the estimate to Jira", ()
   );
 });
 
-Deno.test("a removal names the worklog and is just as quiet", () => {
+Deno.test("a removal is just as quiet, and leaves the estimate alone", () => {
   assertEquals(
     worklogPath("PGR-642", "45231"),
-    "/rest/api/3/issue/PGR-642/worklog/45231?notifyUsers=false",
+    "/rest/api/3/issue/PGR-642/worklog/45231" +
+      "?notifyUsers=false&adjustEstimate=leave",
   );
 });
 
 Deno.test("an issue key with a character needing escaping is encoded", () => {
   assertEquals(
     worklogPath("PGR 642", "45231"),
-    "/rest/api/3/issue/PGR%20642/worklog/45231?notifyUsers=false",
+    "/rest/api/3/issue/PGR%20642/worklog/45231" +
+      "?notifyUsers=false&adjustEstimate=leave",
   );
 });

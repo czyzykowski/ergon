@@ -120,11 +120,17 @@ repoint it at a different entry — and the act is unrecoverable.
 
 ### The receipt
 
-`unlog` reads the issue's Worklogs before deleting, which does three jobs at
+`unlog` reads the issue's Worklogs before removing, which does three jobs at
 once: it finds the entry so the output can describe it, it exposes the author
-for the ownership check, and it means ergon never depends on Jira's 404
-behaviour for a mismatched id — the "not on this issue" error is ergon's own and
-names both halves.
+for the ownership check, and it is the only thing that checks the id belongs to
+the issue at all.
+
+That third job was expected to be a courtesy — a better error than Jira's 404.
+It is not. Measured against the live instance, Jira does not verify the issue
+key in a worklog delete: a `DELETE` addressed to one issue removed a worklog
+belonging to another. So the read is the whole of the protection against a
+mistyped key, and `ergon unlog` must never send a `DELETE` for an id it has not
+already resolved against that issue's own worklogs.
 
 There is no confirmation prompt, and none is wanted. ergon has no "are you sure"
 anywhere, and the id is already the deliberate act: it is copied from a listing
@@ -156,13 +162,17 @@ a billing record, and the Jira UI does it fine for the case that never comes.
 
 ### Jira parameters
 
-`unlog` sends `notifyUsers=false` and no `adjustEstimate`.
+`unlog` sends `notifyUsers=false` and `adjustEstimate=leave`.
 
-Omitting `adjustEstimate` takes Jira's default, which on a delete _increases_
-the remaining estimate by the removed time — the exact inverse of the decrement
-`addWorklog` already takes by default on the way in. Remove-then-re-log
-therefore cancels out. `adjustEstimate=leave` is the trap, and ADR 0011 records
-why.
+This spec originally called for omitting `adjustEstimate` and taking Jira's
+default, on the reasoning that a delete's default increase is the exact inverse
+of the decrement `addWorklog` takes on the way in, so remove-then-re-log would
+cancel. Measured against the live instance, it does not: the decrement has a
+floor at zero and the increase has no ceiling, so logging 1m on an issue with no
+estimate moved its remaining estimate from absent to zero, and removing that
+worklog moved it to 1m. No issue this operator logs against carries an estimate,
+so the default would have invented one on every correction. `leave` holds the
+estimate still instead. ADR 0011 records the reversal and what it costs.
 
 `notifyUsers=false` is also added to `addWorklog`, so `ergon log` stops
 notifying watchers too. This is a change to shipped behaviour and wants its own
@@ -171,7 +181,8 @@ do not need an email because a timer was corrected.
 
 ### Human output
 
-A `worklogs` line becomes `issueKey  id  HH:MM  duration  description`.
+A `worklogs` line becomes `issueKey  id  HH:MM  duration  description`, with
+`(degraded: panel)` appended when the comment lost structure on the way out.
 
 The id goes after the key rather than first, departing from `ergon comments`,
 which leads with it. A comment thread is about one issue and has no key column,
@@ -183,15 +194,24 @@ side by side in the order they are typed.
 The cost is accepted: `widest()` sizes the columns, so the listing is about
 seven characters wider for every reader, in service of a command used rarely.
 
-`unlog`'s own output is one line naming the duration, issue, start time, id and
+`unlog`'s own output is one line naming the duration, issue, start, id and
 description, in that order — the description last because it is the only
-variable-length part.
+variable-length part. The start carries its date as well as its time, because
+`ergon log` defaults `--date` to today, so a bare time could re-log only a
+correction made to today.
 
 ### `--json`
 
-`Worklog` gains `id: string`, placed first to match `JiraComment`. The change is
-additive, so existing consumers are unaffected, and `--json` on `worklogs` is
-the only read contract that changes.
+`Worklog` gains `id: string`, placed first to match `JiraComment`, and
+`descriptionDegraded: string[]`, matching `descriptionDegraded` on an issue and
+`bodyDegraded` on a Comment. Both changes are additive, so existing consumers
+are unaffected, and `--json` on `worklogs` is the only read contract that
+changes.
+
+`descriptionDegraded` is not optional decoration. **Degraded** says degrading is
+never silent, and a Worklog was the one read path dropping it. ADR 0011 makes
+that load-bearing rather than untidy: the receipt is what a re-log is typed
+from, so a panel that quietly read as a quote would be re-logged as a quote.
 
 `ergon unlog` has no `--json`. It is a single act with a single outcome, and the
 receipt is prose for a human; a machine already knows the id it passed.
@@ -202,9 +222,10 @@ receipt is prose for a human; a machine already knows the id it passed.
 always returned on every worklog; `author` and `comment` stay optional because
 profile visibility can hide one and a worklog need not carry the other.
 `JiraClient` gains `deleteWorklog(issueKey, worklogId)`, and `worklogPath`
-builds both worklog write paths so `notifyUsers=false` and the deliberate
-absence of `adjustEstimate` are stated once rather than twice. `author` also
-gains `displayName`, which a refusal needs to name whose Worklog it declined.
+builds both worklog write paths so their query parameters are stated once:
+`notifyUsers=false` on both, and `adjustEstimate=leave` on the removal alone.
+`author` also gains `displayName`, which a refusal needs to name whose Worklog
+it declined.
 
 `assembleDay` carries `id` through from the entry, via a `toWorklog` mapper it
 shares with the receipt so a day's breakdown and a Removal describe the same
@@ -240,8 +261,10 @@ worklog tests do.
 - `unlog` issues no DELETE when the lookup refuses. This is the test that
   matters most: a refusal that still deletes is the only unrecoverable bug
   available.
-- The DELETE carries `notifyUsers=false` and no `adjustEstimate`, and
-  `addWorklog` carries `notifyUsers=false`.
+- The DELETE carries `notifyUsers=false` and `adjustEstimate=leave`, and
+  `addWorklog` carries `notifyUsers=false` and no `adjustEstimate`.
+- A comment that degrades reports what it lost, on the assembled day, on the
+  listing line, and on the receipt.
 
 ## Out of Scope
 
@@ -273,11 +296,12 @@ worklog tests do.
   identify an entry. Finding its issue would take the same JQL-search-then-fetch
   dance `readDay` does, scoped to a date the invocation would have to supply —
   two tokens again, for a request.
-- Verify against a throwaway Worklog before building on it: that `DELETE` with a
-  valid id on the wrong issue fails rather than succeeding, and that Jira's
-  delete default really does restore the remaining estimate. The first is only
-  ergon's second line of defence, since the lookup runs first, but the second is
-  what ADR 0011's cancellation rests on.
+- Both checks this spec asked for were run on 2026-10-01, against a throwaway
+  Worklog on PGR-1882, and **both assumptions were wrong**. Jira does not verify
+  the issue key in a worklog delete, so the lookup is the whole of the
+  protection and not merely a better error. And the `adjustEstimate` defaults do
+  not cancel, so the removal now sends `leave`. Each is recorded in its own
+  section above, in ADR 0011, and in `NOTES.md` with the numbers.
 
 ## Outcome
 
@@ -318,24 +342,29 @@ touched.
 - **Renamed from "Delete a Worklog".** A spec that introduces Removal and lists
   `delete` under `_Avoid_` should not be titled with the word it rules out.
 
-### Not done
+### Also done, after the review
 
-- [ ] **The two checks against the live API that `Further Notes` asks for
-      first.** Neither has been run: that `DELETE` with a valid worklog id on
-      the _wrong_ issue fails rather than succeeding, and that Jira's delete
-      default really restores the remaining estimate. The first is only a second
-      line of defence, since `requireRemovableWorklog` matches the id against
-      the issue's own worklogs before anything is sent. The second is what ADR
-      0011's cancellation argument rests on, so it is the one that matters: if
-      Jira's default does not restore the estimate, remove-then-re-log drains
-      it. `NOTES.md` records both as unmeasured.
+- [x] **Both checks against the live API**, run against a throwaway Worklog on
+      PGR-1882. Both assumptions this spec was written on turned out to be
+      false, and each is recorded in the section it belongs to as well as in
+      `NOTES.md` with the numbers: - Jira **does not** verify the issue key in a
+      worklog delete. `DELETE /issue/PGR-1916/worklog/83101` removed worklog
+      83101, which lived on PGR-1882. The lookup is therefore the whole of the
+      protection against a mistyped key, not a nicer error on top of Jira's. The
+      gate was then exercised live and held: `No worklog 83103 on PGR-1916.`,
+      nothing sent. - The `adjustEstimate` defaults **do not** cancel across
+      remove-then-re-log. Logging 1m on an estimate-less issue moved its
+      remaining estimate from absent to 0; removing that worklog moved it to
+      60s. The removal now sends `adjustEstimate=leave`, which was measured to
+      hold the estimate still. This reverses the `Jira parameters` decision as
+      originally agreed; ADR 0011 carries the reasoning and the cost.
+- [x] **`Worklog` carries `descriptionDegraded`**, closing the silent-degrading
+      gap that the first pass left open as a known limitation.
+- [x] **`src/adf.ts` lints clean.** `blockFrom` lost a `parent` parameter it
+      never read, which `deno lint` had been flagging before this work began.
 
-### Known limitation, not addressed
+### Still standing
 
-`toWorklog` drops `renderAdf(...).degraded`, so a Worklog whose comment held
-structure ergon cannot express reads out as text with nothing naming what was
-flattened — against **Degraded**'s "degrading is never silent". This predates
-the change on `ergon worklogs`, but ADR 0011 makes it newly load-bearing: the
-receipt is what a re-log is typed from, so a degraded comment produces a receipt
-that cannot be re-logged faithfully. Carrying `degraded` onto `Worklog` would
-widen the `--json` contract and was left for its own change.
+Nothing from this spec is outstanding. One thing it never asked for and still
+does not do: `ergon unlog` removes one Worklog per invocation, and there is no
+bulk or by-date form. `Out of Scope` says why.

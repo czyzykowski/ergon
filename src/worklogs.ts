@@ -69,14 +69,15 @@ export function startStamp(started: string): string {
  * Removal's receipt describe the same entry the same way.
  */
 function toWorklog(issueKey: string, entry: JiraWorklogEntry): Worklog {
-  const description = renderAdf(entry.comment).text;
+  const comment = renderAdf(entry.comment);
 
   return {
     id: entry.id,
     issueKey,
     started: entry.started,
     timeSpentSeconds: entry.timeSpentSeconds ?? 0,
-    description: description.length > 0 ? description : null,
+    description: comment.text.length > 0 ? comment.text : null,
+    descriptionDegraded: comment.degraded,
   };
 }
 
@@ -161,9 +162,12 @@ export interface WorklogRemover {
  *
  * The issue's Worklogs are read first, which does three jobs at once: it finds
  * the entry so the receipt can describe it, it exposes the author for the
- * ownership check, and it makes a mismatched id ergon's own error naming both
- * halves rather than Jira's 404 naming neither. Nothing is removed unless the
- * gate returns.
+ * ownership check, and it is the only thing checking that the id belongs to the
+ * issue at all. Jira does not: measured on this instance, `DELETE` addressed to
+ * one issue removed a worklog living on another, because the path's issue key is
+ * not verified against the worklog. So the gate is not a better error than
+ * Jira's — it is the whole of the protection, and nothing is removed unless it
+ * returns.
  */
 export async function removeWorklog(
   jira: WorklogRemover,
