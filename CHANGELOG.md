@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- Added `ergon new --description-file <PATH>`, which reads the issue description
+  from a file, and from stdin when the path is `-`. `--description -` now reads
+  stdin on `ergon new` and `ergon log` as it already did on `ergon edit` and
+  `ergon comment`. **Breaking**: `ergon new --description -` previously created
+  an issue whose description was the literal text `-`.
+- `--description-file` is on `ergon new` alone, because it is the only command
+  that prompts and so the only one where stdin is contended; elsewhere
+  `--description - < file` already reads a file
+  ([ADR 0012](./docs/adr/0012-a-file-flag-only-where-stdin-is-contended.md)).
+  Reading stdin on a run that may still prompt is refused rather than left to
+  hang, passing both description flags is refused rather than resolved by
+  precedence, and an empty file or empty pipe is refused rather than creating an
+  issue with no description.
+- A description read from a file is read, and its markdown checked, before the
+  first prompt and the first Jira call, and a refusal names the file to rewrite.
+- Fixed `--description "  "` sending an empty rich-text document to Jira on
+  `ergon new` and `ergon log`, where `--description ""` was correctly skipped.
 - Added `ergon unlog <ISSUE> <WORKLOG_ID>`, which removes a worklog and prints
   what it removed so the entry can be logged again. A worklog is removed and
   re-logged rather than edited in place

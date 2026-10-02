@@ -2,6 +2,7 @@ import type { Command } from "cliffy/command/mod.ts";
 import { JiraClient } from "../api/jira.ts";
 import { loadConfig } from "../config.ts";
 import { loadState, saveState } from "../state.ts";
+import { omitIfBlank, planSource, readSource } from "../text_source.ts";
 
 interface LogOptions {
   date?: string;
@@ -14,7 +15,10 @@ export function registerLogCommand(program: Command): void {
     .command("log <issueKey:string> <duration:string>")
     .description("Log time to an issue without starting a timer.")
     .option("--date <date:string>", "Start date in YYYY-MM-DD format")
-    .option("--description <description:string>", "Worklog description")
+    .option(
+      "--description <description:string>",
+      "Worklog description, or '-' to read it from stdin",
+    )
     .option("--time <time:string>", "Start time (HH:MM), used with --date")
     .action(async (options: LogOptions, issueKey: string, duration: string) => {
       const config = await loadConfig();
@@ -24,11 +28,23 @@ export function registerLogCommand(program: Command): void {
       const timeSpentSeconds = parseDuration(duration);
       const startedAt = resolveStartedAt(options.date, options.time);
 
+      // `log` never prompts, so stdin is never contended here and needs no
+      // path flag either: `--description - < note.md` already reads a file.
+      const subject = "worklog description";
+      const descriptionSource = planSource({
+        inline: options.description,
+        flag: "--description",
+        subject,
+      });
+      const description = descriptionSource
+        ? await readSource(descriptionSource, { subject })
+        : undefined;
+
       const worklog = await jira.addWorklog({
         issueKey,
         timeSpentSeconds,
         startedAt,
-        comment: options.description,
+        comment: omitIfBlank(description),
       });
 
       await saveState({

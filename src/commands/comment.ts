@@ -5,7 +5,10 @@ import { loadConfig } from "../config.ts";
 import { editInBuffer } from "../editor.ts";
 import { assertRewritable } from "../rewrite.ts";
 import { loadState } from "../state.ts";
+import { refuseBlank } from "../text_source.ts";
 import type { JiraComment } from "../types.ts";
+
+const BLANK_COMMENT = "A comment needs a body.";
 
 interface CommentOptions {
   body?: string;
@@ -136,6 +139,11 @@ async function editComment(
 /**
  * The Comment to write, or undefined when the operator wrote nothing. `-` means
  * stdin; with no `--body` at all the editor opens on `buffer`.
+ *
+ * An empty body is refused rather than treated as a clear, which is where the
+ * `ergon edit --description ""` analogy deliberately stops: a Description can
+ * be blank, a Comment cannot. An untouched editor buffer is a different thing —
+ * it returns undefined above, and means "changed my mind".
  */
 async function resolveBody(
   supplied: string | undefined,
@@ -144,28 +152,16 @@ async function resolveBody(
   if (supplied === undefined) {
     const edited = await editInBuffer(buffer);
 
-    return edited === undefined ? undefined : refuseBlank(edited);
+    return edited === undefined
+      ? undefined
+      : refuseBlank(edited, BLANK_COMMENT);
   }
 
   const body = supplied === "-"
     ? await new Response(Deno.stdin.readable).text()
     : supplied;
 
-  return refuseBlank(body);
-}
-
-/**
- * An empty body is refused rather than treated as a clear, which is where the
- * `ergon edit --description ""` analogy deliberately stops: a Description can
- * be blank, a Comment cannot. An untouched editor buffer is a different thing —
- * it never reaches here, and means "changed my mind".
- */
-function refuseBlank(body: string): string {
-  if (body.trim().length === 0) {
-    throw new Error("A comment needs a body.");
-  }
-
-  return body;
+  return refuseBlank(body, BLANK_COMMENT);
 }
 
 /**

@@ -141,6 +141,15 @@ _Avoid_: manual, human mode
 alone, so that the same command against the same Jira produces the same issue
 for anyone who runs it. _Avoid_: headless, scripted, batch
 
+**Source**: Where a rich-text value is read from, as distinct from the value
+itself. A flag either carries the text inline or names a Source — the path `-`
+means stdin, a `--<field>-file` flag means that file. Which Sources a flag
+offers is not uniform across commands, and deliberately so: stdin is contended
+wherever a run may prompt, because a prompt needs the same stdin and cannot
+share it. See
+[ADR 0012](./docs/adr/0012-a-file-flag-only-where-stdin-is-contended.md).
+_Avoid_: input, origin, target
+
 **Remembered state**: Values persisted from a previous Interactive run to
 pre-select later prompts, such as the last Client SOW chosen. It records what a
 human picked, so it is Interactive-only in both directions — see

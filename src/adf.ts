@@ -63,6 +63,10 @@ export class UnexpressibleError extends Error {
   /** The construct, as a noun phrase: `an image`. */
   readonly construct: string;
 
+  /** Why ADF has nowhere to put it, so a refusal can be rebuilt with a
+   * different remedy. */
+  readonly reason: string;
+
   constructor(
     construct: string,
     reason: string,
@@ -71,6 +75,7 @@ export class UnexpressibleError extends Error {
     super(`ergon cannot write ${construct}. ${reason} ${remedy}`);
     this.name = "UnexpressibleError";
     this.construct = construct;
+    this.reason = reason;
   }
 }
 

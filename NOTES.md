@@ -22,6 +22,7 @@
 - [x] Markdown as ergon's rich-text format, both directions
       (`toAdf`/`renderAdf`)
 - [x] Removing a worklog (`ergon unlog`)
+- [x] Rich text from a file or a pipe (`ergon new --description-file`)
 
 ## Updates
 
@@ -270,3 +271,37 @@
   quote.
 - `blockFrom` in `src/adf.ts` lost an unused `parent` parameter it never read.
   `blocksFrom` still needs its own, for the container rule and the refusal text.
+
+- Measured on 2026-10-02, and the fact the whole of
+  `specs/rich-text-from-a-source.md` turns on. **A cliffy prompt against a piped
+  stdin hangs rather than failing.** `Input.prompt` with stdin at EOF from
+  `echo "" |` did not throw and did not return; it sat there until the command
+  was killed at two minutes. So reading a Source from stdin on a run that may
+  still prompt cannot be left to fail on its own — it produces no output at all
+  — which is why `planSource` refuses the combination up front.
+- `Deno.stdin.isTerminal()` is available on Deno 2.6.4 and reports `false` for a
+  pipe, so the condition is cheaply detectable. **Not acted on, and the
+  follow-up worth doing:** wrapping `ergon new`'s seven prompt sites in that
+  check would turn every variant of the hang into a named error ("needs a Client
+  SOW but stdin is not a terminal; pass --client-sow or --non-interactive"),
+  including the ones that predate this work — any non-tty `ergon new` that needs
+  a prompt hangs today. It was left out because it rewrites prompting for runs
+  that have nothing to do with sourcing a description, and it subsumes
+  `planSource`'s narrower refusal when it lands.
+- `toAdf` already normalises trailing newlines: `"a\n\n- b"`, `"a\n\n- b\n"` and
+  `"a\n\n- b\n\n"` all produce the same two blocks. A file Source therefore
+  needs no trimming, which is what made the file path a smaller change than
+  expected.
+- `toAdf("")` and `toAdf("\n  \n")` both produce a zero-block document, not
+  `null`. `createIssue` and `worklogBody` guard with `if (input.description)`,
+  so `--description ""` was skipped while `--description "  "` sent that empty
+  document to Jira. Both commands now normalise blank inline text to no
+  description at all.
+- `UnexpressibleError` gained `readonly reason`, so a refusal can be rebuilt
+  with a remedy that names the file the markdown came from. The `remedy`
+  constructor parameter had been there since ADR 0010 with only its default ever
+  used; `reason` is what was missing to vary it.
+- `src/text_source.ts` is the one place that decides where rich text comes from.
+  `planSource` is pure and tested directly, like `planEdit` and
+  `requireSprintFieldId`; `readSource` takes its stdin reader as an argument so
+  a pipe can be faked in a test, since `Deno.stdin` cannot be.

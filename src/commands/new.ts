@@ -18,6 +18,12 @@ import {
 } from "../sprint.ts";
 import { loadState, saveState } from "../state.ts";
 import {
+  assertExpressible,
+  omitIfBlank,
+  planSource,
+  readSource,
+} from "../text_source.ts";
+import {
   optionPayload,
   parentFieldsFrom,
   parseLabels,
@@ -32,6 +38,7 @@ interface NewOptions {
   type?: string;
   summary?: string;
   description?: string;
+  descriptionFile?: string;
   clientSow?: string;
   labels?: string;
   sprint?: string;
@@ -293,7 +300,14 @@ export function registerNewCommand(program: Command): void {
     .option("--parent <parent:string>", "Parent issue key")
     .option("--type <type:string>", "Issue type", { default: "Task" })
     .option("--summary <summary:string>", "Issue summary")
-    .option("--description <description:string>", "Issue description")
+    .option(
+      "--description <description:string>",
+      "Issue description, or '-' to read it from stdin",
+    )
+    .option(
+      "--description-file <descriptionFile:string>",
+      "Read the issue description from this file, or from stdin for '-'",
+    )
     .option("--client-sow <clientSow:string>", "Client SOW")
     .option(
       "--labels <labels:string>",
@@ -314,6 +328,25 @@ export function registerNewCommand(program: Command): void {
       const state = await loadState();
 
       const interactive = !options.nonInteractive;
+
+      // Settled and read before the first prompt and the first Jira call: a
+      // typo'd path, an empty file or a construct ergon cannot write costs an
+      // error rather than six answered prompts and two round-trips.
+      const subject = "Description";
+      const descriptionSource = planSource({
+        inline: options.description,
+        file: options.descriptionFile,
+        flag: "--description",
+        fileFlag: "--description-file",
+        subject,
+        interactive,
+      });
+      let description: string | undefined;
+
+      if (descriptionSource) {
+        description = await readSource(descriptionSource, { subject });
+        assertExpressible(description, descriptionSource);
+      }
 
       let projectKey = options.project ?? state.lastProject ??
         config.defaults?.project ?? "";
@@ -577,7 +610,7 @@ export function registerNewCommand(program: Command): void {
         projectKey,
         summary,
         issueType,
-        description: options.description,
+        description: omitIfBlank(description),
         parentKey: parentKey ?? epicKey,
         labels,
         customFields,

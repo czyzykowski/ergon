@@ -51,6 +51,47 @@ ergon new "Fix login" --non-interactive --parent PCK-12
 Interactive runs are unaffected: the parent still pre-selects the Client SOW
 prompt, and the label prompt still appears when nothing supplied labels.
 
+### A description from a file or a pipe
+
+A description worth writing in markdown is one too long to quote into a shell,
+so `--description` can also name where the text is:
+
+```
+ergon new "Fix login" --non-interactive --parent PCK-12 \
+  --description-file spec.md
+ergon new "Fix login" --non-interactive --parent PCK-12 \
+  --description-file - <<'EOF'
+## Acceptance criteria
+
+- [ ] The redirect preserves the query string
+EOF
+ergon log PCK-12 2h --description - < note.md
+```
+
+- `--description-file <path>` reads the description from that file, and `-` as
+  the path means stdin. `--description -` means stdin too, as it already does on
+  `ergon edit` and `ergon comment`.
+- `--description-file` exists on `ergon new` alone, because `ergon new` is the
+  only command that prompts and so the only one where stdin is contended.
+  Elsewhere `--description - < spec.md` already reads a file
+  ([ADR 0012](./docs/adr/0012-a-file-flag-only-where-stdin-is-contended.md)).
+- Reading stdin on a run that may still prompt is refused, because `ergon new`
+  would consume stdin and then hang waiting for an answer to the epic prompt.
+  Pass `--non-interactive`, or use `--description-file <path>`, which leaves
+  stdin alone and still prompts.
+- Passing both `--description` and `--description-file` is refused rather than
+  resolved by precedence.
+- An empty file, a whitespace-only file and an empty pipe are refused: naming a
+  file asserts there is text in it, and a generator that produced nothing should
+  not create an issue someone has to clean up. `--description ""` still means no
+  description, as it always has.
+- The file is read, and its markdown checked, before the first prompt and the
+  first Jira call — so a mistyped path or an image ergon cannot write costs an
+  error rather than six answered prompts. A refusal from a file names the file:
+  `Rewrite spec.md without it.`
+- `none` is not a sentinel here. `--description-file none` reads a file called
+  `none`; omit the flag to create an issue with no description.
+
 ### Reading an issue
 
 `ergon get <KEY> --json` returns an issue as a machine-readable object, and is
