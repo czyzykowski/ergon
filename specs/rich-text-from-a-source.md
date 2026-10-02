@@ -279,3 +279,75 @@ The pure parts carry the weight, as they do for `planEdit` and
   read that `readSource` now subsumes. Neither is broken, and refactoring files
   this feature does not otherwise touch is how a small change becomes a large
   diff.
+
+## Outcome
+
+Implemented in `36b3408`. 215 tests pass; `deno check` and `deno fmt` are clean
+on everything touched, and `deno lint` is clean across all 35 files in `src/`.
+The installed binary at `~/.local/bin/ergon` was rebuilt, and `ergon new --help`
+lists both flags.
+
+### User stories
+
+- [x] 1 — create an issue whose Description is a markdown file
+- [x] 2 — pipe a Description in from a heredoc
+- [x] 3 — `--description-file <path>` still prompts for epic, labels and SOW
+- [x] 4 — a mistyped path fails before any prompt
+- [x] 5 — an unexpressible Description is refused before the prompts, naming the
+      file
+- [x] 6 — `--description -` reads stdin instead of writing a literal `-`
+- [x] 7 — piping into a prompting run says to pass `--non-interactive`
+- [x] 8 — an empty file or an empty pipe is refused
+- [x] 9 — both description flags together are refused
+- [x] 10 — `ergon log --description -` reads a worklog description from a pipe
+
+Stories 4 through 10 were each exercised against the real CLI, since every one
+of them refuses before the first Jira call and so can be run without creating
+anything. Stories 1, 2 and 3 are the happy paths and were **not** run against
+Jira — see `Still standing`.
+
+### Done differently
+
+- **`omitIfBlank` was not in the `Modules` section as first written.** The first
+  pass left `description?.trim() ? description : undefined` inline in both
+  `ergon new` and `ergon log`, with a hand-written comment in each explaining
+  it. Both axes of the review landed on it independently, and they were right:
+  this spec's own argument for moving `refuseBlank` out of `comment.ts` — "a
+  second copy of `text.trim().length === 0` is how two paths come to disagree" —
+  condemns it. The test is now one exported function with one test, and the
+  `Modules` and `Testing Decisions` sections above describe what exists.
+- **`SourceFlags.prompting` is named `interactive`.** It meant "a run permitted
+  to prompt", which is word for word what `CONTEXT.md` defines **Interactive**
+  as, and the call site read `prompting: interactive`. A glossary that lists
+  `_Avoid_` terms should not be undercut by the code coining a synonym.
+- **`comment.ts` changed by more than "the one line" this spec claimed.** It
+  takes the import, a `BLANK_COMMENT` constant, and the two call sites that
+  already went through the local helper, which is deleted. An intermediate draft
+  kept a one-line `refuseComment` wrapper; the review called it a Middle Man
+  with a name that read as "refuse the comment", and removing it left the diff
+  smaller than keeping it.
+- **The `refuseBlank` test asserts less than this spec first specified.** It
+  claimed the test shows "moving it changed no behaviour", but the message is
+  `comment.ts`'s own constant and a test in `tests/text_source_test.ts` can only
+  re-read a literal it passed in itself. The bullet now says what it pins.
+- **`readSource` reports a missing path itself** (`No such file: /nope.md`)
+  rather than relaying Deno's `os error 2`. A directory is left to Deno, whose
+  message already names the problem; a typo'd path is the case story 4 is about
+  and worth ergon's own voice.
+
+### Still standing
+
+- **Nothing has been written to Jira through either new path.** No issue was
+  created and no worklog logged, so stories 1, 2 and 3 are verified by unit test
+  and by code reading, not by a round trip. The refusal paths needed no ticket
+  and were all run live. Worth doing against a throwaway issue before relying on
+  it: the last two specs each made two assumptions about Jira's behaviour that
+  live checks falsified.
+- **`ergon new` still hangs** when it needs a prompt in a non-tty context by any
+  route other than a stdin Source — the class of bug `planSource`'s refusal
+  covers only its own corner of. `Deno.stdin.isTerminal()` makes the fix cheap
+  and `NOTES.md` carries the details; it is its own change because it rewrites
+  prompting for runs that have nothing to do with a Description.
+- **`ergon new` has no `$EDITOR` path**, so an interactive human composing a
+  long Description still writes a file first. `Out of Scope` says why, and the
+  blank-buffer collision it describes is the part that would need designing.
