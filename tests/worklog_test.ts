@@ -1,4 +1,4 @@
-import { assertEquals } from "https://deno.land/std@0.224.0/testing/asserts.ts";
+import { assertEquals } from "testing/asserts.ts";
 import { worklogBody, worklogPath } from "../src/api/jira.ts";
 
 Deno.test("worklogBody sends the comment as an ADF document", () => {

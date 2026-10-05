@@ -1,8 +1,4 @@
-import {
-  assert,
-  assertEquals,
-  assertFalse,
-} from "https://deno.land/std@0.224.0/testing/asserts.ts";
+import { assert, assertEquals, assertFalse } from "testing/asserts.ts";
 import { mapIssue, searchFields } from "../src/api/jira.ts";
 import type { JiraIssueResponse } from "../src/api/jira.ts";
 import type { ProjectDefaults } from "../src/types.ts";

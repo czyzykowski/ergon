@@ -1,4 +1,4 @@
-import { assertEquals } from "https://deno.land/std@0.224.0/testing/asserts.ts";
+import { assertEquals } from "testing/asserts.ts";
 import { mapComment } from "../src/api/jira.ts";
 import type { JiraCommentResponse } from "../src/api/jira.ts";
 import { renderThread } from "../src/commands/comments.ts";

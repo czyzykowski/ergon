@@ -3,7 +3,7 @@ import {
   assertRejects,
   assertStringIncludes,
   assertThrows,
-} from "https://deno.land/std@0.224.0/testing/asserts.ts";
+} from "testing/asserts.ts";
 import { toAdf } from "../src/adf.ts";
 import {
   assertExpressible,

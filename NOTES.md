@@ -57,8 +57,18 @@
   `docs/adr/0001-non-interactive-ignores-remembered-state.md`.
 - Interactive behaviour of `ergon new` is deliberately unchanged by the
   inheritance work; only `--non-interactive` gained new precedence rules.
-- `deno lint` fails repo-wide on `no-import-prefix` for the `https://` std
-  imports in `tests/`; pre-existing, not addressed here.
+- `deno lint` is clean repo-wide. It used to fail `no-import-prefix` on the
+  inline `https://` std import that every one of the fifteen `tests/*_test.ts`
+  files carried. `deno.json` now maps `testing/` to
+  `https://deno.land/std@0.224.0/testing/` — the same shape as the `path/` and
+  `yaml/` entries beside it — and the tests import `testing/asserts.ts`. The std
+  version is unchanged, so nothing resolves differently and `deno.lock` did not
+  move.
+- `deno fmt --check` still reports seven files: `specs/ergon-status-tmux.md`,
+  `specs/move-issue-status.md`, `specs/open-issue-in-browser.md` and four
+  untracked files under `.scratch/`. All predate the lint fix and none is
+  reachable from `src/`; formatting them would rewrap three historical specs for
+  no reading benefit. `deno fmt` alone clears them whenever that is wanted.
 - The Client SOW field id has no default. `requireClientSowFieldId` in
   `src/commands/new_fields.ts` decides when a missing id is an error: every plan
   kind but `skip` needs one — see

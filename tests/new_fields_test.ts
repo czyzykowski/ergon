@@ -1,7 +1,4 @@
-import {
-  assertEquals,
-  assertThrows,
-} from "https://deno.land/std@0.224.0/testing/asserts.ts";
+import { assertEquals, assertThrows } from "testing/asserts.ts";
 import {
   isNoneValue,
   parentFieldsFrom,
