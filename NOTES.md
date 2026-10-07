@@ -210,7 +210,7 @@
   not one of them, and caching it left `--sprint current` writing a closed
   sprint for months. A TTL was rejected: any TTL is wrong at a sprint boundary,
   which is the one moment the answer changes and the one moment it matters. The
-  rule now lives in `CONTEXT.md`'s **Cache** entry.
+  rule now lives in `GLOSSARY.md`'s **Cache** entry.
 - ergon writes time through Clockwork and reads it back from Jira. The asymmetry
   looks like an oversight and is not: Clockwork is a Jira app, so its timers
   land as Jira worklogs, and Jira also sees `ergon log` and anything typed into
