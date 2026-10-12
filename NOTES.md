@@ -23,9 +23,18 @@
       (`toAdf`/`renderAdf`)
 - [x] Removing a worklog (`ergon unlog`)
 - [x] Rich text from a file or a pipe (`ergon new --description-file`)
+- [x] Board order (`ergon ls --order board`), replacing `--order rank`
 
 ## Updates
 
+- Board order replaces raw Rank (ADR 0013, superseding 0009). Facts found on the
+  way: PGR has no board of its own and lives on the Unified Client Board (26)
+  with PCK and ~15 other projects; PCK's own board (373) shows only sprints
+  board 26 owns; Rank is one global field (customfield_10011). The workflows
+  never set a resolution, so `resolution = Unresolved` matches every issue — use
+  `statusCategory != Done`. A board is read through its saved filter
+  (`filter = <id>` in JQL), which keeps the v3 search and its ADF mapping. Board
+  439 ("by Estimate") is not ranked and is refused.
 - Fixed epic prompt None selection in `ergon new`.
 - Guarded Jira issue mapping against missing fields in create response.
 - Added sprint selection flow for `ergon new`.

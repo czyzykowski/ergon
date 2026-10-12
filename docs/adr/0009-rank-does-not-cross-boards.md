@@ -1,5 +1,10 @@
 # Rank does not cross boards
 
+> **Superseded by** [ADR 0013](./0013-board-order-belongs-to-the-board.md). A
+> board is not a project — one board spans several — and raw Rank is not the
+> order a board shows. The rule that an ordering must not cross boards survives
+> there, restated in terms of boards rather than projects.
+
 `ergon ls --order rank` emits `ORDER BY Rank ASC`, and JQL will happily apply it
 to a query spanning every project the operator is assigned in. The result is a
 total order that is stable, plausible-looking, and meaningless in half its

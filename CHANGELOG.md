@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- Added `ergon ls --order board`, the order the board shows: the active sprint,
+  then each upcoming sprint in the board's sequence, then the backlog, in drag
+  order within each. It lists the board's own issues, across every project on
+  it, and works without `--project` when every configured project names the same
+  `sprintBoardId`
+  ([ADR 0013](./docs/adr/0013-board-order-belongs-to-the-board.md)).
+- **Breaking**: removed `ergon ls --order rank`, which now errors naming
+  `board`. Raw Rank interleaved the backlog with the sprint and led with tickets
+  closed years ago.
+- Fixed `ergon ls` telling finished work apart by resolution, which this Jira
+  never sets: `--sprint` no longer carries a `resolution = Unresolved` clause
+  that excluded nothing, and an otherwise unfiltered `ls --all` now lists issues
+  not in the Done status category instead of every issue ever created.
+
 - Added `ergon new --description-file <PATH>`, which reads the issue description
   from a file, and from stdin when the path is `-`. `--description -` now reads
   stdin on `ergon new` and `ergon log` as it already did on `ergon edit` and

@@ -137,7 +137,7 @@ the intended way for an agent to find out what an issue asks for:
   be tested against without knowing a project's status names.
 - `created` and `updated` are Jira's own timestamps, passed through unparsed.
 - `priority` is the Jira Priority name, or `null`. It is reported but never
-  ordered by: the ordering the board carries is `rank`.
+  ordered by: the ordering the board carries is `--order board`.
 - `dueDate` is Jira's due date as `YYYY-MM-DD`, or `null`.
 - `sprints` is the issue's whole sprint history in the board's own order, not
   chronology — a ticket carried over twice reports three, and one planned ahead
@@ -172,7 +172,7 @@ PCK-12 [In Progress] Fix login redirect
 
 ```
 ergon ls --json                            # the same issue shape, as an array
-ergon ls --project PCK --order rank        # the board's own order
+ergon ls --order board --sprint            # the active sprint, as the board shows it
 ergon ls --sprint --json
 ergon ls --since 2026-09-17 --json         # only what has moved since
 ```
@@ -180,11 +180,19 @@ ergon ls --since 2026-09-17 --json         # only what has moved since
 - `--json` emits an array of the object `ergon get --json` returns, so one
   parser handles both, and one request replaces one `get` per key. An empty
   result is `[]`; without `--json` it stays `No issues found.`
-- `--order` takes `rank` or `updated`, and defaults to `updated`. `rank` is the
-  order set by dragging on the board, and it requires `--project`: a rank
-  compares two issues on one board and says nothing across boards
-  ([ADR 0009](./docs/adr/0009-rank-does-not-cross-boards.md)). `--sprint` does
-  not change the ordering.
+- `--order` takes `board` or `updated`, and defaults to `updated`. `board` is
+  the order the board shows: the active sprint, then each upcoming sprint in the
+  board's sequence, then the backlog, in drag order within each. It lists what
+  is on the board — its own filter, so another project's issue on the same board
+  takes its place — narrowed by the other flags. Done issues stay in open
+  sprints and are dropped from the backlog, as on the board. The board is the
+  project's `sprintBoardId`; without `--project` every configured project must
+  name the same one, since an order across boards is one nobody chose
+  ([ADR 0013](./docs/adr/0013-board-order-belongs-to-the-board.md)). `--limit`
+  cuts the ordered list. `--order rank` is gone and errors naming `board`.
+- `--sprint` keeps every status in the open sprint and does not change the
+  ordering. Finished work is told apart by status category, never resolution,
+  which this Jira's workflows do not set.
 - `--since` takes a date, not an instant, and bounds the list to issues updated
   on or after it.
 - Naming a project asserts ergon is configured for it, so `--project` on an
@@ -434,6 +442,10 @@ defaults:
 no default, so `ergon new` fails naming the key rather than writing to a guessed
 field ([ADR 0002](./docs/adr/0002-no-default-client-sow-field-id.md)). A project
 that never sets one needs no Client SOW configuration at all.
+
+`sprintBoardId` is the board the project lives on. It picks the sprint for
+`--sprint current` and is the board `ergon ls --order board` reads; projects
+sharing one board should name the same id.
 
 ## Checks
 

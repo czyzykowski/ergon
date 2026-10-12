@@ -51,14 +51,31 @@ mirror of Parent, which is one slot and nothing more. ergon reports the history
 and leaves the reading of it to the caller, because "the" Sprint of an issue is
 a question only the caller can answer. _Avoid_: iteration, cycle, milestone
 
-**Rank**: The board's own ordering, the one set by dragging. A Rank is
-meaningful only within a board — dragging expresses how two issues on the same
-board compare and never how an issue on one board compares to an issue on
-another — so ordering by Rank across boards produces an order nobody chose. It
-is what the operator means by priority; the Jira Priority field is read and
-reported but never ordered by. See
-[ADR 0009](./docs/adr/0009-rank-does-not-cross-boards.md). _Avoid_: priority,
-position, backlog order
+**Rank**: The ordering set by dragging. A Rank is meaningful only within a board
+— dragging expresses how two issues on the same board compare and never how an
+issue on one board compares to an issue on another — so ordering by Rank across
+boards produces an order nobody chose. A board is not a project: one board may
+span many projects, and issues from different projects on it are ranked against
+each other as deliberately as any two. Rank alone is not what a board shows; see
+Board order. See
+[ADR 0013](./docs/adr/0013-board-order-belongs-to-the-board.md). _Avoid_:
+priority, position
+
+**Done**: Of an issue whose status falls in Jira's Done category — Done and Will
+Not Do alike. This is how ergon tells finished work from open work, and the only
+way: the workflows it serves never set a resolution, so every issue reads as
+unresolved however long ago it closed. _Avoid_: resolved, closed, complete
+
+**Board order**: The order a board presents its issues in, and what the operator
+means by priority: the active Sprint first, then each upcoming Sprint in turn,
+then everything in no Sprint, with Rank deciding only within each of those
+groups. A highly ranked issue in no Sprint still comes after the least ranked
+issue in the active one. Board order follows the board in what it holds as well
+as how it sorts: every issue in an open Sprint, whatever its status, but a Done
+issue in no open Sprint is off the board and so out of Board order. Sprints are
+taken in the board's own sequence, whatever their names suggest — a Sprint used
+as a parking place is still a Sprint. The Jira Priority field is read and
+reported but never ordered by. _Avoid_: rank order, backlog order, priority
 
 **None**: The literal word a flag takes to mean "explicitly empty".
 `--client-sow none` clears the field, `--due none` clears the due date. What

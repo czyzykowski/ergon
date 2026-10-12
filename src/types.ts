@@ -99,7 +99,7 @@ export interface JiraIssue {
   updated: string;
   timeSpentSeconds: number | null;
   originalEstimateSeconds: number | null;
-  /** The Priority name, read and reported; ergon orders by Rank instead. */
+  /** The Priority name, read and reported; ergon orders by Board order instead. */
   priority: string | null;
   dueDate: string | null;
   /**

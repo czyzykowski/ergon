@@ -1,5 +1,5 @@
 import { assert, assertEquals, assertThrows } from "testing/asserts.ts";
-import { buildJql } from "../src/commands/ls.ts";
+import { buildJql, filterClauses, listOrder } from "../src/commands/ls.ts";
 
 Deno.test("the default ordering is unchanged", () => {
   assertEquals(
@@ -8,19 +8,16 @@ Deno.test("the default ordering is unchanged", () => {
   );
 });
 
-Deno.test("--order rank asks for the board's own ordering", () => {
-  const jql = buildJql({ limit: 20, project: "PCK", order: "rank" });
-
-  assert(jql.startsWith("project = PCK AND"));
-  assert(jql.endsWith("ORDER BY Rank ASC"));
+Deno.test("--order rank is gone, and the error names its replacement", () => {
+  assertThrows(
+    () => buildJql({ limit: 20, project: "PCK", order: "rank" }),
+    Error,
+    "--order board",
+  );
 });
 
-Deno.test("--order rank across projects refuses, naming the fix", () => {
-  assertThrows(
-    () => buildJql({ limit: 20, order: "rank" }),
-    Error,
-    "--project",
-  );
+Deno.test("--order board is a recognised ordering", () => {
+  assertEquals(listOrder({ limit: 20, order: "board" }), "board");
 });
 
 Deno.test("--sprint does not quietly change the ordering", () => {
@@ -30,11 +27,20 @@ Deno.test("--sprint does not quietly change the ordering", () => {
   assert(jql.endsWith("ORDER BY updated DESC"));
 });
 
+Deno.test("--sprint keeps every status, because the board shows them all", () => {
+  const clauses = filterClauses({ limit: 20, sprint: true });
+
+  assertEquals(clauses, [
+    "sprint in openSprints()",
+    "assignee = currentUser()",
+  ]);
+});
+
 Deno.test("an unrecognised --order names the two that work", () => {
   assertThrows(
     () => buildJql({ limit: 20, order: "priority" }),
     Error,
-    "rank",
+    "board",
   );
 });
 
@@ -56,6 +62,6 @@ Deno.test("--since is a date, because JQL reads an instant in nobody's timezone"
 Deno.test("a query with no other clause still bounds itself", () => {
   assertEquals(
     buildJql({ limit: 20, all: true }),
-    "resolution = Unresolved ORDER BY updated DESC",
+    "statusCategory != Done ORDER BY updated DESC",
   );
 });

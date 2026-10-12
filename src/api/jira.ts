@@ -1,4 +1,5 @@
 import { renderAdf, toAdf } from "../adf.ts";
+import type { BoardConfiguration } from "../board_order.ts";
 import { type JiraIssueLink, renderLinks } from "../links.ts";
 import type {
   IssueSprint,
@@ -79,6 +80,7 @@ export interface JiraIssueResponse {
 
 export interface JiraSearchResponse {
   issues: JiraIssueResponse[];
+  nextPageToken?: string;
 }
 
 export interface JiraIssueFieldsResponse {
@@ -115,6 +117,12 @@ export interface JiraSprint {
 
 export interface JiraSprintResponse {
   values?: JiraSprint[];
+  isLast?: boolean;
+}
+
+export interface JiraBoardConfigurationResponse {
+  filter?: { id?: string };
+  ranking?: { rankCustomFieldId?: number };
 }
 
 export interface JiraLabelResponse {
@@ -256,6 +264,35 @@ export class JiraClient {
     return response.issues.map((issue) => mapIssue(issue, this.projects));
   }
 
+  /**
+   * Every issue the JQL matches, in its order and unmapped, paginated to
+   * completion: an order cut off at a page boundary is a different order.
+   */
+  async searchAll(jql: string): Promise<JiraIssueResponse[]> {
+    const issues: JiraIssueResponse[] = [];
+    let nextPageToken: string | undefined;
+
+    do {
+      const response = await this.request<JiraSearchResponse>(
+        "/rest/api/3/search/jql",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            jql,
+            maxResults: 100,
+            fields: searchFields(this.projects),
+            nextPageToken,
+          }),
+        },
+      );
+
+      issues.push(...response.issues);
+      nextPageToken = response.nextPageToken;
+    } while (nextPageToken);
+
+    return issues;
+  }
+
   async listEpics(projectKey: string): Promise<JiraIssue[]> {
     const jql =
       `project = ${projectKey} AND issuetype = Epic ORDER BY updated DESC`;
@@ -325,6 +362,52 @@ export class JiraClient {
     );
 
     return response.values ?? [];
+  }
+
+  /**
+   * The board's active and future Sprint ids. Jira returns them active first,
+   * then future in the board's own sequence, which is the order Board order
+   * groups by.
+   */
+  async listOpenSprintIds(boardId: number): Promise<number[]> {
+    const ids: number[] = [];
+    let startAt = 0;
+
+    while (true) {
+      const params = new URLSearchParams({
+        state: "active,future",
+        startAt: startAt.toString(),
+      });
+      const response = await this.request<JiraSprintResponse>(
+        `/rest/agile/1.0/board/${boardId}/sprint?${params}`,
+        { method: "GET" },
+      );
+
+      const page = response.values ?? [];
+      ids.push(...page.map((sprint) => sprint.id));
+
+      if (response.isLast !== false || page.length === 0) break;
+      startAt += page.length;
+    }
+
+    return ids;
+  }
+
+  /** The board's filter, and whether dragging orders it at all. */
+  async getBoardConfiguration(boardId: number): Promise<BoardConfiguration> {
+    const response = await this.request<JiraBoardConfigurationResponse>(
+      `/rest/agile/1.0/board/${boardId}/configuration`,
+      { method: "GET" },
+    );
+
+    if (!response.filter?.id) {
+      throw new Error(`Jira reported no filter for board ${boardId}.`);
+    }
+
+    return {
+      filterId: response.filter.id,
+      ranked: response.ranking?.rankCustomFieldId !== undefined,
+    };
   }
 
   async listLabels(): Promise<string[]> {
