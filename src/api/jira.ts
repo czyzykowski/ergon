@@ -103,6 +103,8 @@ export interface JiraFieldOptionResponse {
 export interface JiraBoard {
   id: number;
   name: string;
+  /** `scrum` or `kanban`; only a scrum board holds Sprints. */
+  type?: string;
 }
 
 export interface JiraBoardResponse {

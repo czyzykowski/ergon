@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- **Breaking**: `--sprint current` is now `--sprint active`, on `ergon new` and
+  `ergon edit`, and `current` errors naming it. The keyword asks for the sprint
+  Jira marks active — which runs past its end date until someone completes it —
+  and the name now says so.
+- `--sprint active` no longer needs a `sprintBoardId` when a project has several
+  boards: it asks each scrum board, uses the active sprint they share, and
+  refuses, listing them, only when they disagree. PGR resolves without
+  configuration.
 - Added `ergon ls --order board`, the order the board shows: the active sprint,
   then each upcoming sprint in the board's sequence, then the backlog, in drag
   order within each. It lists the board's own issues, across every project on

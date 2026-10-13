@@ -1,11 +1,12 @@
 import { isDate } from "../dates.ts";
+import { isActiveSprintKeyword } from "../sprint.ts";
 import { isNoneValue } from "./new_fields.ts";
 
 /** Which Sprint a `--sprint` value asks for, before Jira has been consulted. */
 export type SprintTarget =
   | { kind: "none" }
   | { kind: "id"; id: number }
-  | { kind: "current" }
+  | { kind: "active" }
   | { kind: "name"; name: string };
 
 /** One field an invocation writes. A Description's value needs IO to settle. */
@@ -90,8 +91,7 @@ function parseSprint(value: string): SprintTarget {
 
   if (/^\d+$/.test(trimmed)) return { kind: "id", id: Number(trimmed) };
 
-  const keyword = trimmed.toLowerCase();
-  if (keyword === "current" || keyword === "active") return { kind: "current" };
+  if (isActiveSprintKeyword(trimmed)) return { kind: "active" };
 
   return { kind: "name", name: trimmed };
 }

@@ -12,6 +12,7 @@ import type {
 } from "../types.ts";
 import { loadConfig, requireDeclaredProject } from "../config.ts";
 import {
+  isActiveSprintKeyword,
   normalizeBoardId,
   requireSprintFieldId,
   resolveSprintId,
@@ -315,7 +316,7 @@ export function registerNewCommand(program: Command): void {
     )
     .option(
       "--sprint <sprint:string>",
-      "Sprint name or id; 'current' (or 'active') for the board's active sprint, 'none' to skip",
+      "Sprint name or id; 'active' for the board's active sprint, 'none' to skip",
     )
     .option("--no-cache", "Disable cached Jira metadata")
     .option(
@@ -521,25 +522,34 @@ export function registerNewCommand(program: Command): void {
       const sprintOverride = options.sprint;
       const sprintKeyword = sprintOverride?.trim().toLowerCase();
       const sprintNone = sprintKeyword === "none";
-      const sprintCurrent = sprintKeyword === "current" ||
-        sprintKeyword === "active";
+      const sprintActive = sprintOverride !== undefined &&
+        isActiveSprintKeyword(sprintOverride);
       const sprintIdOverride = parseSprintId(sprintOverride);
       const sprintNameOverride =
-        sprintOverride && !sprintIdOverride && !sprintNone && !sprintCurrent
+        sprintOverride && !sprintIdOverride && !sprintNone && !sprintActive
           ? sprintOverride
           : undefined;
       let sprintId = sprintIdOverride;
 
-      // Resolve a sprint when it isn't already a numeric id or an explicit
-      // 'none'. In non-interactive mode this only runs for --sprint by name or
-      // --sprint current/active (a plain absence leaves the sprint unset).
+      if (sprintActive) {
+        // Boards straight from Jira: the cached ones carry no board type.
+        sprintId = await resolveSprintId({
+          jira,
+          boards: await jira.listBoards(projectKey),
+          configuredBoardId: fieldDefaults?.sprintBoardId,
+        });
+      }
+
+      // Resolve a sprint when it isn't already settled. In non-interactive
+      // mode this only runs for --sprint by name (a plain absence leaves the
+      // sprint unset).
       if (
         !sprintId && !sprintNone &&
-        (interactive || sprintNameOverride || sprintCurrent)
+        (interactive || sprintNameOverride)
       ) {
         if (!interactive && sprintNameOverride) {
           throw new Error(
-            "Resolving --sprint by name needs interactive mode; pass a numeric sprint id or 'current'.",
+            "Resolving --sprint by name needs interactive mode; pass a numeric sprint id or 'active'.",
           );
         }
 
@@ -557,38 +567,21 @@ export function registerNewCommand(program: Command): void {
           }
         }
 
-        if (sprintCurrent) {
-          sprintId = await resolveSprintId({
-            jira,
-            boards: availableBoards,
-            configuredBoardId: fieldDefaults?.sprintBoardId,
-          });
+        const boardId = await promptSprintBoard(
+          availableBoards,
+          fieldDefaults?.sprintBoardId,
+        );
+
+        if (!boardId) {
+          if (sprintNameOverride) {
+            throw new Error("No board available to resolve the sprint.");
+          }
         } else {
-          if (
-            !interactive && !normalizeBoardId(fieldDefaults?.sprintBoardId) &&
-            availableBoards.length > 1
-          ) {
-            throw new Error(
-              "Multiple boards found; set a default sprintBoardId or pass a numeric --sprint id.",
-            );
-          }
-
-          const boardId = await promptSprintBoard(
-            availableBoards,
-            fieldDefaults?.sprintBoardId,
+          // Never cached: an active Sprint is a fact with a shelf life.
+          sprintId = await promptSprint(
+            await jira.listActiveSprints(boardId),
+            sprintNameOverride,
           );
-
-          if (!boardId) {
-            if (sprintNameOverride) {
-              throw new Error("No board available to resolve the sprint.");
-            }
-          } else {
-            // Never cached: an active Sprint is a fact with a shelf life.
-            sprintId = await promptSprint(
-              await jira.listActiveSprints(boardId),
-              sprintNameOverride,
-            );
-          }
         }
       }
 

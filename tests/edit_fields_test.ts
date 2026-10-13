@@ -35,7 +35,7 @@ Deno.test("naming no field opens the description, and decides later what to writ
 
 Deno.test("fields are planned in the receipt's order", () => {
   const plan = planEdit({
-    sprint: "current",
+    sprint: "active",
     due: "2026-09-20",
     summary: "Fix the redirect",
     description: "Body",
@@ -61,16 +61,24 @@ Deno.test("'none' takes an issue out of its sprint", () => {
   ]);
 });
 
-Deno.test("a sprint is named, numbered, or asked for as the current one", () => {
+Deno.test("a sprint is named, numbered, or asked for as the active one", () => {
   assertEquals(planEdit({ sprint: "1296" }).writes, [
     { field: "sprint", target: { kind: "id", id: 1296 } },
   ]);
-  assertEquals(planEdit({ sprint: "current" }).writes, [
-    { field: "sprint", target: { kind: "current" } },
+  assertEquals(planEdit({ sprint: "Active" }).writes, [
+    { field: "sprint", target: { kind: "active" } },
   ]);
   assertEquals(planEdit({ sprint: "Sep 14 - 19" }).writes, [
     { field: "sprint", target: { kind: "name", name: "Sep 14 - 19" } },
   ]);
+});
+
+Deno.test("'current' is refused, naming its replacement", () => {
+  assertThrows(
+    () => planEdit({ sprint: "current" }),
+    Error,
+    "--sprint current was renamed to 'active'",
+  );
 });
 
 Deno.test("a malformed due date is ergon's error, not Jira's", () => {

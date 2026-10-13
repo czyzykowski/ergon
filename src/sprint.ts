@@ -1,10 +1,11 @@
 /**
- * Which Sprint is current, resolved the same way for every command that writes
- * one — see [resolve-current-sprint.md](../specs/resolve-current-sprint.md).
+ * Which Sprint is the Active Sprint, resolved the same way for every command
+ * that writes one — see
+ * [resolve-current-sprint.md](../specs/resolve-current-sprint.md).
  *
- * Nothing here is cached. Which Sprint is active is a fact with a two-week
- * shelf life, and caching it once left `--sprint current` reporting a Sprint
- * that had closed months earlier.
+ * Nothing here is cached. Which Sprint is active is a fact with a one-week
+ * shelf life, and a remembered answer — a cache once, a copied id in a skill
+ * later — names a closed Sprint that Jira refuses to write to.
  */
 
 import type { JiraSprint } from "./api/jira.ts";
@@ -13,11 +14,28 @@ import type { JiraSprint } from "./api/jira.ts";
 export interface BoardRef {
   id: number;
   name?: string;
+  /** Jira's board type; only a scrum board has Sprints to ask about. */
+  type?: string;
 }
 
 /** The part of the Jira client this module needs, so a test can stand in. */
 export interface ActiveSprintSource {
   listActiveSprints(boardId: number): Promise<JiraSprint[]>;
+}
+
+/**
+ * Whether a `--sprint` value asks for the Active Sprint. `current` once did,
+ * and is refused by name so an old instruction fails with its fix rather than
+ * being taken for a Sprint's name.
+ */
+export function isActiveSprintKeyword(value: string): boolean {
+  const keyword = value.trim().toLowerCase();
+
+  if (keyword === "current") {
+    throw new Error("--sprint current was renamed to 'active'.");
+  }
+
+  return keyword === "active";
 }
 
 /** A board id as config may hold it: a number, or a string out of YAML. */
@@ -54,50 +72,67 @@ export function requireSprintFieldId(
 }
 
 /**
- * The board to resolve a Sprint from. A configured id wins outright — Jira is
- * the authority on whether it is usable — and a single board needs no
- * configuration. Anything else is an ambiguity ergon refuses rather than
- * guesses at, because a guess writes to another board's Sprint silently.
+ * The boards to ask for the Active Sprint. A configured id wins outright —
+ * Jira is the authority on whether it is usable. Otherwise every board that
+ * can hold a Sprint is asked, because boards sharing a Sprint share the answer
+ * and only a disagreement between them is an ambiguity.
  */
-export function selectSprintBoard(
+function boardsToAsk(
   boards: readonly BoardRef[],
   configuredBoardId?: number | string,
-): number {
+): BoardRef[] {
   const configured = normalizeBoardId(configuredBoardId);
   if (configured) {
-    return configured;
+    return [
+      boards.find((board) => board.id === configured) ?? { id: configured },
+    ];
   }
 
-  if (boards.length === 0) {
+  const candidates = boards.filter((board) =>
+    board.type === undefined || board.type === "scrum"
+  );
+  if (candidates.length === 0) {
     throw new Error("No board available to resolve the sprint.");
   }
 
-  if (boards.length > 1) {
-    throw new Error(
-      "Multiple boards found; set a default sprintBoardId or pass a numeric --sprint id.",
-    );
-  }
+  return candidates;
+}
 
-  return boards[0].id;
+function boardLabel(board: BoardRef): string {
+  return board.name ? `${board.name} (${board.id})` : `${board.id}`;
 }
 
 /**
- * The id of a board's Sprint, asked of Jira at the moment of the write: the
- * active one, or the one going by `name`. `listActiveSprints` filters
- * `state=active` server-side, so an answer is an active one by construction.
+ * The id of the Active Sprint, asked of Jira at the moment of the write: the
+ * one every candidate board agrees on, or the one going by `name`.
+ * `listActiveSprints` filters `state=active` server-side, so an answer is an
+ * active one by construction. Different answers from different boards are
+ * refused rather than chosen between, because a guess writes to another
+ * board's Sprint silently.
  */
 export async function resolveSprintId(input: {
   jira: ActiveSprintSource;
   boards: readonly BoardRef[];
   configuredBoardId?: number | string;
-  /** A Sprint to match by name among the active ones, instead of the first. */
+  /** A Sprint to match by name among the active ones, instead of the only one. */
   name?: string;
 }): Promise<number> {
-  const boardId = selectSprintBoard(input.boards, input.configuredBoardId);
-  const sprints = await input.jira.listActiveSprints(boardId);
+  const boards = boardsToAsk(input.boards, input.configuredBoardId);
+  const answers = await Promise.all(
+    boards.map((board) => input.jira.listActiveSprints(board.id)),
+  );
+
+  // Each Sprint once, on the first board that showed it.
+  const found = new Map<number, { sprint: JiraSprint; board: BoardRef }>();
+  boards.forEach((board, index) => {
+    for (const sprint of answers[index]) {
+      if (!found.has(sprint.id)) found.set(sprint.id, { sprint, board });
+    }
+  });
+  const sprints = [...found.values()];
 
   if (input.name !== undefined) {
-    const match = sprints.find((sprint) =>
+    const match = sprints.find(({ sprint }) =>
       sprint.name.toLowerCase() === input.name?.toLowerCase()
     );
 
@@ -105,19 +140,31 @@ export async function resolveSprintId(input: {
       throw new Error(`Active sprint "${input.name}" not found.`);
     }
 
-    return match.id;
+    return match.sprint.id;
   }
 
   if (sprints.length === 0) {
-    throw new Error("No active sprint found for the board.");
+    throw new Error(
+      `No active sprint on ${boards.map(boardLabel).join(", ")}.`,
+    );
   }
 
-  const sprint = sprints[0];
-  const board = input.boards.find((candidate) => candidate.id === boardId);
-  const boardLabel = board?.name ? `${board.name} (${boardId})` : `${boardId}`;
+  if (sprints.length > 1) {
+    const listed = sprints
+      .map(({ sprint, board }) =>
+        `${sprint.name} (${sprint.id}) on ${boardLabel(board)}`
+      )
+      .join(", ");
+    throw new Error(
+      `Several active sprints: ${listed}. Pass a numeric --sprint id, or set a default sprintBoardId.`,
+    );
+  }
 
+  const [{ sprint, board }] = sprints;
   console.error(
-    `Using active sprint: ${sprint.name} (${sprint.id}) from board ${boardLabel}`,
+    `Using active sprint: ${sprint.name} (${sprint.id}) from board ${
+      boardLabel(board)
+    }`,
   );
 
   return sprint.id;

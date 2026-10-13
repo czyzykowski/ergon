@@ -51,6 +51,14 @@ mirror of Parent, which is one slot and nothing more. ergon reports the history
 and leaves the reading of it to the caller, because "the" Sprint of an issue is
 a question only the caller can answer. _Avoid_: iteration, cycle, milestone
 
+**Active Sprint**: The Sprint Jira marks active, as Jira says at the moment it
+is asked — never a remembered answer, because it changes the moment someone
+completes the Sprint and a remembered one names a closed Sprint Jira refuses to
+write to. It is Jira's flag, not the calendar: it can run past its end date
+until someone completes it, and work written to it then carries over with the
+rest. Boards that share a Sprint share the answer, so it is one Active Sprint
+however many of a project's boards show it. _Avoid_: current sprint, this sprint
+
 **Rank**: The ordering set by dragging. A Rank is meaningful only within a board
 — dragging expresses how two issues on the same board compare and never how an
 issue on one board compares to an issue on another — so ordering by Rank across

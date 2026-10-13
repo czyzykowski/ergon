@@ -25,7 +25,7 @@ export function registerEditCommand(program: Command): void {
     )
     .option(
       "--sprint <sprint:string>",
-      "Sprint name or id; 'current' for the board's active sprint, 'none' to clear it",
+      "Sprint name or id; 'active' for the board's active sprint, 'none' to clear it",
     )
     .option("--force", "Overwrite a description ergon cannot round-trip")
     .action(async (options: EditOptions, issueKey?: string) => {

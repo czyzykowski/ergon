@@ -386,7 +386,7 @@ ergon edit PCK-12
 ergon edit PCK-12 --summary "Fix login redirect"
 ergon edit PCK-12 --due 2026-09-20
 ergon edit PCK-12 --due none
-ergon edit PCK-12 --sprint current
+ergon edit PCK-12 --sprint active
 ergon edit PCK-12 --sprint none
 ergon edit PCK-12 --description - <<'EOF'
 Steps to reproduce:
@@ -398,10 +398,14 @@ EOF
 - A field write never opens an editor, so it is safe to run unattended, and the
   receipt names what was sent: `Updated PCK-12 (due, sprint)`.
 - `--due` takes `YYYY-MM-DD`, or `none` to clear the date.
-- `--sprint` takes a sprint id, a sprint name, `current` for the board's active
-  sprint, or `none` to take the issue out of its sprint. `current` asks Jira at
-  the moment of the write, and refuses when the project has several boards and
-  no configured `sprintBoardId`.
+- `--sprint` takes a sprint id, a sprint name, `active` for the sprint Jira
+  marks active, or `none` to take the issue out of its sprint. `active` asks
+  Jira at the moment of the write, across every scrum board of the project:
+  boards sharing a sprint give one answer, and different active sprints on
+  different boards are refused, listed, rather than chosen between. It is Jira's
+  flag, not the calendar, so it stays on last week's sprint until someone
+  completes it. `current` is refused, naming `active`. The same holds for
+  `ergon new --sprint`.
 - `--description ""` clears the description. `none` is not a sentinel here: it
   would collide with a real description.
 - Descriptions are markdown. Markdown ergon cannot express — an image, raw HTML,
@@ -443,9 +447,10 @@ no default, so `ergon new` fails naming the key rather than writing to a guessed
 field ([ADR 0002](./docs/adr/0002-no-default-client-sow-field-id.md)). A project
 that never sets one needs no Client SOW configuration at all.
 
-`sprintBoardId` is the board the project lives on. It picks the sprint for
-`--sprint current` and is the board `ergon ls --order board` reads; projects
-sharing one board should name the same id.
+`sprintBoardId` is the board the project lives on. It is the board
+`ergon ls --order board` reads, and it settles `--sprint active` when the
+project's boards disagree about which sprint is active; projects sharing one
+board should name the same id.
 
 ## Checks
 

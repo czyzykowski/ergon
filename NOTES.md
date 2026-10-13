@@ -24,9 +24,28 @@
 - [x] Removing a worklog (`ergon unlog`)
 - [x] Rich text from a file or a pipe (`ergon new --description-file`)
 - [x] Board order (`ergon ls --order board`), replacing `--order rank`
+- [x] `--sprint active`, resolved across a project's boards, replacing
+      `--sprint current`
 
 ## Updates
 
+- `--sprint current` became `--sprint active` after writes failed on a closed
+  sprint. ergon's own lookup was already live; the closed id came from a copy
+  the `jira` skill kept for PGR, which had several boards and no
+  `sprintBoardId`. The fix removes the reason for the copy: every scrum board of
+  the project is asked, and boards sharing a sprint (26, 373 and 439 all show
+  the PCK/PGR sprint) give one answer. Kanban boards are skipped by `type`,
+  because Jira answers a sprint request on one with an error.
+- The Monday gap is deliberately left alone. Board 26's sprint ends Monday 04:00
+  UTC but is completed around 20:48 UTC, so Jira's active sprint is last week's
+  for a whole European working day. A calendar rule ("the sprint whose dates
+  cover now") was considered and dropped: during the gap last week's sprint is
+  still open, a write to it succeeds, and completing it carries unfinished
+  issues into the new one. Only a closed sprint fails, and nothing ergon reads
+  live can name one.
+- `ergon new --sprint active` reads the project's boards from Jira, not the
+  board cache: the cache holds no board type. The interactive board prompt and
+  `--sprint <name>` still use the cache.
 - Board order replaces raw Rank (ADR 0013, superseding 0009). Facts found on the
   way: PGR has no board of its own and lives on the Unified Client Board (26)
   with PCK and ~15 other projects; PCK's own board (373) shows only sprints
