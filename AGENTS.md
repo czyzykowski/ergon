@@ -40,14 +40,13 @@ rules for every change you make.
   on `PATH` actually runs:
   `deno compile --allow-net --allow-read --allow-env --allow-write --allow-run -o ~/.local/bin/ergon src/main.ts`.
 
-### Test
+### Check
 
-- Add once tests exist: `deno test`.
-
-### Lint / Format
-
-- Format: `deno fmt`.
-- Lint: `deno lint`.
+- `deno task check` runs format check, lint, type check and tests; the
+  pre-commit hook in `.githooks/` runs it too, once a clone has run
+  `git config core.hooksPath .githooks`. Fix formatting with `deno fmt`.
+- Run tests through `deno task test`: plain `deno test` lacks the permissions
+  the config tests need.
 
 ## Code Style Guidelines
 

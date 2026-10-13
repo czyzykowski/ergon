@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- Added `deno task check` (format check, lint, type check, tests) and a
+  pre-commit hook in `.githooks/` that runs it.
 - **Breaking**: `--sprint current` is now `--sprint active`, on `ergon new` and
   `ergon edit`, and `current` errors naming it. The keyword asks for the sprint
   Jira marks active — which runs past its end date until someone completes it —
