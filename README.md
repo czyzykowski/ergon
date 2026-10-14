@@ -155,8 +155,10 @@ the intended way for an agent to find out what an issue asks for:
   `ergon edit --description` is written as flat paragraphs, so a real list
   becomes text shaped like one. Read with `get`, write with the source text.
 
-The human-readable `ergon get` output does not print the body, but does list
-links:
+The human-readable `ergon get` output lists the fields and links, then prints
+the body below a blank line — the same markdown as `description`, unindented so
+it copies out intact. An issue with no body ends at its fields, and a
+`degraded:` line names what `descriptionDegraded` would:
 
 ```
 PCK-12 [In Progress] Fix login redirect
@@ -166,6 +168,9 @@ PCK-12 [In Progress] Fix login redirect
   links:
     is blocked by PCK-9 [Done] Pin the runner image
     relates to PCK-31 [To Do] Audit CI secrets
+
+- reproduce on staging
+- check the 302 target
 ```
 
 ### Listing issues

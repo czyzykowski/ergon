@@ -26,9 +26,18 @@
 - [x] Board order (`ergon ls --order board`), replacing `--order rank`
 - [x] `--sprint active`, resolved across a project's boards, replacing
       `--sprint current`
+- [x] Reading an issue's description in plain `ergon get`
 
 ## Updates
 
+- Plain `ergon get` prints the Description whole, last, unindented and
+  unlabelled, rather than a length with a pointer to `--json`: plain output is
+  for people, and the body is the part of an issue they read. It is the raw
+  markdown `--json` carries, not terminal-rendered, so the two never disagree.
+  Unlike `ergon comments`, which indents each body to separate one from the
+  next, a single body has nothing to be told apart from, and indenting it would
+  corrupt its code blocks and nested lists when copied out. A Degraded body is
+  named in a `degraded:` header field, ahead of the text it qualifies.
 - `--sprint current` became `--sprint active` after writes failed on a closed
   sprint. ergon's own lookup was already live; the closed id came from a copy
   the `jira` skill kept for PGR, which had several boards and no

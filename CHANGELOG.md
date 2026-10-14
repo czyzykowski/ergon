@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- `ergon get` now prints the issue's Description, as markdown below the fields,
+  and names a Degraded body with a `degraded:` field. It was only readable
+  through `--json` before.
 - Added `deno task check` (format check, lint, type check, tests) and a
   pre-commit hook in `.githooks/` that runs it.
 - **Breaking**: `--sprint current` is now `--sprint active`, on `ergon new` and
