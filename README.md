@@ -151,9 +151,6 @@ the intended way for an agent to find out what an issue asks for:
   none for a project config has never heard of. `null` always means ergon looked
   and Jira had nothing
   ([ADR 0006](./docs/adr/0006-absent-means-not-fetched.md)).
-- The rendering is one-way: text read here and passed back to
-  `ergon edit --description` is written as flat paragraphs, so a real list
-  becomes text shaped like one. Read with `get`, write with the source text.
 
 The human-readable `ergon get` output lists the fields and links, then prints
 the body below a blank line — the same markdown as `description`, unindented so
