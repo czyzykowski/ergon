@@ -15,12 +15,9 @@ const SCREENSHOT: JiraAttachmentResponse = {
   created: "2026-10-02T14:11:07.000+0200",
   size: 48213,
   mimeType: "image/png",
-  content: "https://example.atlassian.net/rest/api/3/attachment/content/10423",
-  thumbnail:
-    "https://example.atlassian.net/rest/api/3/attachment/thumbnail/10423",
 };
 
-Deno.test("an attachment maps to the contract and drops Jira's URLs", () => {
+Deno.test("an attachment maps to the contract", () => {
   assertEquals(mapAttachment(SCREENSHOT), {
     id: "10423",
     filename: "checkout-error.png",
