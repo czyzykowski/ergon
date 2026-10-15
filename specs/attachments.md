@@ -195,8 +195,9 @@ A bare array, one object per selected Attachment, oldest first:
 
 ## Testing Decisions
 
-- Tests exercise behavior through three pure seams and nothing else. They never
-  stub `fetch` or touch the filesystem, which matches the existing suite.
+- Tests exercise behavior through three pure seams. They never stub `fetch` or
+  touch the filesystem, which matches the existing suite. (Review added a
+  fourth; see Outcome.)
 - **`mapAttachment`**: a full payload maps to the contract. A hidden author
   makes `author` Absent, not `null` or empty. `path` is never set by the mapper.
 - **`selectAttachments`**, the new seam that carries most of the decisions:
@@ -250,3 +251,48 @@ A bare array, one object per selected Attachment, oldest first:
   list-then-download-by-id flow and the filename match against Degraded
   Descriptions.
 - Update `CHANGELOG.md`, `README.md` and `NOTES.md` when implementing.
+
+## Outcome
+
+Implemented in `38ada5d` (listing), `b1a8599` (narrowing by id) and `a29cc1e`
+(download). After code review, `4227110`, `d8ca6c7`, `42d7b08`, `cbdcafd`,
+`d056f6d` and `c12b849` fixed what it raised. 263 tests pass, and
+`deno task check` is clean.
+
+### Done differently
+
+- **The download loop is tested.** Testing Decisions planned three pure seams
+  and a hand check for the IO. Review cited AGENTS.md ("use temp directories for
+  filesystem tests") and the loop gained a fourth seam,
+  `downloadAttachments(downloads, fetchBytes)`. It takes rows typed to carry a
+  `path` and an injected downloader, and its tests run in a temp directory.
+  `fetch` is still never stubbed.
+- **Names are also shortened and stripped of control characters.** `<id>-<name>`
+  is held to 200 UTF-8 bytes, keeping the extension and never splitting a
+  character. Control characters are removed. Both went beyond the spec's
+  sanitizing rule after review found that an over-long name or a NUL stopped the
+  whole run partway through.
+- **`--download ""` is refused by cliffy** while it parses the command line, so
+  ergon needs no guard of its own. A test pins this.
+- **The timestamp slice** moved to its own module, shared by `comments` and
+  `attachments`, instead of `attachments` importing it from `comments`.
+
+### Redirect
+
+Jira's content endpoint answers `303` to Atlassian's media host, with a token in
+the URL, so fetch dropping `Authorization` on that hop does no harm. NOTES.md
+has the details.
+
+### Still standing
+
+- The plain listing prints Jira's raw `filename`, so a name holding control
+  characters can still put escape sequences on the terminal. Only the path on
+  disk is cleaned.
+- A hidden author is Absent and an Attachment not downloaded has no `path`.
+  Neither strictly matches the glossary's **Absent** ("a field ergon did not
+  fetch"), and `mapComment` still maps a hidden author to `""`. Whether to widen
+  the term is open.
+- `mapAttachment` defaults fields Jira omits (`size ?? 0` and the like) instead
+  of reporting them Absent.
+- A download holds the whole file in memory. Streaming would only matter for
+  very large Attachments.
