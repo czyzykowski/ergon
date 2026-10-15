@@ -2,6 +2,7 @@ import { renderAdf, toAdf } from "../adf.ts";
 import type { BoardConfiguration } from "../board_order.ts";
 import { type JiraIssueLink, renderLinks } from "../links.ts";
 import type {
+  Attachment,
   IssueSprint,
   JiraComment,
   JiraConfig,
@@ -133,6 +134,21 @@ export interface JiraLabelResponse {
   maxResults?: number;
   isLast?: boolean;
   total?: number;
+}
+
+/** One element of an issue's `attachment` field, as the v3 API returns it. */
+export interface JiraAttachmentResponse {
+  id: string;
+  filename?: string;
+  /** Absent when profile visibility hides the author, which Jira permits. */
+  author?: { displayName?: string };
+  created?: string;
+  size?: number;
+  mimeType?: string;
+  /** Needs ergon's credentials to fetch, so never handed out. */
+  content?: string;
+  /** Needs ergon's credentials to fetch, so never handed out. */
+  thumbnail?: string;
 }
 
 /** One element of Jira's comment payload, as the v3 API returns it. */
@@ -533,6 +549,19 @@ export class JiraClient {
     return comments;
   }
 
+  /**
+   * Every Attachment on the issue, in Jira's order (oldest first). Jira holds
+   * Comment attachments on the issue too, so this is all of them.
+   */
+  async listAttachments(issueKey: string): Promise<Attachment[]> {
+    const fields = await this.getIssueFields(issueKey, ["attachment"]);
+    const attachments = fields.attachment as
+      | JiraAttachmentResponse[]
+      | undefined;
+
+    return (attachments ?? []).map(mapAttachment);
+  }
+
   /** Append a Comment. Jira returns the Comment it created, id and all. */
   async addComment(
     issueKey: string,
@@ -855,6 +884,27 @@ export function mapComment(comment: JiraCommentResponse): JiraComment {
       value: comment.visibility.value,
     };
   }
+
+  return mapped;
+}
+
+/**
+ * An Attachment as ergon hands it out, and the `ergon attachments --json`
+ * contract. Jira's content and thumbnail URLs are dropped: both need ergon's
+ * credentials, so a reader could not use them.
+ */
+export function mapAttachment(attachment: JiraAttachmentResponse): Attachment {
+  const mapped: Attachment = {
+    id: attachment.id,
+    filename: attachment.filename ?? "",
+    mimeType: attachment.mimeType ?? "",
+    size: attachment.size ?? 0,
+    created: attachment.created ?? "",
+  };
+
+  // Absent rather than empty, so a hidden author never reads as a real one.
+  const author = attachment.author?.displayName;
+  if (author) mapped.author = author;
 
   return mapped;
 }

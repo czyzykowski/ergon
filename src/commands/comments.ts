@@ -76,6 +76,6 @@ function indent(body: string): string {
  * timestamp already carries the offset it was written at, so reading it back
  * as a Date would only re-render it in whatever zone the terminal is in.
  */
-function timestamp(value: string): string {
+export function timestamp(value: string): string {
   return `${value.slice(0, 10)} ${value.slice(11, 16)}`.trim();
 }
