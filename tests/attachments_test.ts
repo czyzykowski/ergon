@@ -1,9 +1,11 @@
 import { join } from "path/mod.ts";
+import { Command } from "cliffy/command/mod.ts";
 import { assertEquals, assertRejects, assertThrows } from "testing/asserts.ts";
 import { mapAttachment } from "../src/api/jira.ts";
 import type { JiraAttachmentResponse } from "../src/api/jira.ts";
 import {
   downloadAttachments,
+  registerAttachmentsCommand,
   renderAttachments,
   selectAttachments,
 } from "../src/commands/attachments.ts";
@@ -344,4 +346,17 @@ Deno.test("a failed download leaves nothing under its name, temp or final", asyn
 
     assertEquals(await entriesOf(dir), ["10423-checkout-error.png"]);
   });
+});
+
+Deno.test("an empty --download dir is refused before Jira is asked anything", async () => {
+  // Cliffy refuses an empty value while parsing, so the action, and with it
+  // the config, Jira and the filesystem, is never reached.
+  const program = new Command().throwErrors();
+  registerAttachmentsCommand(program);
+
+  await assertRejects(
+    () => program.parse(["attachments", "PGR-1864", "--download", ""]),
+    Error,
+    `Missing value for option "--download".`,
+  );
 });
