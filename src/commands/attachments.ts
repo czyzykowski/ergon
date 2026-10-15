@@ -155,8 +155,56 @@ export function selectAttachments(
 
   return selected.map((attachment) => ({
     ...attachment,
-    path: resolve(dir, `${attachment.id}-${safeName(attachment.filename)}`),
+    path: resolve(dir, fileName(attachment)),
   }));
+}
+
+/**
+ * Most filesystems cap a file name at 255 bytes. Holding `<id>-<name>` to 200
+ * leaves room for the temp suffix a download adds, with margin to spare.
+ */
+const MAX_FILE_NAME_BYTES = 200;
+
+/** `<id>-<safe name>`, cut to fit within `MAX_FILE_NAME_BYTES`. */
+function fileName(attachment: Attachment): string {
+  const prefix = `${attachment.id}-`;
+  const name = safeName(attachment.filename);
+
+  return prefix + fitName(name, MAX_FILE_NAME_BYTES - byteLength(prefix));
+}
+
+/**
+ * `name` cut to `budget` UTF-8 bytes, keeping its extension so the file still
+ * opens as what it is. Only the stem is cut, and only on a character boundary.
+ * A suffix too long to be an extension is treated as part of the stem.
+ */
+function fitName(name: string, budget: number): string {
+  if (byteLength(name) <= budget) return name;
+
+  const dot = name.lastIndexOf(".");
+  const suffix = dot > 0 ? name.slice(dot) : "";
+  const extension = byteLength(suffix) <= budget / 2 ? suffix : "";
+  const stem = name.slice(0, name.length - extension.length);
+
+  return cutToBytes(stem, budget - byteLength(extension)) + extension;
+}
+
+/** The longest prefix of `text` that fits in `budget` UTF-8 bytes. */
+function cutToBytes(text: string, budget: number): string {
+  let cut = "";
+  let used = 0;
+
+  for (const char of text) {
+    used += byteLength(char);
+    if (used > budget) break;
+    cut += char;
+  }
+
+  return cut;
+}
+
+function byteLength(text: string): number {
+  return new TextEncoder().encode(text).length;
 }
 
 /**

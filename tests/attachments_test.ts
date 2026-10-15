@@ -228,6 +228,42 @@ Deno.test("a relative dir still gives an absolute path", () => {
   assertEquals(row.path, join(Deno.cwd(), "att", "10423-checkout-error.png"));
 });
 
+const byteLength = (text: string) => new TextEncoder().encode(text).length;
+
+/** The file name `filename` downloads to, as attachment 10423. */
+const downloadName = (filename: string) =>
+  selectAttachments([mapAttachment({ ...SCREENSHOT, filename })], [], "/att")[0]
+    .path.slice("/att/".length);
+
+Deno.test("a long filename is cut to 200 bytes, keeping its id and extension", () => {
+  const name = downloadName(`${"a".repeat(300)}.png`);
+
+  assertEquals(name, `10423-${"a".repeat(190)}.png`);
+  assertEquals(byteLength(name), 200);
+});
+
+Deno.test("cutting counts UTF-8 bytes, not characters", () => {
+  // Each "ż" is two bytes, so the 190 bytes left for the stem hold 95.
+  assertEquals(
+    downloadName(`${"ż".repeat(300)}.png`),
+    `10423-${"ż".repeat(95)}.png`,
+  );
+});
+
+Deno.test("a character that would straddle the cut is dropped whole", () => {
+  // 189 one-byte characters leave one byte, too few for the four-byte emoji.
+  assertEquals(
+    downloadName(`${"a".repeat(189)}😀${"b".repeat(50)}.png`),
+    `10423-${"a".repeat(189)}.png`,
+  );
+});
+
+Deno.test("a filename that fits is left whole", () => {
+  const filename = `${"a".repeat(190)}.png`;
+
+  assertEquals(downloadName(filename), `10423-${filename}`);
+});
+
 const BYTES: Record<string, Uint8Array> = {
   "10423": new TextEncoder().encode("png bytes"),
   "10424": new TextEncoder().encode("log bytes"),
