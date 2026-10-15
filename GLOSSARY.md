@@ -59,6 +59,12 @@ until someone completes it, and work written to it then carries over with the
 rest. Boards that share a Sprint share the answer, so it is one Active Sprint
 however many of a project's boards show it. _Avoid_: current sprint, this sprint
 
+**Open Sprint**: A Sprint that is active or future — anything Jira has not
+closed. It is the set a Sprint can still be written to, and the set Board order
+groups by. Like the Active Sprint it is asked of Jira every time and never
+remembered. A closed Sprint still appears in an issue's history, but it is never
+open again. _Avoid_: current sprints, upcoming sprints, unfinished sprints
+
 **Rank**: The ordering set by dragging. A Rank is meaningful only within a board
 — dragging expresses how two issues on the same board compare and never how an
 issue on one board compares to an issue on another — so ordering by Rank across
@@ -79,8 +85,8 @@ means by priority: the active Sprint first, then each upcoming Sprint in turn,
 then everything in no Sprint, with Rank deciding only within each of those
 groups. A highly ranked issue in no Sprint still comes after the least ranked
 issue in the active one. Board order follows the board in what it holds as well
-as how it sorts: every issue in an open Sprint, whatever its status, but a Done
-issue in no open Sprint is off the board and so out of Board order. Sprints are
+as how it sorts: every issue in an Open Sprint, whatever its status, but a Done
+issue in no Open Sprint is off the board and so out of Board order. Sprints are
 taken in the board's own sequence, whatever their names suggest — a Sprint used
 as a parking place is still a Sprint. The Jira Priority field is read and
 reported but never ordered by. _Avoid_: rank order, backlog order, priority
