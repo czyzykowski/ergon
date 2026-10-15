@@ -15,6 +15,7 @@ import { registerNewCommand } from "./commands/new.ts";
 import { registerMoveCommand } from "./commands/move.ts";
 import { registerOpenCommand } from "./commands/open.ts";
 import { registerSearchCommand } from "./commands/search.ts";
+import { registerSprintsCommand } from "./commands/sprints.ts";
 import { registerStartCommand } from "./commands/start.ts";
 import { registerStatusCommand } from "./commands/status.ts";
 import { registerStopCommand } from "./commands/stop.ts";
@@ -40,6 +41,7 @@ export function buildCommand(): Command {
   registerGetCommand(program);
   registerLabelsCommand(program);
   registerClientSowsCommand(program);
+  registerSprintsCommand(program);
   registerCommentCommand(program);
   registerCommentsCommand(program);
   registerAttachmentsCommand(program);

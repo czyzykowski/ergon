@@ -8,7 +8,7 @@
  * later — names a closed Sprint that Jira refuses to write to.
  */
 
-import type { JiraSprint } from "./api/jira.ts";
+import type { JiraBoard, JiraSprint } from "./api/jira.ts";
 
 /** Enough of a board to choose between boards and name the one chosen. */
 export interface BoardRef {
@@ -21,6 +21,31 @@ export interface BoardRef {
 /** The part of the Jira client this module needs, so a test can stand in. */
 export interface ActiveSprintSource {
   listActiveSprints(boardId: number): Promise<JiraSprint[]>;
+}
+
+/** The part of the Jira client `listOpenSprints` needs. */
+export interface OpenSprintSource {
+  listOpenSprints(boardId: number): Promise<JiraSprint[]>;
+}
+
+/** An Open Sprint as `ergon sprints` reports it, once however many boards show it. */
+export interface OpenSprint {
+  id: number;
+  name: string;
+  state: "active" | "future";
+  /** Null where Jira has no date: fetched and found empty, not Absent. */
+  startDate: string | null;
+  endDate: string | null;
+  /** The boards showing it, in the order the project's boards were listed. */
+  boards: { id: number; name: string }[];
+}
+
+/**
+ * Where a caller stuck on `--sprint` can see what it accepts. Until a future
+ * Sprint can be named, its id is the only way to write it.
+ */
+export function sprintsHint(projectKey: string): string {
+  return `Run 'ergon sprints ${projectKey}' to see open sprint ids.`;
 }
 
 /**
@@ -88,9 +113,7 @@ function boardsToAsk(
     ];
   }
 
-  const candidates = boards.filter((board) =>
-    board.type === undefined || board.type === "scrum"
-  );
+  const candidates = boards.filter(holdsSprints);
   if (candidates.length === 0) {
     throw new Error("No board available to resolve the sprint.");
   }
@@ -98,7 +121,75 @@ function boardsToAsk(
   return candidates;
 }
 
-function boardLabel(board: BoardRef): string {
+/**
+ * Whether a board can hold a Sprint. A board of unknown type is given the
+ * benefit of the doubt; a kanban board is not asked, because Jira answers a
+ * Sprint request on one with an error.
+ */
+function holdsSprints(board: BoardRef): boolean {
+  return board.type === undefined || board.type === "scrum";
+}
+
+/**
+ * The project's boards that can hold a Sprint. None at all is an error rather
+ * than an empty answer: "this project never has Sprints" is not "nothing is
+ * planned right now".
+ */
+export function scrumBoards(
+  boards: readonly JiraBoard[],
+  projectKey: string,
+): JiraBoard[] {
+  const candidates = boards.filter(holdsSprints);
+  if (candidates.length === 0) {
+    throw new Error(`No scrum board on ${projectKey}; it has no sprints.`);
+  }
+
+  return candidates;
+}
+
+/**
+ * Every Open Sprint the boards show, each once. Active Sprints lead, then
+ * future ones; within each, a Sprint stands where it first appears, walking
+ * the boards in order — so one board, or boards sharing their Sprints, read in
+ * the board's own sequence.
+ */
+export async function listOpenSprints(input: {
+  jira: OpenSprintSource;
+  boards: readonly JiraBoard[];
+}): Promise<OpenSprint[]> {
+  const answers = await Promise.all(
+    input.boards.map((board) => input.jira.listOpenSprints(board.id)),
+  );
+
+  const found = new Map<number, OpenSprint>();
+  input.boards.forEach((board, index) => {
+    for (const sprint of answers[index]) {
+      const known = found.get(sprint.id);
+      if (known) {
+        known.boards.push({ id: board.id, name: board.name });
+        continue;
+      }
+
+      found.set(sprint.id, {
+        id: sprint.id,
+        name: sprint.name,
+        // Only active and future were asked for, so what is not one is the other.
+        state: sprint.state === "active" ? "active" : "future",
+        startDate: sprint.startDate ?? null,
+        endDate: sprint.endDate ?? null,
+        boards: [{ id: board.id, name: board.name }],
+      });
+    }
+  });
+
+  const sprints = [...found.values()];
+  return [
+    ...sprints.filter((sprint) => sprint.state === "active"),
+    ...sprints.filter((sprint) => sprint.state === "future"),
+  ];
+}
+
+export function boardLabel(board: BoardRef): string {
   return board.name ? `${board.name} (${board.id})` : `${board.id}`;
 }
 
@@ -111,6 +202,8 @@ function boardLabel(board: BoardRef): string {
  * board's Sprint silently.
  */
 export async function resolveSprintId(input: {
+  /** The project being written, named in the hint a refusal ends with. */
+  projectKey: string;
   jira: ActiveSprintSource;
   boards: readonly BoardRef[];
   configuredBoardId?: number | string;
@@ -137,7 +230,11 @@ export async function resolveSprintId(input: {
     );
 
     if (!match) {
-      throw new Error(`Active sprint "${input.name}" not found.`);
+      throw new Error(
+        `Active sprint "${input.name}" not found. ${
+          sprintsHint(input.projectKey)
+        }`,
+      );
     }
 
     return match.sprint.id;
@@ -156,7 +253,8 @@ export async function resolveSprintId(input: {
       )
       .join(", ");
     throw new Error(
-      `Several active sprints: ${listed}. Pass a numeric --sprint id, or set a default sprintBoardId.`,
+      `Several active sprints: ${listed}. Pass a numeric --sprint id, or ` +
+        `set a default sprintBoardId. ${sprintsHint(input.projectKey)}`,
     );
   }
 

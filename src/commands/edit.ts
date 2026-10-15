@@ -25,7 +25,7 @@ export function registerEditCommand(program: Command): void {
     )
     .option(
       "--sprint <sprint:string>",
-      "Sprint name or id; 'active' for the board's active sprint, 'none' to clear it",
+      "Sprint id, or an active sprint's name ('ergon sprints <project>' lists them); 'active' for the active sprint, 'none' to clear it",
     )
     .option("--force", "Overwrite a description ergon cannot round-trip")
     .action(async (options: EditOptions, issueKey?: string) => {
@@ -162,6 +162,7 @@ async function resolveSprint(
   if (target.kind === "id") return target.id;
 
   return await resolveSprintId({
+    projectKey,
     jira,
     boards: await jira.listBoards(projectKey),
     configuredBoardId: fieldDefaults?.sprintBoardId,

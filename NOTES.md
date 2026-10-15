@@ -30,8 +30,21 @@
 - [x] Listing an issue's Attachments (`ergon attachments`)
 - [x] Selecting Attachments by id (`ergon attachments KEY ID...`)
 - [x] Downloading Attachments (`ergon attachments ... --download <dir>`)
+- [x] Listing a project's Open Sprints (`ergon sprints`)
+- [ ] `--sprint <name>` matching future Sprints, on `edit` and on `new` in both
+      modes, through `listOpenSprints`
 
 ## Updates
+
+- `ergon sprints` ignores `sprintBoardId` on purpose, unlike `--sprint active`:
+  it reports what exists, and a numeric `--sprint` writes regardless of board
+  config. Against PCK it lists seven Open Sprints over boards 439, 373 and 26,
+  parking-place Sprints included; their future sequence follows board 439
+  because Jira lists that board first. Jira caps Sprint names at 30 characters
+  (`Estimated but not yet in a Spr` is stored that way).
+- Found while designing it: `--sprint <name>` only ever matches active Sprints,
+  and `ergon new` refuses names when Non-interactive, so an upcoming Sprint is
+  writable only by id. Left for a follow-up (see Progress).
 
 - Attachment content redirects off Jira, checked on PGR-1864 (44624, a 586 KB
   PNG). `GET /rest/api/3/attachment/content/{id}` with Basic auth answers `303`

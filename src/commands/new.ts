@@ -16,6 +16,7 @@ import {
   normalizeBoardId,
   requireSprintFieldId,
   resolveSprintId,
+  sprintsHint,
 } from "../sprint.ts";
 import { loadState, saveState } from "../state.ts";
 import {
@@ -216,6 +217,7 @@ async function promptSprintBoard(
 }
 
 async function promptSprint(
+  projectKey: string,
   sprints: JiraSprint[],
   sprintName?: string,
 ): Promise<number | undefined> {
@@ -233,7 +235,9 @@ async function promptSprint(
     );
 
     if (!match) {
-      throw new Error(`Active sprint "${sprintName}" not found.`);
+      throw new Error(
+        `Active sprint "${sprintName}" not found. ${sprintsHint(projectKey)}`,
+      );
     }
 
     return match.id;
@@ -316,7 +320,7 @@ export function registerNewCommand(program: Command): void {
     )
     .option(
       "--sprint <sprint:string>",
-      "Sprint name or id; 'active' for the board's active sprint, 'none' to skip",
+      "Sprint id, or an active sprint's name ('ergon sprints <project>' lists them); 'active' for the active sprint, 'none' to skip",
     )
     .option("--no-cache", "Disable cached Jira metadata")
     .option(
@@ -534,6 +538,7 @@ export function registerNewCommand(program: Command): void {
       if (sprintActive) {
         // Boards straight from Jira: the cached ones carry no board type.
         sprintId = await resolveSprintId({
+          projectKey,
           jira,
           boards: await jira.listBoards(projectKey),
           configuredBoardId: fieldDefaults?.sprintBoardId,
@@ -579,6 +584,7 @@ export function registerNewCommand(program: Command): void {
         } else {
           // Never cached: an active Sprint is a fact with a shelf life.
           sprintId = await promptSprint(
+            projectKey,
             await jira.listActiveSprints(boardId),
             sprintNameOverride,
           );

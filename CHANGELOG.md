@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- Added `ergon sprints <PROJECT>`, which lists the project's open sprints —
+  active first, then upcoming in board order — each once with the boards that
+  show it, asked of Jira every run. `--json` gives
+  `[{ id, name, state, startDate, endDate, boards: [{ id, name }] }]`, dates as
+  ISO instants or `null`. A project with no scrum board errors; one with nothing
+  planned lists nothing.
+- `--sprint` help on `ergon new` and `ergon edit`, and the "Active sprint not
+  found" and "Several active sprints" errors, now point at `ergon sprints`. A
+  name is still matched among active sprints only; an upcoming sprint is written
+  by id.
+
 - `ergon comments --json` (and `ergon comment --json`) leave `author` out when
   Jira hides it, instead of giving `""`, matching `ergon attachments`. A hidden
   author is Absent: ergon does not know the name, which is not the same as there

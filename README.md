@@ -23,12 +23,29 @@ Before scripting `ergon new`, list what Jira will accept:
 ```
 ergon labels [--filter <substring>] [--json]
 ergon client-sows <PROJECT> [--json]
+ergon sprints <PROJECT> [--json]
 ```
 
-Both always query Jira rather than the metadata cache, so they report what is
-valid now. `--json` gives labels as `["a", "b"]` and Client SOWs as
+All three always query Jira rather than the metadata cache, so they report what
+is valid now. `--json` gives labels as `["a", "b"]` and Client SOWs as
 `[{"id": "...", "value": "..."}]`; `ergon new --client-sow` accepts either the
 id or the value.
+
+`ergon sprints` lists the project's open sprints — the active one first, then
+the upcoming ones in board order — each once, with the boards that show it:
+
+```
+ID    STATE   NAME          START       END         BOARDS
+1329  active  Oct 12 - 16   2026-10-12  2026-10-19  PCK Sprint Board (373), Unified Client Board (26)
+1330  future  Oct 19 - 23   2026-10-19  2026-10-26  Unified Client Board (26)
+```
+
+`--json` gives
+`[{"id", "name", "state", "startDate", "endDate", "boards":
+[{"id", "name"}]}]`,
+with dates as Jira's ISO instants or `null`. `--sprint` accepts any of these
+ids; a name is matched among active sprints only, so an upcoming sprint is
+written by its id.
 
 ### Scripted creation
 

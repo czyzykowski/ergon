@@ -116,6 +116,9 @@ export interface JiraSprint {
   id: number;
   name: string;
   state?: string;
+  /** ISO instants; Jira gives none to a Sprint nobody has started. */
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface JiraSprintResponse {
@@ -379,12 +382,11 @@ export class JiraClient {
   }
 
   /**
-   * The board's active and future Sprint ids. Jira returns them active first,
-   * then future in the board's own sequence, which is the order Board order
-   * groups by.
+   * The board's Open Sprints. Jira returns them active first, then future in
+   * the board's own sequence, which is the order Board order groups by.
    */
-  async listOpenSprintIds(boardId: number): Promise<number[]> {
-    const ids: number[] = [];
+  async listOpenSprints(boardId: number): Promise<JiraSprint[]> {
+    const sprints: JiraSprint[] = [];
     let startAt = 0;
 
     while (true) {
@@ -398,13 +400,18 @@ export class JiraClient {
       );
 
       const page = response.values ?? [];
-      ids.push(...page.map((sprint) => sprint.id));
+      sprints.push(...page);
 
       if (response.isLast !== false || page.length === 0) break;
       startAt += page.length;
     }
 
-    return ids;
+    return sprints;
+  }
+
+  /** The board's Open Sprint ids, in the order `listOpenSprints` gives them. */
+  async listOpenSprintIds(boardId: number): Promise<number[]> {
+    return (await this.listOpenSprints(boardId)).map((sprint) => sprint.id);
   }
 
   /** The board's filter, and whether dragging orders it at all. */

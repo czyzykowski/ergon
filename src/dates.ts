@@ -11,10 +11,14 @@ export function isDate(value: string): boolean {
 
 /** Today in the operator's own timezone, which is the day they mean. */
 export function today(): string {
-  const now = new Date();
+  return localDay(new Date());
+}
+
+/** The day an instant falls on in the operator's own timezone. */
+export function localDay(instant: Date): string {
   const pad = (value: number): string => String(value).padStart(2, "0");
 
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${
-    pad(now.getDate())
+  return `${instant.getFullYear()}-${pad(instant.getMonth() + 1)}-${
+    pad(instant.getDate())
   }`;
 }
