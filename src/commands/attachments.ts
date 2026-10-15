@@ -1,4 +1,4 @@
-import { resolve } from "path/mod.ts";
+import { dirname, resolve } from "path/mod.ts";
 import type { Command } from "cliffy/command/mod.ts";
 import { JiraClient } from "../api/jira.ts";
 import { loadConfig } from "../config.ts";
@@ -36,14 +36,18 @@ export function registerAttachmentsCommand(program: Command): void {
       }
 
       const jira = new JiraClient(config.jira, config.defaults?.projects);
-      const attachments = selectAttachments(
-        await jira.listAttachments(key),
-        ids,
-        options.download,
-      );
+      const attached = await jira.listAttachments(key);
+      let attachments: Attachment[];
 
-      if (options.download !== undefined) {
-        await downloadAll(jira, options.download, attachments);
+      if (options.download === undefined) {
+        attachments = selectAttachments(attached, ids);
+      } else {
+        const downloads = selectAttachments(attached, ids, options.download);
+        await downloadAttachments(
+          downloads,
+          (id) => jira.downloadAttachment(id),
+        );
+        attachments = downloads;
       }
 
       if (options.json) {
@@ -55,22 +59,23 @@ export function registerAttachmentsCommand(program: Command): void {
     });
 }
 
-/**
- * One at a time, each through a temp file in `dir` renamed into place, so a run
- * that dies midway never leaves a truncated file under a final name. An
- * existing file is overwritten: an Attachment never changes, so a re-run is
- * idempotent and repairs an earlier partial one.
- */
-async function downloadAll(
-  jira: JiraClient,
-  dir: string,
-  attachments: Attachment[],
-): Promise<void> {
-  await Deno.mkdir(dir, { recursive: true });
+/** An Attachment selected for download, so its `path` is always set. */
+export type Download = Attachment & { path: string };
 
-  for (const attachment of attachments) {
-    const path = attachment.path!;
-    const bytes = await jira.downloadAttachment(attachment.id);
+/**
+ * One at a time, each through a temp file beside its `path` renamed into place,
+ * so a run that dies midway never leaves a truncated file under a final name.
+ * Missing directories are created. An existing file is overwritten: an
+ * Attachment never changes, so a re-run is idempotent and repairs an earlier
+ * partial one.
+ */
+export async function downloadAttachments(
+  downloads: Download[],
+  fetchBytes: (id: string) => Promise<Uint8Array>,
+): Promise<void> {
+  for (const { id, path } of downloads) {
+    await Deno.mkdir(dirname(path), { recursive: true });
+    const bytes = await fetchBytes(id);
     // Not Deno.makeTempFile: it creates the file 0600, and that mode would
     // survive the rename.
     const tempPath = `${path}.${Date.now()}.tmp`;
@@ -134,9 +139,18 @@ function humanSize(bytes: number): string {
 export function selectAttachments(
   attachments: Attachment[],
   ids: string[],
+): Attachment[];
+export function selectAttachments(
+  attachments: Attachment[],
+  ids: string[],
+  dir: string,
+): Download[];
+export function selectAttachments(
+  attachments: Attachment[],
+  ids: string[],
   dir?: string,
 ): Attachment[] {
-  const selected = pick(attachments, ids);
+  const selected = narrowToIds(attachments, ids);
   if (dir === undefined) return selected;
 
   return selected.map((attachment) => ({
@@ -157,7 +171,7 @@ function safeName(filename: string): string {
   return /^\.*$/.test(base) ? "attachment" : base;
 }
 
-function pick(attachments: Attachment[], ids: string[]): Attachment[] {
+function narrowToIds(attachments: Attachment[], ids: string[]): Attachment[] {
   if (ids.length === 0) return attachments;
 
   const attached = new Set(attachments.map((attachment) => attachment.id));
