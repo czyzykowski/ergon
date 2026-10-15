@@ -108,7 +108,7 @@ back as markdown, and Expressible in both directions — see
 body, details, notes
 
 **Degraded**: Of content read out with its text whole but its structure reduced
-— a panel that reads as a quote, an attachment that reads as its filename.
+— a panel that reads as a quote, an Attachment that reads as its filename.
 Degrading is never silent: whatever was flattened is named alongside the text.
 Strictly a read-side word. Nothing is Degraded on write, because a construct
 ergon cannot express is refused rather than reduced. To be Degraded and to be
@@ -150,6 +150,14 @@ in place. _Avoid_: note, remark, update
 of creating one ends there — Clockwork's timer writes a Worklog, `ergon log`
 writes a Worklog, and so does anyone typing into the Jira UI. Jira is therefore
 the only vantage point from which a day is whole, which is why ergon reads time
+**Attachment**: A file stored on an issue and named by an id Jira assigns. Its
+content never changes — replacing a file makes a new Attachment with a new id —
+so an id names the same bytes for as long as it exists. A Description or Comment
+may show an Attachment, but what it shows carries only the filename, never the
+id, and a filename need not be unique on an issue. So ergon never claims which
+Attachment a Description means; it reports the filename and leaves the matching
+to the reader. _Avoid_: file, upload, media
+
 from Jira even though it writes it through Clockwork — see
 [ADR 0008](./docs/adr/0008-jira-is-the-record-of-logged-time.md). Distinct from
 a Comment, which records what happened rather than how long it took. _Avoid_:
