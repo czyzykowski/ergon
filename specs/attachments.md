@@ -287,11 +287,12 @@ has the details.
 
 - The plain listing prints Jira's raw `filename`, so a name holding control
   characters can still put escape sequences on the terminal. Only the path on
-  disk is cleaned.
-- A hidden author is Absent and an Attachment not downloaded has no `path`.
-  Neither strictly matches the glossary's **Absent** ("a field ergon did not
-  fetch"), and `mapComment` still maps a hidden author to `""`. Whether to widen
-  the term is open.
+  disk is cleaned. This risk is accepted: the Jira is company-controlled, so a
+  hostile filename is not expected.
+- `mapComment` still maps a hidden author to `""`. **Absent** was widened to
+  cover what Jira withholds and what a run did not produce, so the Attachment's
+  hidden author and missing `path` follow the glossary, and the Comment is now
+  the one out of line.
 - `mapAttachment` defaults fields Jira omits (`size ?? 0` and the like) instead
   of reporting them Absent.
 - A download holds the whole file in memory. Streaming would only matter for

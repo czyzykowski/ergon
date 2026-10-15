@@ -93,11 +93,13 @@ empty, deliberately". The convention holds wherever `none` cannot collide with a
 real value of the field; a free-text field, where it can, is cleared with an
 empty string instead. _Avoid_: empty, null, unset
 
-**Absent**: Of a field ergon did not fetch, as distinct from one it fetched and
-found empty. An Absent field is missing from the JSON entirely; an empty one is
-`null`. The distinction is what stops "I did not look" reading as "there is
-nothing there" — the read side's counterpart to None, and the reason a Link
-never appears on an issue that came from a search. See
+**Absent**: Of a field ergon has no answer for, as distinct from one it fetched
+and found empty. There are three ways to have no answer: ergon did not fetch it
+(a Link on an issue from a search), Jira would not say (an author hidden by
+profile visibility), or this run did not produce it (the `path` of an Attachment
+that was not downloaded). An Absent field is missing from the JSON entirely; an
+empty one is `null`. The distinction is what stops "I do not know" reading as
+"there is nothing there" — the read side's counterpart to None. See
 [ADR 0006](./docs/adr/0006-absent-means-not-fetched.md). _Avoid_: missing,
 unset, undefined
 
