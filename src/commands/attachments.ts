@@ -3,8 +3,8 @@ import type { Command } from "cliffy/command/mod.ts";
 import { JiraClient } from "../api/jira.ts";
 import { loadConfig } from "../config.ts";
 import { loadState } from "../state.ts";
+import { timestamp } from "../timestamp.ts";
 import type { Attachment } from "../types.ts";
-import { timestamp } from "./comments.ts";
 
 interface AttachmentsOptions {
   json?: boolean;
