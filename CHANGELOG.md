@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- Added `ergon attachments [KEY]`, which lists an issue's Attachments one line
+  each — id, size, when, who, filename — oldest first. `--json` returns a bare
+  array of `{ id, filename, mimeType, size, created, author }`, with `size` in
+  bytes and `author` Absent when Jira hides it. No content URLs are given out:
+  they need ergon's credentials.
 - `ergon get` now prints the issue's Description, as markdown below the fields,
   and names a Degraded body with a `degraded:` field. It was only readable
   through `--json` before.

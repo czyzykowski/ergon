@@ -1,5 +1,6 @@
 import { Command } from "cliffy/command/mod.ts";
 import { ConfigError } from "./config.ts";
+import { registerAttachmentsCommand } from "./commands/attachments.ts";
 import { registerClientSowsCommand } from "./commands/client_sows.ts";
 import { registerCommentCommand } from "./commands/comment.ts";
 import { registerCommentsCommand } from "./commands/comments.ts";
@@ -41,6 +42,7 @@ export function buildCommand(): Command {
   registerClientSowsCommand(program);
   registerCommentCommand(program);
   registerCommentsCommand(program);
+  registerAttachmentsCommand(program);
   registerSearchCommand(program);
   registerOpenCommand(program);
   registerMoveCommand(program);

@@ -113,6 +113,21 @@ export interface JiraIssue {
   links?: IssueLink[];
 }
 
+/** An Attachment as ergon hands it out, and the `ergon attachments --json` contract. */
+export interface Attachment {
+  /** Jira's own id; it names the same bytes for as long as it exists. */
+  id: string;
+  /** Jira's filename, unsanitized. Not unique on an issue. */
+  filename: string;
+  mimeType: string;
+  /** In bytes. */
+  size: number;
+  /** Jira's own string, unparsed. */
+  created: string;
+  /** The author's display name. Absent when profile visibility hides it. */
+  author?: string;
+}
+
 /** Who a Comment is restricted to, when it is restricted at all. */
 export interface CommentVisibility {
   type: string;

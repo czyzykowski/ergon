@@ -27,9 +27,20 @@
 - [x] `--sprint active`, resolved across a project's boards, replacing
       `--sprint current`
 - [x] Reading an issue's description in plain `ergon get`
+- [x] Listing an issue's Attachments (`ergon attachments`)
+- [ ] Selecting Attachments by id, and downloading them
+      (`ergon attachments ... --download`)
 
 ## Updates
 
+- `ergon attachments` reads the issue's `attachment` field rather than a
+  separate endpoint, so one request returns every Attachment, Comment
+  attachments included, in Jira's order. `mapAttachment` drops Jira's `content`
+  and `thumbnail` URLs (both need ergon's credentials) and leaves `author`
+  Absent when hidden — unlike `mapComment`, which maps it to an empty string.
+  Size is rendered with the unit chosen after rounding, so a file just under a
+  megabyte reads `1 MB`, never `1024 KB`. The timestamp slice is shared with
+  `ergon comments` (`timestamp`, now exported from `commands/comments.ts`).
 - Plain `ergon get` prints the Description whole, last, unindented and
   unlabelled, rather than a length with a pointer to `--json`: plain output is
   for people, and the body is the part of an issue they read. It is the raw

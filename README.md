@@ -377,6 +377,35 @@ ergon comments PCK-12 --json
   `body`, `bodyDegraded`, and Jira's own `created`/`updated` timestamps.
   `visibility` is present only on a restricted comment.
 
+### Listing attachments
+
+`ergon attachments` lists the files attached to an issue, one per line, oldest
+first.
+
+```
+ergon attachments PCK-12
+ergon attachments PCK-12 --json
+```
+
+```
+10423  47 KB  2026-10-02 14:11  Jane Doe  checkout-error.png
+10424  512 B  2026-10-02 14:30  Jane Doe  server log 2026-10-02.txt
+```
+
+- The issue key is optional and falls back to the last one, like
+  `ergon comments`.
+- Columns are id, size, timestamp, author and filename. The filename is last
+  because it is the only field that can contain spaces. A hidden author leaves
+  its column empty.
+- Sizes are rounded, base 1024; the exact byte count is in `--json`. Timestamps
+  are Jira's own, as in `ergon comments`.
+- A screenshot pasted into a Description reads in `ergon get` as its filename;
+  match that filename against this listing to find the Attachment. ergon does
+  not make the match itself, because a filename need not be unique on an issue.
+- `--json` returns a bare array, each carrying `id`, `filename`, `mimeType`,
+  `size` (bytes), Jira's own `created`, and `author`, which is absent when Jira
+  hides it. No content URL is included: fetching one needs ergon's credentials.
+
 ### Editing an issue
 
 Name a field and `ergon edit` writes that field; name none and it opens the
