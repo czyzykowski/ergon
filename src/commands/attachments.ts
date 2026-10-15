@@ -209,12 +209,14 @@ function byteLength(text: string): number {
 
 /**
  * Jira's filename is untrusted, so only what follows its last `/` or `\` is
- * kept, so no filename can reach outside the dir. A name that is then empty or
- * only dots says nothing about the file, so it becomes a fixed fallback. The id
- * prefix keeps the result unique either way.
+ * kept, so no filename can reach outside the dir. Control characters, NUL
+ * among them, are dropped: no filesystem wants the one, and a terminal printing
+ * the path would act on the rest. A name that is then empty or only dots says
+ * nothing about the file, so it becomes a fixed fallback. The id prefix keeps
+ * the result unique either way.
  */
 function safeName(filename: string): string {
-  const base = filename.split(/[/\\]/).pop() ?? "";
+  const base = (filename.split(/[/\\]/).pop() ?? "").replace(/\p{Cc}/gu, "");
 
   return /^\.*$/.test(base) ? "attachment" : base;
 }

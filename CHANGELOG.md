@@ -17,12 +17,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `ergon attachments KEY [ID...] --download <dir>` fetches the selected
   Attachments into `<dir>`, creating it if missing, each as `<dir>/<id>-<name>`,
   where `<name>` is Jira's filename reduced to a safe basename, so no filename
-  can write outside `<dir>`. A name too long for the filesystem is cut so that
-  `<id>-<name>` stays within 200 bytes, keeping its extension. Each file goes
-  through a temp file and a rename, and an existing one is overwritten.
-  Downloaded lines end with `→ <absolute path>`; in `--json` each downloaded
-  object gains an absolute `path`, Absent otherwise. `filename` stays Jira's
-  own.
+  can write outside `<dir>`, and stripped of control characters. A name too long
+  for the filesystem is cut so that `<id>-<name>` stays within 200 bytes,
+  keeping its extension. Each file goes through a temp file and a rename, and an
+  existing one is overwritten. Downloaded lines end with `→ <absolute path>`; in
+  `--json` each downloaded object gains an absolute `path`, Absent otherwise.
+  `filename` stays Jira's own.
 - `ergon get` now prints the issue's Description, as markdown below the fields,
   and names a Degraded body with a `degraded:` field. It was only readable
   through `--json` before.

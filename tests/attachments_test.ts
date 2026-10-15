@@ -264,6 +264,17 @@ Deno.test("a filename that fits is left whole", () => {
   assertEquals(downloadName(filename), `10423-${filename}`);
 });
 
+Deno.test("NUL and other control characters are stripped from the name", () => {
+  assertEquals(
+    downloadName("re\u0000port\n\t\u001b[31m\u007f\u0085.pdf"),
+    "10423-report[31m.pdf",
+  );
+});
+
+Deno.test("a name of nothing but control characters falls back", () => {
+  assertEquals(downloadName("\u0000\r\n"), "10423-attachment");
+});
+
 const BYTES: Record<string, Uint8Array> = {
   "10423": new TextEncoder().encode("png bytes"),
   "10424": new TextEncoder().encode("log bytes"),
