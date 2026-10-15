@@ -385,6 +385,7 @@ first.
 ```
 ergon attachments PCK-12
 ergon attachments PCK-12 --json
+ergon attachments PCK-12 10423 10424
 ```
 
 ```
@@ -393,7 +394,11 @@ ergon attachments PCK-12 --json
 ```
 
 - The issue key is optional and falls back to the last one, like
-  `ergon comments`.
+  `ergon comments`, but only when no arguments are given: the first argument is
+  always the key, so naming ids means naming the issue too.
+- Attachment ids after the key narrow the listing, and `--json`, to those
+  Attachments, still in Jira's order. An id that is not on the issue refuses the
+  run and prints nothing else; the refusal names every unknown id.
 - Columns are id, size, timestamp, author and filename. The filename is last
   because it is the only field that can contain spaces. A hidden author leaves
   its column empty.
