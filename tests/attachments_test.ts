@@ -1,8 +1,11 @@
 import { join } from "path/mod.ts";
-import { assertEquals, assertThrows } from "testing/asserts.ts";
+import { Command } from "cliffy/command/mod.ts";
+import { assertEquals, assertRejects, assertThrows } from "testing/asserts.ts";
 import { mapAttachment } from "../src/api/jira.ts";
 import type { JiraAttachmentResponse } from "../src/api/jira.ts";
 import {
+  downloadAttachments,
+  registerAttachmentsCommand,
   renderAttachments,
   selectAttachments,
 } from "../src/commands/attachments.ts";
@@ -14,12 +17,9 @@ const SCREENSHOT: JiraAttachmentResponse = {
   created: "2026-10-02T14:11:07.000+0200",
   size: 48213,
   mimeType: "image/png",
-  content: "https://example.atlassian.net/rest/api/3/attachment/content/10423",
-  thumbnail:
-    "https://example.atlassian.net/rest/api/3/attachment/thumbnail/10423",
 };
 
-Deno.test("an attachment maps to the contract and drops Jira's URLs", () => {
+Deno.test("an attachment maps to the contract", () => {
   assertEquals(mapAttachment(SCREENSHOT), {
     id: "10423",
     filename: "checkout-error.png",
@@ -228,4 +228,135 @@ Deno.test("a relative dir still gives an absolute path", () => {
   const [row] = selectAttachments(ATTACHED, ["10423"], "att");
 
   assertEquals(row.path, join(Deno.cwd(), "att", "10423-checkout-error.png"));
+});
+
+const byteLength = (text: string) => new TextEncoder().encode(text).length;
+
+/** The file name `filename` downloads to, as attachment 10423. */
+const downloadName = (filename: string) =>
+  selectAttachments([mapAttachment({ ...SCREENSHOT, filename })], [], "/att")[0]
+    .path.slice("/att/".length);
+
+Deno.test("a long filename is cut to 200 bytes, keeping its id and extension", () => {
+  const name = downloadName(`${"a".repeat(300)}.png`);
+
+  assertEquals(name, `10423-${"a".repeat(190)}.png`);
+  assertEquals(byteLength(name), 200);
+});
+
+Deno.test("cutting counts UTF-8 bytes, not characters", () => {
+  // Each "ż" is two bytes, so the 190 bytes left for the stem hold 95.
+  assertEquals(
+    downloadName(`${"ż".repeat(300)}.png`),
+    `10423-${"ż".repeat(95)}.png`,
+  );
+});
+
+Deno.test("a character that would straddle the cut is dropped whole", () => {
+  // 189 one-byte characters leave one byte, too few for the four-byte emoji.
+  assertEquals(
+    downloadName(`${"a".repeat(189)}😀${"b".repeat(50)}.png`),
+    `10423-${"a".repeat(189)}.png`,
+  );
+});
+
+Deno.test("a filename that fits is left whole", () => {
+  const filename = `${"a".repeat(190)}.png`;
+
+  assertEquals(downloadName(filename), `10423-${filename}`);
+});
+
+Deno.test("NUL and other control characters are stripped from the name", () => {
+  assertEquals(
+    downloadName("re\u0000port\n\t\u001b[31m\u007f\u0085.pdf"),
+    "10423-report[31m.pdf",
+  );
+});
+
+Deno.test("a name of nothing but control characters falls back", () => {
+  assertEquals(downloadName("\u0000\r\n"), "10423-attachment");
+});
+
+const BYTES: Record<string, Uint8Array> = {
+  "10423": new TextEncoder().encode("png bytes"),
+  "10424": new TextEncoder().encode("log bytes"),
+  "10425": new TextEncoder().encode("mp4 bytes"),
+};
+
+const fromJira = (id: string) => Promise.resolve(BYTES[id]);
+
+async function inTempDir(run: (dir: string) => Promise<void>): Promise<void> {
+  const dir = await Deno.makeTempDir();
+  try {
+    await run(dir);
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+}
+
+const readText = async (path: string) =>
+  new TextDecoder().decode(await Deno.readFile(path));
+
+async function entriesOf(dir: string): Promise<string[]> {
+  const names = [];
+  for await (const entry of Deno.readDir(dir)) names.push(entry.name);
+  return names.sort();
+}
+
+Deno.test("downloads land at the selected paths, creating a missing dir", async () => {
+  await inTempDir(async (root) => {
+    const dir = join(root, "nested", "att");
+    const rows = selectAttachments(ATTACHED, ["10423", "10424"], dir);
+
+    await downloadAttachments(rows, fromJira);
+
+    assertEquals(await entriesOf(dir), [
+      "10423-checkout-error.png",
+      "10424-server.log",
+    ]);
+    assertEquals(await readText(rows[0].path), "png bytes");
+    assertEquals(await readText(rows[1].path), "log bytes");
+  });
+});
+
+Deno.test("a download overwrites a file already at its path", async () => {
+  await inTempDir(async (dir) => {
+    const rows = selectAttachments(ATTACHED, ["10423"], dir);
+    await Deno.writeTextFile(rows[0].path, "a stale partial run");
+
+    await downloadAttachments(rows, fromJira);
+
+    assertEquals(await readText(rows[0].path), "png bytes");
+  });
+});
+
+Deno.test("a failed download leaves nothing under its name, temp or final", async () => {
+  await inTempDir(async (dir) => {
+    const rows = selectAttachments(ATTACHED, ["10423", "10424"], dir);
+    const failOnLog = (id: string) =>
+      id === "10424"
+        ? Promise.reject(new Error("Jira API request failed (500)"))
+        : fromJira(id);
+
+    await assertRejects(
+      () => downloadAttachments(rows, failOnLog),
+      Error,
+      "Jira API request failed (500)",
+    );
+
+    assertEquals(await entriesOf(dir), ["10423-checkout-error.png"]);
+  });
+});
+
+Deno.test("an empty --download dir is refused before Jira is asked anything", async () => {
+  // Cliffy refuses an empty value while parsing, so the action, and with it
+  // the config, Jira and the filesystem, is never reached.
+  const program = new Command().throwErrors();
+  registerAttachmentsCommand(program);
+
+  await assertRejects(
+    () => program.parse(["attachments", "PGR-1864", "--download", ""]),
+    Error,
+    `Missing value for option "--download".`,
+  );
 });

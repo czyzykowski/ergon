@@ -145,10 +145,6 @@ export interface JiraAttachmentResponse {
   created?: string;
   size?: number;
   mimeType?: string;
-  /** Needs ergon's credentials to fetch, so never handed out. */
-  content?: string;
-  /** Needs ergon's credentials to fetch, so never handed out. */
-  thumbnail?: string;
 }
 
 /** One element of Jira's comment payload, as the v3 API returns it. */
@@ -704,12 +700,8 @@ export class JiraClient {
     path: string,
     init: RequestInit,
   ): Promise<T> {
-    const headers = new Headers(init.headers);
-    headers.set("Accept", "application/json");
-
-    if (init.body) {
-      headers.set("Content-Type", "application/json");
-    }
+    const headers: Record<string, string> = { Accept: "application/json" };
+    if (init.body) headers["Content-Type"] = "application/json";
 
     const response = await this.send(path, { ...init, headers });
 

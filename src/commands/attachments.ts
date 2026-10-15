@@ -1,10 +1,10 @@
-import { resolve } from "path/mod.ts";
+import { dirname, resolve } from "path/mod.ts";
 import type { Command } from "cliffy/command/mod.ts";
 import { JiraClient } from "../api/jira.ts";
 import { loadConfig } from "../config.ts";
 import { loadState } from "../state.ts";
+import { timestamp } from "../timestamp.ts";
 import type { Attachment } from "../types.ts";
-import { timestamp } from "./comments.ts";
 
 interface AttachmentsOptions {
   json?: boolean;
@@ -36,14 +36,18 @@ export function registerAttachmentsCommand(program: Command): void {
       }
 
       const jira = new JiraClient(config.jira, config.defaults?.projects);
-      const attachments = selectAttachments(
-        await jira.listAttachments(key),
-        ids,
-        options.download,
-      );
+      const attached = await jira.listAttachments(key);
+      let attachments: Attachment[];
 
-      if (options.download !== undefined) {
-        await downloadAll(jira, options.download, attachments);
+      if (options.download === undefined) {
+        attachments = selectAttachments(attached, ids);
+      } else {
+        const downloads = selectAttachments(attached, ids, options.download);
+        await downloadAttachments(
+          downloads,
+          (id) => jira.downloadAttachment(id),
+        );
+        attachments = downloads;
       }
 
       if (options.json) {
@@ -55,22 +59,23 @@ export function registerAttachmentsCommand(program: Command): void {
     });
 }
 
-/**
- * One at a time, each through a temp file in `dir` renamed into place, so a run
- * that dies midway never leaves a truncated file under a final name. An
- * existing file is overwritten: an Attachment never changes, so a re-run is
- * idempotent and repairs an earlier partial one.
- */
-async function downloadAll(
-  jira: JiraClient,
-  dir: string,
-  attachments: Attachment[],
-): Promise<void> {
-  await Deno.mkdir(dir, { recursive: true });
+/** An Attachment selected for download, so its `path` is always set. */
+export type Download = Attachment & { path: string };
 
-  for (const attachment of attachments) {
-    const path = attachment.path!;
-    const bytes = await jira.downloadAttachment(attachment.id);
+/**
+ * One at a time, each through a temp file beside its `path` renamed into place,
+ * so a run that dies midway never leaves a truncated file under a final name.
+ * Missing directories are created. An existing file is overwritten: an
+ * Attachment never changes, so a re-run is idempotent and repairs an earlier
+ * partial one.
+ */
+export async function downloadAttachments(
+  downloads: Download[],
+  fetchBytes: (id: string) => Promise<Uint8Array>,
+): Promise<void> {
+  for (const { id, path } of downloads) {
+    await Deno.mkdir(dirname(path), { recursive: true });
+    const bytes = await fetchBytes(id);
     // Not Deno.makeTempFile: it creates the file 0600, and that mode would
     // survive the rename.
     const tempPath = `${path}.${Date.now()}.tmp`;
@@ -134,30 +139,89 @@ function humanSize(bytes: number): string {
 export function selectAttachments(
   attachments: Attachment[],
   ids: string[],
+): Attachment[];
+export function selectAttachments(
+  attachments: Attachment[],
+  ids: string[],
+  dir: string,
+): Download[];
+export function selectAttachments(
+  attachments: Attachment[],
+  ids: string[],
   dir?: string,
 ): Attachment[] {
-  const selected = pick(attachments, ids);
+  const selected = narrowToIds(attachments, ids);
   if (dir === undefined) return selected;
 
   return selected.map((attachment) => ({
     ...attachment,
-    path: resolve(dir, `${attachment.id}-${safeName(attachment.filename)}`),
+    path: resolve(dir, fileName(attachment)),
   }));
 }
 
 /**
+ * Most filesystems cap a file name at 255 bytes. Holding `<id>-<name>` to 200
+ * leaves room for the temp suffix a download adds, with margin to spare.
+ */
+const MAX_FILE_NAME_BYTES = 200;
+
+/** `<id>-<safe name>`, cut to fit within `MAX_FILE_NAME_BYTES`. */
+function fileName(attachment: Attachment): string {
+  const prefix = `${attachment.id}-`;
+  const name = safeName(attachment.filename);
+
+  return prefix + fitName(name, MAX_FILE_NAME_BYTES - byteLength(prefix));
+}
+
+/**
+ * `name` cut to `budget` UTF-8 bytes, keeping its extension so the file still
+ * opens as what it is. Only the stem is cut, and only on a character boundary.
+ * A suffix too long to be an extension is treated as part of the stem.
+ */
+function fitName(name: string, budget: number): string {
+  if (byteLength(name) <= budget) return name;
+
+  const dot = name.lastIndexOf(".");
+  const suffix = dot > 0 ? name.slice(dot) : "";
+  const extension = byteLength(suffix) <= budget / 2 ? suffix : "";
+  const stem = name.slice(0, name.length - extension.length);
+
+  return cutToBytes(stem, budget - byteLength(extension)) + extension;
+}
+
+/** The longest prefix of `text` that fits in `budget` UTF-8 bytes. */
+function cutToBytes(text: string, budget: number): string {
+  let cut = "";
+  let used = 0;
+
+  for (const char of text) {
+    used += byteLength(char);
+    if (used > budget) break;
+    cut += char;
+  }
+
+  return cut;
+}
+
+function byteLength(text: string): number {
+  return new TextEncoder().encode(text).length;
+}
+
+/**
  * Jira's filename is untrusted, so only what follows its last `/` or `\` is
- * kept, so no filename can reach outside the dir. A name that is then empty or
- * only dots says nothing about the file, so it becomes a fixed fallback. The id
- * prefix keeps the result unique either way.
+ * kept, so no filename can reach outside the dir. Control characters, NUL
+ * among them, are dropped: no filesystem wants the one, and a terminal printing
+ * the path would act on the rest. A name that is then empty or only dots says
+ * nothing about the file, so it becomes a fixed fallback. The id prefix keeps
+ * the result unique either way.
  */
 function safeName(filename: string): string {
-  const base = filename.split(/[/\\]/).pop() ?? "";
+  const base = (filename.split(/[/\\]/).pop() ?? "").replace(/\p{Cc}/gu, "");
 
   return /^\.*$/.test(base) ? "attachment" : base;
 }
 
-function pick(attachments: Attachment[], ids: string[]): Attachment[] {
+function narrowToIds(attachments: Attachment[], ids: string[]): Attachment[] {
   if (ids.length === 0) return attachments;
 
   const attached = new Set(attachments.map((attachment) => attachment.id));
