@@ -1,7 +1,10 @@
-import { assertEquals } from "testing/asserts.ts";
+import { assertEquals, assertThrows } from "testing/asserts.ts";
 import { mapAttachment } from "../src/api/jira.ts";
 import type { JiraAttachmentResponse } from "../src/api/jira.ts";
-import { renderAttachments } from "../src/commands/attachments.ts";
+import {
+  renderAttachments,
+  selectAttachments,
+} from "../src/commands/attachments.ts";
 
 const SCREENSHOT: JiraAttachmentResponse = {
   id: "10423",
@@ -96,5 +99,44 @@ Deno.test("an attachment with a hidden author still renders, its column empty", 
   assertEquals(
     renderAttachments([anonymous]),
     "10423  47 KB  2026-10-02 14:11    checkout-error.png",
+  );
+});
+
+const ATTACHED = [
+  mapAttachment(SCREENSHOT),
+  mapAttachment({ ...SCREENSHOT, id: "10424", filename: "server.log" }),
+  mapAttachment({ ...SCREENSHOT, id: "10425", filename: "recording.mp4" }),
+];
+
+const idsOf = (rows: { id: string }[]) => rows.map((row) => row.id);
+
+Deno.test("no ids selects every attachment, in Jira's order", () => {
+  assertEquals(idsOf(selectAttachments(ATTACHED, [])), [
+    "10423",
+    "10424",
+    "10425",
+  ]);
+});
+
+Deno.test("ids narrow the selection and keep Jira's order, not the typed one", () => {
+  assertEquals(idsOf(selectAttachments(ATTACHED, ["10425", "10423"])), [
+    "10423",
+    "10425",
+  ]);
+});
+
+Deno.test("an id not on the issue refuses the selection, naming it", () => {
+  assertThrows(
+    () => selectAttachments(ATTACHED, ["10423", "99999"]),
+    Error,
+    "Not attached to this issue: 99999.",
+  );
+});
+
+Deno.test("the refusal names every unknown id, so one fix covers them all", () => {
+  assertThrows(
+    () => selectAttachments(ATTACHED, ["88888", "10424", "99999"]),
+    Error,
+    "Not attached to this issue: 88888, 99999.",
   );
 });

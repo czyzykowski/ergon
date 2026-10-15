@@ -11,6 +11,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   array of `{ id, filename, mimeType, size, created, author }`, with `size` in
   bytes and `author` Absent when Jira hides it. No content URLs are given out:
   they need ergon's credentials.
+- `ergon attachments KEY ID...` narrows the listing, and `--json`, to the named
+  Attachments, still in Jira's order. An id that is not on the issue refuses the
+  run, naming every unknown id. The first argument is always the issue key.
 - `ergon get` now prints the issue's Description, as markdown below the fields,
   and names a Degraded body with a `degraded:` field. It was only readable
   through `--json` before.
