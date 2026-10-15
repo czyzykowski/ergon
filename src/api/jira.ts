@@ -887,12 +887,15 @@ export function mapComment(comment: JiraCommentResponse): JiraComment {
   const body = renderAdf(comment.body);
   const mapped: JiraComment = {
     id: comment.id,
-    author: comment.author?.displayName ?? "",
     body: body.text,
     bodyDegraded: body.degraded,
     created: comment.created ?? "",
     updated: comment.updated ?? "",
   };
+
+  // Absent rather than empty, so a hidden author never reads as a real one.
+  const author = comment.author?.displayName;
+  if (author) mapped.author = author;
 
   // Absent rather than null when unrestricted, which is the normal case.
   if (comment.visibility?.type && comment.visibility.value) {

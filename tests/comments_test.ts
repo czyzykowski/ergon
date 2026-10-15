@@ -109,8 +109,21 @@ Deno.test("timestamps are Jira's own strings, unparsed", () => {
   assertEquals(mapped.updated, "2026-08-15T09:22:41.000+0100");
 });
 
-Deno.test("an author ergon cannot name maps to an empty string", () => {
-  assertEquals(mapComment({ ...PLAIN, author: undefined }).author, "");
+Deno.test("an author Jira hides is Absent, not an empty name", () => {
+  const comment = mapComment({ ...PLAIN, author: undefined });
+  assertEquals("author" in comment, false);
+});
+
+Deno.test("an author with no display name is Absent too", () => {
+  const comment = mapComment({ ...PLAIN, author: {} });
+  assertEquals("author" in comment, false);
+});
+
+Deno.test("a hidden author leaves the header's author column empty", () => {
+  assertEquals(
+    renderThread([mapComment({ ...PLAIN, author: undefined })]).split("\n")[0],
+    "10234    2026-08-14 11:04",
+  );
 });
 
 Deno.test("a thread prints a header per comment and indents the body", () => {

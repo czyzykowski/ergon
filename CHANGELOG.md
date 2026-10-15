@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- `ergon comments --json` (and `ergon comment --json`) leave `author` out when
+  Jira hides it, instead of giving `""`, matching `ergon attachments`. A hidden
+  author is Absent: ergon does not know the name, which is not the same as there
+  being none.
+
 - Added `ergon attachments [KEY]`, which lists an issue's Attachments one line
   each — id, size, when, who, filename — oldest first. `--json` returns a bare
   array of `{ id, filename, mimeType, size, created, author }`, with `size` in

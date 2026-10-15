@@ -375,7 +375,8 @@ ergon comments PCK-12 --json
 - Every page is fetched, so the thread is never a partial history.
 - `--json` returns the comments as an array, each carrying `id`, `author`,
   `body`, `bodyDegraded`, and Jira's own `created`/`updated` timestamps.
-  `visibility` is present only on a restricted comment.
+  `visibility` is present only on a restricted comment, and `author` is Absent
+  when Jira hides it.
 
 ### Listing and downloading attachments
 

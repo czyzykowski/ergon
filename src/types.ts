@@ -142,8 +142,11 @@ export interface CommentVisibility {
 export interface JiraComment {
   /** Jira's own id, and the only handle for editing the Comment. */
   id: string;
-  /** The author's display name; ergon does not resolve account identity. */
-  author: string;
+  /**
+   * The author's display name; ergon does not resolve account identity. Absent
+   * when profile visibility hides it.
+   */
+  author?: string;
   /** The rendered body. */
   body: string;
   /** Node and mark types whose structure the body lost being read out. */

@@ -50,7 +50,7 @@ export function renderThread(comments: JiraComment[]): string {
 
 function renderComment(comment: JiraComment): string {
   const header = [
-    `${comment.id}  ${comment.author}  ${timestamp(comment.created)}`,
+    `${comment.id}  ${comment.author ?? ""}  ${timestamp(comment.created)}`,
   ];
 
   if (comment.updated !== comment.created) {
