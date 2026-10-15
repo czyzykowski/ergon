@@ -562,6 +562,13 @@ export class JiraClient {
     return (attachments ?? []).map(mapAttachment);
   }
 
+  /** An Attachment's content, whole. Attachments never change, so neither do these bytes. */
+  downloadAttachment(id: string): Promise<Uint8Array> {
+    return this.requestBytes(
+      `/rest/api/3/attachment/content/${encodeURIComponent(id)}`,
+    );
+  }
+
   /** Append a Comment. Jira returns the Comment it created, id and all. */
   async addComment(
     issueKey: string,
@@ -697,18 +704,38 @@ export class JiraClient {
     path: string,
     init: RequestInit,
   ): Promise<T> {
-    const url = `${this.baseUrl}${path}`;
     const headers = new Headers(init.headers);
-    const auth = btoa(`${this.email}:${this.apiToken}`);
-
-    headers.set("Authorization", `Basic ${auth}`);
     headers.set("Accept", "application/json");
 
     if (init.body) {
       headers.set("Content-Type", "application/json");
     }
 
-    const response = await fetch(url, {
+    const response = await this.send(path, { ...init, headers });
+
+    const text = await response.text();
+    if (!text) return undefined as T;
+    return JSON.parse(text) as T;
+  }
+
+  /**
+   * `request` without the JSON: the body comes back as bytes. Jira answers an
+   * Attachment's content with a 303 to Atlassian's media host, whose URL
+   * carries its own token; fetch follows it and drops `Authorization` on the
+   * way, which that host does not need.
+   */
+  private async requestBytes(path: string): Promise<Uint8Array> {
+    const response = await this.send(path, { method: "GET" });
+    return new Uint8Array(await response.arrayBuffer());
+  }
+
+  /** One authenticated call, refusing any answer that is not a success. */
+  private async send(path: string, init: RequestInit): Promise<Response> {
+    const headers = new Headers(init.headers);
+    const auth = btoa(`${this.email}:${this.apiToken}`);
+    headers.set("Authorization", `Basic ${auth}`);
+
+    const response = await fetch(`${this.baseUrl}${path}`, {
       ...init,
       headers,
     });
@@ -718,9 +745,7 @@ export class JiraClient {
       throw new Error(requestFailure(response.status, body));
     }
 
-    const text = await response.text();
-    if (!text) return undefined as T;
-    return JSON.parse(text) as T;
+    return response;
   }
 }
 

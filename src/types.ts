@@ -126,6 +126,11 @@ export interface Attachment {
   created: string;
   /** The author's display name. Absent when profile visibility hides it. */
   author?: string;
+  /**
+   * Where `--download` wrote the file, absolute. Absent unless it was
+   * downloaded in this run, so its absence means "not downloaded".
+   */
+  path?: string;
 }
 
 /** Who a Comment is restricted to, when it is restricted at all. */
