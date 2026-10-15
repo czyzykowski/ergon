@@ -1,3 +1,4 @@
+import { resolve } from "path/mod.ts";
 import type { Command } from "cliffy/command/mod.ts";
 import { JiraClient } from "../api/jira.ts";
 import { loadConfig } from "../config.ts";
@@ -7,13 +8,18 @@ import { timestamp } from "./comments.ts";
 
 interface AttachmentsOptions {
   json?: boolean;
+  download?: string;
 }
 
 export function registerAttachmentsCommand(program: Command): void {
   program
     .command("attachments [issueKey:string] [...ids:string]")
     .description(
-      "List an issue's attachments, or only those named by id.",
+      "List an issue's attachments, or only those named by id; --download fetches them.",
+    )
+    .option(
+      "--download <dir:string>",
+      "Fetch the selected attachments into <dir> as <id>-<filename>",
     )
     .option("--json", "Output raw JSON")
     .action(async (
@@ -33,7 +39,12 @@ export function registerAttachmentsCommand(program: Command): void {
       const attachments = selectAttachments(
         await jira.listAttachments(key),
         ids,
+        options.download,
       );
+
+      if (options.download !== undefined) {
+        await downloadAll(jira, options.download, attachments);
+      }
 
       if (options.json) {
         console.log(JSON.stringify(attachments, null, 2));
@@ -42,6 +53,36 @@ export function registerAttachmentsCommand(program: Command): void {
 
       console.log(renderAttachments(attachments));
     });
+}
+
+/**
+ * One at a time, each through a temp file in `dir` renamed into place, so a run
+ * that dies midway never leaves a truncated file under a final name. An
+ * existing file is overwritten: an Attachment never changes, so a re-run is
+ * idempotent and repairs an earlier partial one.
+ */
+async function downloadAll(
+  jira: JiraClient,
+  dir: string,
+  attachments: Attachment[],
+): Promise<void> {
+  await Deno.mkdir(dir, { recursive: true });
+
+  for (const attachment of attachments) {
+    const path = attachment.path!;
+    const bytes = await jira.downloadAttachment(attachment.id);
+    // Not Deno.makeTempFile: it creates the file 0600, and that mode would
+    // survive the rename.
+    const tempPath = `${path}.${Date.now()}.tmp`;
+
+    try {
+      await Deno.writeFile(tempPath, bytes);
+      await Deno.rename(tempPath, path);
+    } catch (error) {
+      await Deno.remove(tempPath).catch(() => {});
+      throw error;
+    }
+  }
 }
 
 /**
@@ -56,13 +97,15 @@ export function renderAttachments(attachments: Attachment[]): string {
 }
 
 function renderAttachment(attachment: Attachment): string {
-  return [
+  const line = [
     attachment.id,
     humanSize(attachment.size),
     timestamp(attachment.created),
     attachment.author ?? "",
     attachment.filename,
   ].join("  ");
+
+  return attachment.path ? `${line}  → ${attachment.path}` : line;
 }
 
 /**
@@ -84,11 +127,37 @@ function humanSize(bytes: number): string {
  * Jira's order. Ids are resolved against the issue's own list, and any that is
  * not on it refuses the whole selection, naming each unknown id, so an id
  * copied from the wrong issue fails loudly rather than half-succeeding.
+ *
+ * Given a `dir`, each row also gets the absolute `path` it downloads to,
+ * `<dir>/<id>-<safe name>`; without one, no row has a path.
  */
 export function selectAttachments(
   attachments: Attachment[],
   ids: string[],
+  dir?: string,
 ): Attachment[] {
+  const selected = pick(attachments, ids);
+  if (dir === undefined) return selected;
+
+  return selected.map((attachment) => ({
+    ...attachment,
+    path: resolve(dir, `${attachment.id}-${safeName(attachment.filename)}`),
+  }));
+}
+
+/**
+ * Jira's filename is untrusted, so only what follows its last `/` or `\` is
+ * kept, so no filename can reach outside the dir. A name that is then empty or
+ * only dots says nothing about the file, so it becomes a fixed fallback. The id
+ * prefix keeps the result unique either way.
+ */
+function safeName(filename: string): string {
+  const base = filename.split(/[/\\]/).pop() ?? "";
+
+  return /^\.*$/.test(base) ? "attachment" : base;
+}
+
+function pick(attachments: Attachment[], ids: string[]): Attachment[] {
   if (ids.length === 0) return attachments;
 
   const attached = new Set(attachments.map((attachment) => attachment.id));

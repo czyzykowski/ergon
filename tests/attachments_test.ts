@@ -1,3 +1,4 @@
+import { join } from "path/mod.ts";
 import { assertEquals, assertThrows } from "testing/asserts.ts";
 import { mapAttachment } from "../src/api/jira.ts";
 import type { JiraAttachmentResponse } from "../src/api/jira.ts";
@@ -102,6 +103,26 @@ Deno.test("an attachment with a hidden author still renders, its column empty", 
   );
 });
 
+Deno.test("only a downloaded row ends with an arrow to its path", () => {
+  const downloaded = {
+    ...mapAttachment(SCREENSHOT),
+    path: "/work/att/10423-checkout-error.png",
+  };
+  const listed = mapAttachment({
+    ...SCREENSHOT,
+    id: "10424",
+    filename: "server.log",
+  });
+
+  assertEquals(
+    renderAttachments([downloaded, listed]),
+    [
+      "10423  47 KB  2026-10-02 14:11  Jane Doe  checkout-error.png  → /work/att/10423-checkout-error.png",
+      "10424  47 KB  2026-10-02 14:11  Jane Doe  server.log",
+    ].join("\n"),
+  );
+});
+
 const ATTACHED = [
   mapAttachment(SCREENSHOT),
   mapAttachment({ ...SCREENSHOT, id: "10424", filename: "server.log" }),
@@ -139,4 +160,72 @@ Deno.test("the refusal names every unknown id, so one fix covers them all", () =
     Error,
     "Not attached to this issue: 88888, 99999.",
   );
+});
+
+Deno.test("a dir gives each row its absolute path, named by id and filename", () => {
+  assertEquals(
+    selectAttachments(ATTACHED, ["10424"], "/work/att").map((row) => row.path),
+    ["/work/att/10424-server.log"],
+  );
+});
+
+Deno.test("a filename reduces to a safe basename that never leaves the dir", () => {
+  const named = (id: string, filename: string) =>
+    mapAttachment({ ...SCREENSHOT, id, filename });
+  const hostile = [
+    named("1", "a/b.png"),
+    named("2", "../../etc/passwd"),
+    named("3", "C:\\Users\\jane\\shot.png"),
+    named("4", ""),
+    named("5", ".."),
+    named("6", "logs/"),
+  ];
+
+  const paths = selectAttachments(hostile, [], "/work/att").map((row) =>
+    row.path
+  );
+
+  assertEquals(paths, [
+    "/work/att/1-b.png",
+    "/work/att/2-passwd",
+    "/work/att/3-shot.png",
+    "/work/att/4-attachment",
+    "/work/att/5-attachment",
+    "/work/att/6-attachment",
+  ]);
+});
+
+Deno.test("two attachments sharing a filename land at distinct paths", () => {
+  const twins = [
+    mapAttachment({ ...SCREENSHOT, id: "10423", filename: "screenshot.png" }),
+    mapAttachment({ ...SCREENSHOT, id: "10430", filename: "screenshot.png" }),
+  ];
+
+  assertEquals(
+    selectAttachments(twins, [], "/work/att").map((row) => row.path),
+    ["/work/att/10423-screenshot.png", "/work/att/10430-screenshot.png"],
+  );
+});
+
+Deno.test("the unsanitized filename survives beside the safe path", () => {
+  const [row] = selectAttachments(
+    [mapAttachment({ ...SCREENSHOT, filename: "../../etc/passwd" })],
+    [],
+    "/work/att",
+  );
+
+  assertEquals(row.filename, "../../etc/passwd");
+});
+
+Deno.test("without a dir no row has a path", () => {
+  assertEquals(
+    selectAttachments(ATTACHED, []).some((row) => "path" in row),
+    false,
+  );
+});
+
+Deno.test("a relative dir still gives an absolute path", () => {
+  const [row] = selectAttachments(ATTACHED, ["10423"], "att");
+
+  assertEquals(row.path, join(Deno.cwd(), "att", "10423-checkout-error.png"));
 });

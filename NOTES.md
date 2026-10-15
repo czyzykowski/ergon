@@ -28,11 +28,30 @@
       `--sprint current`
 - [x] Reading an issue's description in plain `ergon get`
 - [x] Listing an issue's Attachments (`ergon attachments`)
-- [ ] Selecting Attachments by id, and downloading them
-      (`ergon attachments ... --download`)
+- [x] Selecting Attachments by id (`ergon attachments KEY ID...`)
+- [x] Downloading Attachments (`ergon attachments ... --download <dir>`)
 
 ## Updates
 
+- Attachment content redirects off Jira, checked on PGR-1864 (44624, a 586 KB
+  PNG). `GET /rest/api/3/attachment/content/{id}` with Basic auth answers `303`
+  to `https://api.media.atlassian.com/file/<uuid>/binary`, whose query carries
+  its own `token` and `client` (plus `dl` and `name`). That URL answers
+  `200 image/png` with the full body and no `Authorization` at all, so fetch
+  dropping the header on the cross-origin hop is harmless and the default
+  `redirect: "follow"` is all the client needs. `requestBytes` shares `send`
+  with `request` (auth, error unwrapping) and, unlike it, sends no
+  `Accept: application/json`.
+- The download temp file is `<final path>.<ms>.tmp`, as `saveState` does, not
+  `Deno.makeTempFile`: that creates the file `0600`, and the mode survives the
+  rename, so every download came out owner-only.
+- `downloadAttachment` buffers the whole file in memory before writing. Fine for
+  screenshots and logs (a 47 MB JPEG on HAYU-364 took 5 s); the largest
+  Attachment seen, 804 MB on GAME-626, was not downloaded. Streaming to the temp
+  file is the fix if that ever matters.
+- Hand-checked: all four PNGs on PGR-1864 into a missing nested dir; a re-run of
+  one id over an existing file; an unknown id refusing before the dir is
+  created; RDMP2021-3944's two `image.png` (44626, 44627) landing side by side.
 - `ergon attachments` reads the issue's `attachment` field rather than a
   separate endpoint, so one request returns every Attachment, Comment
   attachments included, in Jira's order. `mapAttachment` drops Jira's `content`

@@ -377,15 +377,17 @@ ergon comments PCK-12 --json
   `body`, `bodyDegraded`, and Jira's own `created`/`updated` timestamps.
   `visibility` is present only on a restricted comment.
 
-### Listing attachments
+### Listing and downloading attachments
 
 `ergon attachments` lists the files attached to an issue, one per line, oldest
-first.
+first, and with `--download <dir>` fetches them.
 
 ```
 ergon attachments PCK-12
 ergon attachments PCK-12 --json
 ergon attachments PCK-12 10423 10424
+ergon attachments PCK-12 --download ./att
+ergon attachments PCK-12 10423 --download ./att --json
 ```
 
 ```
@@ -410,6 +412,19 @@ ergon attachments PCK-12 10423 10424
 - `--json` returns a bare array, each carrying `id`, `filename`, `mimeType`,
   `size` (bytes), Jira's own `created`, and `author`, which is absent when Jira
   hides it. No content URL is included: fetching one needs ergon's credentials.
+- `--download <dir>` fetches every selected Attachment — all of them, or only
+  the named ids — into `<dir>`, creating it if missing. Each lands at
+  `<dir>/<id>-<name>`, where `<name>` is the filename with any directory parts
+  dropped (`attachment` if nothing usable is left), so two files sharing a name
+  never collide and none can be written outside `<dir>`. Downloaded lines end
+  with `→ <absolute path>`, and in `--json` each downloaded object gains an
+  absolute `path`; `filename` stays Jira's own.
+- Downloads run one at a time, with no progress output, and print once every
+  file has landed. Each goes through a temp file renamed into place, so an
+  interrupted run never leaves a truncated file under the final name. An
+  existing file is overwritten — an Attachment never changes — so re-running is
+  safe. There is no size cap: check sizes in the listing and name ids to skip
+  the large ones.
 
 ### Editing an issue
 
