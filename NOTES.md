@@ -43,9 +43,11 @@
   `.help({ colors: false })` and `.throwErrors()`. Without `throwErrors`,
   cliffy's `throw()` prints the full help to stdout with `console.log` before
   the error line; with it, a `ValidationError` reaches `main`'s catch like any
-  other error. `tests/main_test.ts` spawns `src/main.ts` to check the streams,
-  hence `--allow-run` on the test tasks. **Follow-up:** bare `ergon`, with no
-  command, prints nothing and exits 0, because the root command has no action.
+  other error. cliffy's `--version` colours unconditionally, so `versionOption`
+  replaces it with a plain one that keeps the `-V` short / `--version` long
+  split. `tests/main_test.ts` spawns `src/main.ts` to check the streams, hence
+  `--allow-run` on the test tasks. **Follow-up:** bare `ergon`, with no command,
+  prints nothing and exits 0, because the root command has no action.
 
 - `children` on `ergon get` is one `parent = KEY ORDER BY key ASC` search, paged
   to completion through `searchAll` and run in parallel with the issue and

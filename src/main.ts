@@ -29,9 +29,21 @@ export function buildCommand(): Command {
     .name("ergon")
     .version("0.1.0")
     .description(MAIN_DESCRIPTION)
-    // ergon is read mostly by scripts and agents, so help carries no escape
-    // codes. Subcommands inherit this.
+    // ergon is read mostly by scripts and agents, so help and version carry no
+    // escape codes. Subcommands inherit the help setting; cliffy's own
+    // `--version` colours unconditionally, so it is replaced.
     .help({ colors: false })
+    .versionOption(
+      "-V, --version",
+      "Show the version number for this program.",
+      function () {
+        // As cliffy has it: `-V` is the bare version, `--version` names ergon.
+        const version = this.getVersion();
+        const long = this.getRawArgs().includes("--version");
+        console.log(long ? `${this.getName()} ${version}` : version);
+        Deno.exit(0);
+      },
+    )
     // Usage errors reach main's catch as one line, rather than cliffy printing
     // the whole help to stdout ahead of them.
     .throwErrors();

@@ -56,3 +56,25 @@ Deno.test("help is plain text on stdout", async () => {
   assert(run.stdout.includes("Usage:"), run.stdout);
   assert(!run.stdout.includes("\x1b"), JSON.stringify(run.stdout));
 });
+
+Deno.test("an unknown command is a usage error like any other", async () => {
+  const run = await runErgon("bogus");
+
+  assertEquals(run.code, 1);
+  assertEquals(run.stdout, "");
+  assert(run.stderr.startsWith('Unknown command "bogus".'), run.stderr);
+  assertEquals(run.stderr.split("\n").length, 2, run.stderr);
+});
+
+Deno.test("--version is plain text on stdout, and -V the bare number", async () => {
+  assertEquals(await runErgon("--version"), {
+    code: 0,
+    stdout: "ergon 0.1.0\n",
+    stderr: "",
+  });
+  assertEquals(await runErgon("-V"), {
+    code: 0,
+    stdout: "0.1.0\n",
+    stderr: "",
+  });
+});
