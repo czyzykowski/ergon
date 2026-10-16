@@ -32,10 +32,18 @@
 - [x] Downloading Attachments (`ergon attachments ... --download <dir>`)
 - [x] Listing a project's Open Sprints (`ergon sprints`)
 - [x] Time in status (`statusSince` on `ergon get`)
+- [x] Listing an issue's Children (`children` on `ergon get`)
 - [ ] `--sprint <name>` matching future Sprints, on `edit` and on `new` in both
       modes, through `listOpenSprints`
 
 ## Updates
+
+- `children` on `ergon get` is one `parent = KEY ORDER BY key ASC` search, paged
+  to completion through `searchAll` and run in parallel with the issue and
+  changelog reads. Direct Children only: walking an Epic's whole tree is
+  repeated `get` calls, and a Descendant term waits until something needs it. A
+  Child is the Parent slot read backwards, never Jira's Parent-Child Link type.
+  Checked live on PCK-1243 (19 Children, one Done).
 
 - `statusSince` reads `POST /rest/api/3/changelog/bulkfetch` with
   `fieldIds: ["status"]`, paged by `nextPageToken`. Its `created` is epoch

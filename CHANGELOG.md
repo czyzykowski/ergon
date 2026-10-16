@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- `ergon get` lists the issue's Children — every issue whose Parent it is, Done
+  ones included, sorted by key and never capped. `--json` carries them as
+  `children: [{ key, summary, issueType, status, statusCategory, assignee }]`;
+  the human-readable output shows a `children:` block below `links:`. Absent
+  from `ls` and `search`, and Absent with a warning on stderr when the Children
+  cannot be searched.
+
 - `ergon get --json` carries `statusSince`: when the issue entered the status it
   shows, as a UTC ISO instant — its last Transition (a change of status name,
   one within a category included), or `created` if it has never had one. Read

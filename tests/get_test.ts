@@ -65,6 +65,31 @@ Deno.test("a Degraded Description is named among the fields", () => {
   ]);
 });
 
+Deno.test("Children follow the links, one line each", () => {
+  const rendered = renderIssue({
+    ...ISSUE,
+    children: [{
+      key: "PCK-14",
+      summary: "Handle the 302 target",
+      issueType: "Task",
+      status: "Ready for QA",
+      statusCategory: "indeterminate",
+      assignee: null,
+    }],
+  });
+
+  assertEquals(rendered.split("\n").slice(4), [
+    "  links:",
+    "    is blocked by PCK-9 [Done] Pin the runner image",
+    "  children:",
+    "    PCK-14 [Ready for QA] Handle the 302 target",
+  ]);
+});
+
+Deno.test("an issue with no Children shows no children block", () => {
+  assertEquals(renderIssue({ ...ISSUE, children: [] }), HEADER.join("\n"));
+});
+
 Deno.test("the time in status is the local date of the last Transition", () => {
   // Midday UTC is 9 August in every zone from -11:00 to +11:00, so this pins
   // the format without depending on the zone the tests run in.

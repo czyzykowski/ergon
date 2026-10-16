@@ -13,6 +13,13 @@ so an Epic and a Story compete for the same slot — an issue does not have "an
 epic _and_ a parent", it has one Parent that may happen to be either. _Avoid_:
 parent ticket, container
 
+**Child**: An issue whose Parent is a given issue — the Parent slot read from
+the other end. Because each issue has one Parent, an issue's Children belong to
+it alone, and the issues below an Epic form a tree rather than a web. Jira's
+Parent-Child Link type is not this: it is an ordinary Link, carries no
+hierarchy, and is never called a Child here. _Avoid_: subtask, sub-issue,
+parent-child link
+
 **Epic**: The Parent chosen from a project's epic list rather than searched for
 by key. It is a way of _picking_ a Parent, not a second kind of link. _Avoid_:
 initiative, theme

@@ -63,6 +63,13 @@ export function renderIssue(issue: JiraIssue): string {
     }
   }
 
+  if (issue.children && issue.children.length > 0) {
+    lines.push("  children:");
+    for (const child of issue.children) {
+      lines.push(`    ${child.key} [${child.status}] ${child.summary}`);
+    }
+  }
+
   if (issue.description !== null) {
     lines.push("", issue.description);
   }

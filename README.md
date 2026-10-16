@@ -138,6 +138,16 @@ the intended way for an agent to find out what an issue asks for:
       "summary": "Pin the runner image",
       "status": "Done"
     }
+  ],
+  "children": [
+    {
+      "key": "PCK-14",
+      "summary": "Handle the 302 target",
+      "issueType": "Task",
+      "status": "Ready for QA",
+      "statusCategory": "indeterminate",
+      "assignee": null
+    }
   ]
 }
 ```
@@ -169,16 +179,22 @@ the intended way for an agent to find out what an issue asks for:
 - `links` holds every link Jira reports, each `phrase` reading from the issue
   you asked about — `"is blocked by"` on one issue is `"blocks"` on the other.
   Links only come back from `ergon get`; `ls` and `search` leave them out.
+- `children` lists every issue whose Parent is this one, by key: direct Children
+  only, Done ones included, never capped — so counting `statusCategory: "done"`
+  says how far along the issue is. `[]` means it has none. Jira's Parent-Child
+  link type is not a Child; it shows under `links`. Like `links`, `children` is
+  missing from `ls` and `search`, and from `get` when the Children could not be
+  searched (a warning on stderr says so).
 - A field ergon did not fetch is **missing** rather than `null`: `links` has no
   key at all on an issue that came from `ls`, and `sprints`/`clientSow` have
   none for a project config has never heard of. `null` always means ergon looked
   and Jira had nothing
   ([ADR 0006](./docs/adr/0006-absent-means-not-fetched.md)).
 
-The human-readable `ergon get` output lists the fields and links, then prints
-the body below a blank line — the same markdown as `description`, unindented so
-it copies out intact. An issue with no body ends at its fields, and a
-`degraded:` line names what `descriptionDegraded` would:
+The human-readable `ergon get` output lists the fields, links and Children, then
+prints the body below a blank line — the same markdown as `description`,
+unindented so it copies out intact. An issue with no body ends at its fields,
+and a `degraded:` line names what `descriptionDegraded` would:
 
 ```
 PCK-12 [In Progress] Fix login redirect

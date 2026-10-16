@@ -3,6 +3,7 @@ import type { BoardConfiguration } from "../board_order.ts";
 import { type JiraIssueLink, renderLinks } from "../links.ts";
 import type {
   Attachment,
+  IssueChild,
   IssueSprint,
   JiraComment,
   JiraConfig,
@@ -267,7 +268,7 @@ export class JiraClient {
   }
 
   async getIssue(key: string): Promise<JiraIssue> {
-    const [response, histories] = await Promise.all([
+    const [response, histories, children] = await Promise.all([
       this.request<JiraIssueResponse>(
         `/rest/api/3/issue/${encodeURIComponent(key)}`,
         {
@@ -279,9 +280,10 @@ export class JiraClient {
       // transitioned", which is a different and possibly false answer. The
       // error is held, not printed, so an issue that fails too reports only
       // its own error.
-      this.listStatusHistories(key).catch((error: unknown) =>
-        error instanceof Error ? error : new Error(String(error))
-      ),
+      this.listStatusHistories(key).catch(asError),
+      // Absent on failure for the same reason: an empty list would claim the
+      // issue has no Children.
+      this.listChildren(key).catch(asError),
     ]);
 
     const issue = mapIssue(response, this.projects);
@@ -290,7 +292,21 @@ export class JiraClient {
     } else {
       issue.statusSince = statusSinceFrom(histories, issue.created);
     }
+    if (children instanceof Error) {
+      console.error(`children unavailable: ${children.message}`);
+    } else {
+      issue.children = children;
+    }
     return issue;
+  }
+
+  /**
+   * Every direct Child, Done ones included, never capped: a list cut short
+   * would make the Parent read as further along than it is.
+   */
+  private async listChildren(key: string): Promise<IssueChild[]> {
+    const issues = await this.searchAll(`parent = ${key} ORDER BY key ASC`);
+    return issues.map((issue) => childOf(mapIssue(issue, this.projects)));
   }
 
   /**
@@ -870,6 +886,22 @@ export function mapIssue(
   }
 
   return mapped;
+}
+
+/** An issue as it appears in its Parent's list of Children. */
+export function childOf(issue: JiraIssue): IssueChild {
+  return {
+    key: issue.key,
+    summary: issue.summary,
+    issueType: issue.issueType,
+    status: issue.status,
+    statusCategory: issue.statusCategory,
+    assignee: issue.assignee,
+  };
+}
+
+function asError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(String(error));
 }
 
 /**

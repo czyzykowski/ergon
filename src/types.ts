@@ -76,6 +76,20 @@ export interface IssueLink {
   status: string;
 }
 
+/**
+ * An issue whose Parent is the one it was read from: enough to say how far
+ * along it is and who holds it, and no more.
+ */
+export interface IssueChild {
+  key: string;
+  summary: string;
+  issueType: string;
+  status: string;
+  /** The status category key — `new`, `indeterminate`, or `done`. */
+  statusCategory: string;
+  assignee: string | null;
+}
+
 export interface JiraIssue {
   id: string;
   key: string;
@@ -116,6 +130,11 @@ export interface JiraIssue {
   clientSow?: string | null;
   /** Absent from a search: `issuelinks` is fetched for a single issue only. */
   links?: IssueLink[];
+  /**
+   * Every direct Child, Done ones included, by key. Absent from a search, and
+   * when the Children could not be searched.
+   */
+  children?: IssueChild[];
 }
 
 /** An Attachment as ergon hands it out, and the `ergon attachments --json` contract. */
