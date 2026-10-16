@@ -31,10 +31,24 @@
 - [x] Selecting Attachments by id (`ergon attachments KEY ID...`)
 - [x] Downloading Attachments (`ergon attachments ... --download <dir>`)
 - [x] Listing a project's Open Sprints (`ergon sprints`)
+- [x] Time in status (`statusSince` on `ergon get`)
 - [ ] `--sprint <name>` matching future Sprints, on `edit` and on `new` in both
       modes, through `listOpenSprints`
 
 ## Updates
+
+- `statusSince` reads `POST /rest/api/3/changelog/bulkfetch` with
+  `fieldIds: ["status"]`, paged by `nextPageToken`. Its `created` is epoch
+  milliseconds, not the offset-bearing string the rest of the API sends, which
+  is why `statusSince` is UTC ISO (`…Z`) and why the `created` fallback is
+  re-spelled to match. Checked live against a full walk of
+  `/issue/{key}/changelog` on ten issues, among them TCCC-1 (1218 entries) and
+  PGR-643 (3588, never transitioned): every instant matched to the millisecond.
+  The issue and changelog requests run in parallel. A same-name remap is not a
+  Transition (`fromString === toString`); see the glossary.
+- The standup skill's In Progress rule should read "`statusSince` 7+ days and no
+  comment, commit or PR in that window": `statusSince` measures time in status,
+  not activity.
 
 - `ergon sprints` ignores `sprintBoardId` on purpose, unlike `--sprint active`:
   it reports what exists, and a numeric `--sprint` writes regardless of board

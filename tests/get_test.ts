@@ -64,3 +64,17 @@ Deno.test("a Degraded Description is named among the fields", () => {
     "  links:",
   ]);
 });
+
+Deno.test("the time in status is the local date of the last Transition", () => {
+  // Midday UTC is 9 August in every zone from -11:00 to +11:00, so this pins
+  // the format without depending on the zone the tests run in.
+  const rendered = renderIssue({
+    ...ISSUE,
+    statusSince: "2026-08-09T12:00:00.000Z",
+  });
+
+  assertEquals(rendered.split("\n").slice(3, 5), [
+    "  assignee: Lukasz Czyzykowski",
+    "  since:    2026-08-09",
+  ]);
+});

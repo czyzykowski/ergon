@@ -80,6 +80,15 @@ Not Do alike. This is how ergon tells finished work from open work, and the only
 way: the workflows it serves never set a resolution, so every issue reads as
 unresolved however long ago it closed. _Avoid_: resolved, closed, complete
 
+**Transition**: A change in the status an issue shows, by name — In Progress to
+Ready for QA counts though both sit in one category, and so does a move made by
+automation or by someone else. A remap that changes the status underneath but
+leaves its name alone, as moving an issue between projects can, is not a
+Transition: the issue has been waiting in the status a reader sees all along.
+How long an issue has sat in its status runs from its last Transition, or from
+its creation if it has never had one. _Avoid_: status change, move, workflow
+step
+
 **Board order**: The order a board presents its issues in, and what the operator
 means by priority: the active Sprint first, then each upcoming Sprint in turn,
 then everything in no Sprint, with Rank deciding only within each of those

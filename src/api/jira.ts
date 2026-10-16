@@ -84,6 +84,18 @@ export interface JiraSearchResponse {
   nextPageToken?: string;
 }
 
+/** One dated edit from an issue's changelog, as bulkfetch returns it. */
+export interface JiraChangeHistory {
+  /** Epoch milliseconds: bulkfetch, unlike the rest of the API, sends a number. */
+  created: number;
+  items: Array<{ fieldId?: string; fromString?: string; toString?: string }>;
+}
+
+interface JiraBulkChangelogResponse {
+  issueChangeLogs?: Array<{ changeHistories?: JiraChangeHistory[] }>;
+  nextPageToken?: string;
+}
+
 export interface JiraIssueFieldsResponse {
   fields: Record<string, unknown>;
 }
@@ -255,14 +267,64 @@ export class JiraClient {
   }
 
   async getIssue(key: string): Promise<JiraIssue> {
-    const issue = await this.request<JiraIssueResponse>(
-      `/rest/api/3/issue/${encodeURIComponent(key)}`,
-      {
-        method: "GET",
-      },
-    );
+    const [response, histories] = await Promise.all([
+      this.request<JiraIssueResponse>(
+        `/rest/api/3/issue/${encodeURIComponent(key)}`,
+        {
+          method: "GET",
+        },
+      ),
+      // A changelog that cannot be read leaves statusSince Absent rather than
+      // failing the issue: falling back to `created` would read as "never
+      // transitioned", which is a different and possibly false answer. The
+      // error is held, not printed, so an issue that fails too reports only
+      // its own error.
+      this.listStatusHistories(key).catch((error: unknown) =>
+        error instanceof Error ? error : new Error(String(error))
+      ),
+    ]);
 
-    return mapIssue(issue, this.projects);
+    const issue = mapIssue(response, this.projects);
+    if (histories instanceof Error) {
+      console.error(`statusSince unavailable: ${histories.message}`);
+    } else {
+      issue.statusSince = statusSinceFrom(histories, issue.created);
+    }
+    return issue;
+  }
+
+  /**
+   * Every change to the issue's status, paginated to completion. The embedded
+   * `expand=changelog` stops at 100 entries of any field, so on a long-lived
+   * issue it need not reach the last Transition; bulkfetch filters to status
+   * on Jira's side and pages through the rest.
+   */
+  private async listStatusHistories(
+    key: string,
+  ): Promise<JiraChangeHistory[]> {
+    const histories: JiraChangeHistory[] = [];
+    let nextPageToken: string | undefined;
+
+    do {
+      const response = await this.request<JiraBulkChangelogResponse>(
+        "/rest/api/3/changelog/bulkfetch",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            issueIdsOrKeys: [key],
+            fieldIds: ["status"],
+            maxResults: 1000,
+            nextPageToken,
+          }),
+        },
+      );
+      for (const log of response.issueChangeLogs ?? []) {
+        histories.push(...(log.changeHistories ?? []));
+      }
+      nextPageToken = response.nextPageToken;
+    } while (nextPageToken);
+
+    return histories;
   }
 
   async search(jql: string, maxResults = 50): Promise<JiraIssue[]> {
@@ -808,6 +870,29 @@ export function mapIssue(
   }
 
   return mapped;
+}
+
+/**
+ * When the issue entered the status it shows: its last Transition, or its
+ * creation if it has never had one. Always UTC ISO 8601, because bulkfetch
+ * reports a Transition as an instant with no offset to spell it in, and one
+ * field should not come in two spellings.
+ */
+export function statusSinceFrom(
+  histories: JiraChangeHistory[],
+  created: string,
+): string {
+  // A remap that keeps the name is not a Transition; see the glossary.
+  const transitions = histories.filter((history) =>
+    history.items.some((item) =>
+      item.fieldId === "status" && item.fromString !== item.toString
+    )
+  );
+
+  if (transitions.length === 0) return new Date(created).toISOString();
+
+  const latest = Math.max(...transitions.map((history) => history.created));
+  return new Date(latest).toISOString();
 }
 
 /**

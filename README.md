@@ -125,6 +125,7 @@ the intended way for an agent to find out what an issue asks for:
   "labels": ["backend"],
   "created": "2026-08-01T09:12:00.000+0100",
   "updated": "2026-08-14T11:04:31.000+0100",
+  "statusSince": "2026-08-09T15:40:12.000Z",
   "priority": "Medium",
   "dueDate": "2026-08-20",
   "sprints": [{ "name": "Aug 17 - 21", "state": "active" }],
@@ -153,6 +154,11 @@ the intended way for an agent to find out what an issue asks for:
 - `statusCategory` is the stable key (`new`, `indeterminate`, `done`), so it can
   be tested against without knowing a project's status names.
 - `created` and `updated` are Jira's own timestamps, passed through unparsed.
+- `statusSince` is when the issue entered the status it shows, as a UTC ISO
+  instant: its last Transition — any change of status name, one within a
+  category included — or `created` if it has never had one. Unlike `updated`, a
+  comment or an edit does not reset it. It is missing from `ls`, and from `get`
+  when the changelog could not be read (a warning on stderr says so).
 - `priority` is the Jira Priority name, or `null`. It is reported but never
   ordered by: the ordering the board carries is `--order board`.
 - `dueDate` is Jira's due date as `YYYY-MM-DD`, or `null`.
@@ -179,6 +185,7 @@ PCK-12 [In Progress] Fix login redirect
   type:     Task
   project:  PCK
   assignee: Lukasz Czyzykowski
+  since:    2026-08-09
   links:
     is blocked by PCK-9 [Done] Pin the runner image
     relates to PCK-31 [To Do] Audit CI secrets

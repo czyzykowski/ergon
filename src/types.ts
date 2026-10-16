@@ -97,6 +97,11 @@ export interface JiraIssue {
   epicSummary?: string;
   created: string;
   updated: string;
+  /**
+   * When the issue entered its status: its last Transition, or `created` if it
+   * has none. Absent from a search, and when the changelog could not be read.
+   */
+  statusSince?: string;
   timeSpentSeconds: number | null;
   originalEstimateSeconds: number | null;
   /** The Priority name, read and reported; ergon orders by Board order instead. */

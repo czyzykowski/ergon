@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- `ergon get --json` carries `statusSince`: when the issue entered the status it
+  shows, as a UTC ISO instant — its last Transition (a change of status name,
+  one within a category included), or `created` if it has never had one. Read
+  from the full status changelog, so long-lived issues are not cut off at Jira's
+  100-entry embedded changelog. Absent from `ls`, and Absent with a warning on
+  stderr when the changelog cannot be read. The human-readable `ergon get` shows
+  it as a `since:` date.
+
 - Added `ergon sprints <PROJECT>`, which lists the project's open sprints —
   active first, then upcoming in board order — each once with the boards that
   show it, asked of Jira every run. `--json` gives

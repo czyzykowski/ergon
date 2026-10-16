@@ -1,6 +1,7 @@
 import type { Command } from "cliffy/command/mod.ts";
 import { JiraClient } from "../api/jira.ts";
 import { loadConfig } from "../config.ts";
+import { localDay } from "../dates.ts";
 import type { JiraIssue } from "../types.ts";
 
 interface GetOptions {
@@ -45,6 +46,9 @@ export function renderIssue(issue: JiraIssue): string {
     lines.push(`  parent:   ${issue.parentKey} ${issue.parentSummary ?? ""}`);
   }
   lines.push(`  assignee: ${issue.assignee ?? "Unassigned"}`);
+  if (issue.statusSince) {
+    lines.push(`  since:    ${localDay(new Date(issue.statusSince))}`);
+  }
 
   if (issue.descriptionDegraded.length > 0) {
     lines.push(`  degraded: ${issue.descriptionDegraded.join(", ")}`);

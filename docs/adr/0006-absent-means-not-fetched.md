@@ -47,6 +47,10 @@ extra check in `scripts/sweep.py` and in anything else parsing `--json`.
 graphs to satisfy a symmetry no caller consumes, and the honest thin answer is
 better than the expensive identical one.
 
+`statusSince` follows `links`: `ergon get` reads it from the status changelog,
+at least one more request per issue, and `ls` leaves it Absent. Bulkfetch would
+make it one request per list, but no caller of `ls` consumes it.
+
 `mapIssue` becomes an exported, tested function. It was private while
 `ergon
 get` was the only caller and its output was read by a human; it is now a
