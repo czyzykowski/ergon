@@ -28,7 +28,13 @@ export function buildCommand(): Command {
   const program = new Command()
     .name("ergon")
     .version("0.1.0")
-    .description(MAIN_DESCRIPTION);
+    .description(MAIN_DESCRIPTION)
+    // ergon is read mostly by scripts and agents, so help carries no escape
+    // codes. Subcommands inherit this.
+    .help({ colors: false })
+    // Usage errors reach main's catch as one line, rather than cliffy printing
+    // the whole help to stdout ahead of them.
+    .throwErrors();
 
   registerNewCommand(program);
   registerStartCommand(program);

@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- Help is plain text: no ANSI colour codes, in a terminal or not.
+
+- A usage error — an option missing its value, an unknown command or option —
+  prints its message alone on stderr and exits 1. It used to print the whole
+  help to stdout first, so a script capturing stdout got usage text instead of
+  data.
+
 - `ergon get` lists the issue's Children — every issue whose Parent it is, Done
   ones included, sorted by key and never capped. `--json` carries them as
   `children: [{ key, summary, issueType, status, statusCategory, assignee }]`;

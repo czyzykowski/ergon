@@ -33,10 +33,19 @@
 - [x] Listing a project's Open Sprints (`ergon sprints`)
 - [x] Time in status (`statusSince` on `ergon get`)
 - [x] Listing an issue's Children (`children` on `ergon get`)
+- [x] Plain help and one-line usage errors, for captured output
 - [ ] `--sprint <name>` matching future Sprints, on `edit` and on `new` in both
       modes, through `listOpenSprints`
 
 ## Updates
+
+- Help and usage errors are set on the root command and inherited:
+  `.help({ colors: false })` and `.throwErrors()`. Without `throwErrors`,
+  cliffy's `throw()` prints the full help to stdout with `console.log` before
+  the error line; with it, a `ValidationError` reaches `main`'s catch like any
+  other error. `tests/main_test.ts` spawns `src/main.ts` to check the streams,
+  hence `--allow-run` on the test tasks. **Follow-up:** bare `ergon`, with no
+  command, prints nothing and exits 0, because the root command has no action.
 
 - `children` on `ergon get` is one `parent = KEY ORDER BY key ASC` search, paged
   to completion through `searchAll` and run in parallel with the issue and
