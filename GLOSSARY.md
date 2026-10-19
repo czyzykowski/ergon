@@ -51,6 +51,12 @@ single-select Jira custom field whose id varies per project, so it is always
 referred to by configured field id rather than by name. _Avoid_: SOW value,
 contract, engagement
 
+**Assignee**: The person an issue is assigned to — one slot, which may be empty.
+An issue starts with whatever its project's default gives it, which for the
+projects ergon serves is nobody, and gains an Assignee only when someone names
+one. Never Inherited: whoever holds the Parent has not thereby taken on the work
+beneath it. _Avoid_: owner, assigned user, responsible
+
 **Sprint**: A named, time-boxed iteration on a board. An issue carries a
 _history_ of them rather than a slot: a ticket carried over twice reports three,
 and one planned ahead reports a Sprint it is not yet working in. This is the
@@ -114,6 +120,11 @@ on `ergon new`, leave-alone on `ergon edit` — so None says only "make this
 empty, deliberately". The convention holds wherever `none` cannot collide with a
 real value of the field; a free-text field, where it can, is cleared with an
 empty string instead. _Avoid_: empty, null, unset
+
+**Me**: The literal word a flag takes to mean the Jira account ergon's
+credentials belong to — `--assignee me`. It names the account, not whoever is
+typing: an agent running ergon that passes `me` assigns the operator, never
+itself. _Avoid_: self, myself, current user
 
 **Absent**: Of a field ergon has no answer for, as distinct from one it fetched
 and found empty. There are three ways to have no answer: ergon did not fetch it
