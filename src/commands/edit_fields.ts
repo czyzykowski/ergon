@@ -1,6 +1,7 @@
 import { isDate } from "../dates.ts";
 import { isActiveSprintKeyword } from "../sprint.ts";
-import { isNoneValue } from "./new_fields.ts";
+import type { AssigneeTarget } from "./new_fields.ts";
+import { isNoneValue, parseAssignee } from "./new_fields.ts";
 
 /** Which Sprint a `--sprint` value asks for, before Jira has been consulted. */
 export type SprintTarget =
@@ -14,10 +15,11 @@ export type EditWrite =
   | { field: "description" }
   | { field: "summary"; value: string }
   | { field: "due"; value: string | null }
-  | { field: "sprint"; target: SprintTarget };
+  | { field: "sprint"; target: SprintTarget }
+  | { field: "assignee"; target: AssigneeTarget };
 
 export interface EditPlan {
-  /** In the receipt's order: description, summary, due, sprint. */
+  /** In the receipt's order: description, summary, due, sprint, assignee. */
   writes: EditWrite[];
   opensEditor: boolean;
   /** Whether the current Description must be fetched and checked first. */
@@ -29,6 +31,7 @@ export interface EditOptions {
   description?: string;
   due?: string;
   sprint?: string;
+  assignee?: string;
   force?: boolean;
 }
 
@@ -57,6 +60,10 @@ export function planEdit(options: EditOptions): EditPlan {
 
   if (options.sprint !== undefined) {
     writes.push({ field: "sprint", target: parseSprint(options.sprint) });
+  }
+
+  if (options.assignee !== undefined) {
+    writes.push({ field: "assignee", target: parseAssignee(options.assignee) });
   }
 
   // --force means "flatten this deliberately", which only makes sense when the

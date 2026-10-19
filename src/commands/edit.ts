@@ -9,6 +9,7 @@ import { loadState } from "../state.ts";
 import type { ProjectFieldDefaults } from "../types.ts";
 import type { EditOptions, SprintTarget } from "./edit_fields.ts";
 import { planEdit } from "./edit_fields.ts";
+import { assigneeField } from "./new_fields.ts";
 
 export function registerEditCommand(program: Command): void {
   program
@@ -26,6 +27,10 @@ export function registerEditCommand(program: Command): void {
     .option(
       "--sprint <sprint:string>",
       "Sprint id, or an active sprint's name ('ergon sprints <project>' lists them); 'active' for the active sprint, 'none' to clear it",
+    )
+    .option(
+      "--assignee <assignee:string>",
+      "'me' to assign the issue to yourself, 'none' to unassign it",
     )
     .option("--force", "Overwrite a description ergon cannot round-trip")
     .action(async (options: EditOptions, issueKey?: string) => {
@@ -113,6 +118,13 @@ export function registerEditCommand(program: Command): void {
             changed.push("sprint");
             break;
           }
+          case "assignee":
+            fields.assignee = await assigneeField(
+              write.target,
+              () => jira.getMyAccountId(),
+            );
+            changed.push("assignee");
+            break;
         }
       }
 

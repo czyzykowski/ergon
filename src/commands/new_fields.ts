@@ -1,4 +1,4 @@
-import type { ProjectFieldDefaults } from "../types.ts";
+import type { AssigneeField, ProjectFieldDefaults } from "../types.ts";
 
 /** A Client SOW option, as either a Jira option id or its raw display value. */
 export interface ClientSowValue {
@@ -41,6 +41,28 @@ export interface ResolvedFields {
 /** True when a flag was given the literal word "none", meaning explicitly empty. */
 export function isNoneValue(input?: string): boolean {
   return input?.trim().toLowerCase() === "none";
+}
+
+/**
+ * Who `--assignee` asks for: the operator, or nobody. A person's name is not
+ * taken, because matching one needs a user search and a refusal for a name
+ * that fits several people.
+ */
+export type AssigneeTarget = "me" | "none";
+
+export function parseAssignee(input: string): AssigneeTarget {
+  if (isNoneValue(input)) return "none";
+  if (input.trim().toLowerCase() === "me") return "me";
+
+  throw new Error("--assignee takes 'me' or 'none'.");
+}
+
+/** What to write for a target. Jira is asked who `me` is only when it matters. */
+export async function assigneeField(
+  target: AssigneeTarget,
+  myAccountId: () => Promise<string>,
+): Promise<AssigneeField> {
+  return target === "none" ? null : { accountId: await myAccountId() };
 }
 
 /**

@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- `ergon new` and `ergon edit` take `--assignee me` to assign the issue to the
+  account ergon runs as, and `--assignee none` to leave it or make it
+  unassigned. Any other value is refused before anything is sent. Without the
+  flag, `ergon new` leaves the issue to the project's default Assignee, as
+  before; the Assignee is never inherited from the Parent.
+
 - Help and `--version` are plain text: no ANSI colour codes, in a terminal or
   not.
 

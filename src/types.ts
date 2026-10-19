@@ -90,6 +90,9 @@ export interface IssueChild {
   assignee: string | null;
 }
 
+/** The Assignee as Jira takes it on a write: an account, or null for nobody. */
+export type AssigneeField = { accountId: string } | null;
+
 export interface JiraIssue {
   id: string;
   key: string;

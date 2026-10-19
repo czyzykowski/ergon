@@ -26,8 +26,10 @@ import {
   readSource,
 } from "../text_source.ts";
 import {
+  assigneeField,
   optionPayload,
   parentFieldsFrom,
+  parseAssignee,
   parseLabels,
   requireClientSowFieldId,
   resolveFields,
@@ -44,6 +46,7 @@ interface NewOptions {
   clientSow?: string;
   labels?: string;
   sprint?: string;
+  assignee?: string;
   noCache?: boolean;
   nonInteractive?: boolean;
 }
@@ -322,6 +325,10 @@ export function registerNewCommand(program: Command): void {
       "--sprint <sprint:string>",
       "Sprint id, or an active sprint's name ('ergon sprints <project>' lists them); 'active' for the active sprint, 'none' to skip",
     )
+    .option(
+      "--assignee <assignee:string>",
+      "'me' to assign the issue to yourself, 'none' to create it unassigned; left out, the project's default applies",
+    )
     .option("--no-cache", "Disable cached Jira metadata")
     .option(
       "--non-interactive",
@@ -352,6 +359,11 @@ export function registerNewCommand(program: Command): void {
         description = await readSource(descriptionSource, { subject });
         assertExpressible(description, descriptionSource);
       }
+
+      // Refused here for the same reason as a bad Description source.
+      const assigneeTarget = options.assignee === undefined
+        ? undefined
+        : parseAssignee(options.assignee);
 
       let projectKey = options.project ?? state.lastProject ??
         config.defaults?.project ?? "";
@@ -605,6 +617,10 @@ export function registerNewCommand(program: Command): void {
         ] = sprintId;
       }
 
+      const assignee = assigneeTarget
+        ? await assigneeField(assigneeTarget, () => jira.getMyAccountId())
+        : undefined;
+
       const issue = await jira.createIssue({
         projectKey,
         summary,
@@ -612,6 +628,7 @@ export function registerNewCommand(program: Command): void {
         description: omitIfBlank(description),
         parentKey: parentKey ?? epicKey,
         labels,
+        assignee,
         customFields,
       });
 

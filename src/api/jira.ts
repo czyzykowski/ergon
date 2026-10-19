@@ -2,6 +2,7 @@ import { renderAdf, toAdf } from "../adf.ts";
 import type { BoardConfiguration } from "../board_order.ts";
 import { type JiraIssueLink, renderLinks } from "../links.ts";
 import type {
+  AssigneeField,
   Attachment,
   IssueChild,
   IssueSprint,
@@ -230,6 +231,8 @@ export class JiraClient {
     description?: string;
     parentKey?: string;
     labels?: string[];
+    /** null makes the issue unassigned; leaving it out takes Jira's default. */
+    assignee?: AssigneeField;
     customFields?: Record<string, unknown>;
   }): Promise<JiraIssue> {
     const fields: Record<string, unknown> = {
@@ -240,6 +243,10 @@ export class JiraClient {
 
     if (input.description) {
       fields.description = toAdf(input.description);
+    }
+
+    if (input.assignee !== undefined) {
+      fields.assignee = input.assignee;
     }
 
     if (input.parentKey) {

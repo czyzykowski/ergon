@@ -480,6 +480,7 @@ ergon edit PCK-12 --due 2026-09-20
 ergon edit PCK-12 --due none
 ergon edit PCK-12 --sprint active
 ergon edit PCK-12 --sprint none
+ergon edit PCK-12 --assignee me
 ergon edit PCK-12 --description - <<'EOF'
 Steps to reproduce:
 1. Log in
@@ -498,6 +499,11 @@ EOF
   flag, not the calendar, so it stays on last week's sprint until someone
   completes it. `current` is refused, naming `active`. The same holds for
   `ergon new --sprint`.
+- `--assignee` takes `me`, the account ergon's credentials belong to, or `none`
+  to unassign the issue. It replaces whoever held the issue without asking; Jira
+  keeps the change in the issue's history. Other people cannot be named yet.
+  `ergon new --assignee` takes the same values; without it a new issue gets the
+  project's default Assignee, which on PCK and PGR is nobody.
 - `--description ""` clears the description. `none` is not a sentinel here: it
   would collide with a real description.
 - Descriptions are markdown. Markdown ergon cannot express — an image, raw HTML,

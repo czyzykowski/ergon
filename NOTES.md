@@ -34,10 +34,26 @@
 - [x] Time in status (`statusSince` on `ergon get`)
 - [x] Listing an issue's Children (`children` on `ergon get`)
 - [x] Plain help and one-line usage errors, for captured output
+- [x] Assigning an issue to the operator (`--assignee me|none` on `new`, `edit`)
 - [ ] `--sprint <name>` matching future Sprints, on `edit` and on `new` in both
       modes, through `listOpenSprints`
+- [ ] A command that takes up an issue in one step — assign it to the operator,
+      move it to In Progress, start the timer. It needs its own verb: `start`
+      already means the timer.
+- [ ] `--assignee <person>`: a user search through
+      `/rest/api/3/user/assignable/search`, refusing a name that fits several
+      people (`matt` fits two on PCK).
 
 ## Updates
+
+- `--assignee` is `me` or `none` only; see `specs/assign-issue.md`. PCK and PGR
+  both default new issues to unassigned (`assigneeType: UNASSIGNED`), and the
+  Assignee is on the create and edit screens of every issue type there, so it
+  travels in the same request as the other fields. `me` is asked of
+  `/rest/api/3/myself` per run. Checked live with `ergon edit PGR-1975` both
+  ways. `ergon new --assignee` was not run live, since that creates an issue:
+  the payload is covered by tests, but Jira accepting `assignee: null` on create
+  is unconfirmed.
 
 - Help and usage errors are set on the root command and inherited:
   `.help({ colors: false })` and `.throwErrors()`. Without `throwErrors`,

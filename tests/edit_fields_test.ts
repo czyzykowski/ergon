@@ -33,8 +33,31 @@ Deno.test("naming no field opens the description, and decides later what to writ
   assertEquals(plan.fetchesDescription, true);
 });
 
+Deno.test("--assignee is a field write, not a reason to open the description", () => {
+  const plan = planEdit({ assignee: "me" });
+
+  assertEquals(plan.writes, [{ field: "assignee", target: "me" }]);
+  assertEquals(plan.opensEditor, false);
+  assertEquals(plan.fetchesDescription, false);
+});
+
+Deno.test("'none' unassigns an issue", () => {
+  assertEquals(planEdit({ assignee: "None" }).writes, [
+    { field: "assignee", target: "none" },
+  ]);
+});
+
+Deno.test("--assignee with a person's name is refused before anything is written", () => {
+  assertThrows(
+    () => planEdit({ due: "2026-09-20", assignee: "bobby" }),
+    Error,
+    "--assignee takes 'me' or 'none'.",
+  );
+});
+
 Deno.test("fields are planned in the receipt's order", () => {
   const plan = planEdit({
+    assignee: "me",
     sprint: "active",
     due: "2026-09-20",
     summary: "Fix the redirect",
@@ -46,6 +69,7 @@ Deno.test("fields are planned in the receipt's order", () => {
     "summary",
     "due",
     "sprint",
+    "assignee",
   ]);
 });
 
