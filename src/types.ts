@@ -109,6 +109,11 @@ export interface JiraIssue {
   parentKey?: string;
   parentSummary?: string;
   assignee: string | null;
+  /**
+   * The Reporter's display name, or null when Jira reports none. Absent from a
+   * search, and when profile visibility hides the name.
+   */
+  reporter?: string | null;
   labels: string[];
   epicKey?: string;
   epicSummary?: string;

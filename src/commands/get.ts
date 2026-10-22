@@ -45,6 +45,11 @@ export function renderIssue(issue: JiraIssue): string {
   if (issue.parentKey) {
     lines.push(`  parent:   ${issue.parentKey} ${issue.parentSummary ?? ""}`);
   }
+  // `get` fetches every field, so an Absent Reporter here is a hidden one.
+  const reporter = issue.reporter === undefined
+    ? "(hidden)"
+    : issue.reporter ?? "(nobody)";
+  lines.push(`  reporter: ${reporter}`);
   lines.push(`  assignee: ${issue.assignee ?? "Unassigned"}`);
   if (issue.statusSince) {
     lines.push(`  since:    ${localDay(new Date(issue.statusSince))}`);

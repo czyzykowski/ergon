@@ -61,6 +61,7 @@ export interface JiraIssueFields {
   project: { key: string };
   parent?: { key: string; fields: { summary: string } };
   assignee?: { displayName?: string };
+  reporter?: { displayName?: string } | null;
   description?: unknown;
   labels?: string[];
   created?: string;
@@ -880,6 +881,13 @@ export function mapIssue(
 
   // Absent unless it was fetched: a key that is missing says "ergon did not
   // look", which is never what an empty array or a null should be read as.
+  // A Reporter Jira will not name is Absent too, so it never reads as nobody.
+  if ("reporter" in raw) {
+    const reporter = fields.reporter;
+    if (!reporter) mapped.reporter = null;
+    else if (reporter.displayName) mapped.reporter = reporter.displayName;
+  }
+
   if ("issuelinks" in raw) {
     mapped.links = renderLinks(fields.issuelinks);
   }

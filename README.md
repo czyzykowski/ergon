@@ -122,6 +122,7 @@ the intended way for an agent to find out what an issue asks for:
   "descriptionDegraded": [],
   "status": "In Progress",
   "statusCategory": "indeterminate",
+  "reporter": "Ada Lovelace",
   "labels": ["backend"],
   "created": "2026-08-01T09:12:00.000+0100",
   "updated": "2026-08-14T11:04:31.000+0100",
@@ -163,6 +164,11 @@ the intended way for an agent to find out what an issue asks for:
   ([ADR 0010](./docs/adr/0010-markdown-is-ergons-rich-text-format.md)).
 - `statusCategory` is the stable key (`new`, `indeterminate`, `done`), so it can
   be tested against without knowing a project's status names.
+- `reporter` is the display name of the person Jira records as asking for the
+  issue — whoever filed it, unless they named someone else. An issue filed
+  through ergon names the account ergon runs as, whoever the request came from.
+  It is `null` when Jira reports no Reporter, and missing when Jira hides the
+  name, as a comment's `author` is. Missing from `ls` and `search` too.
 - `created` and `updated` are Jira's own timestamps, passed through unparsed.
 - `statusSince` is when the issue entered the status it shows, as a UTC ISO
   instant: its last Transition — any change of status name, one within a
@@ -194,12 +200,14 @@ the intended way for an agent to find out what an issue asks for:
 The human-readable `ergon get` output lists the fields, links and Children, then
 prints the body below a blank line — the same markdown as `description`,
 unindented so it copies out intact. An issue with no body ends at its fields,
-and a `degraded:` line names what `descriptionDegraded` would:
+and a `degraded:` line names what `descriptionDegraded` would. `reporter:` reads
+`(nobody)` when Jira reports none and `(hidden)` when it hides the name:
 
 ```
 PCK-12 [In Progress] Fix login redirect
   type:     Task
   project:  PCK
+  reporter: Ada Lovelace
   assignee: Lukasz Czyzykowski
   since:    2026-08-09
   links:

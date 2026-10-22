@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- `ergon get` names the issue's Reporter — who Jira records as asking for it.
+  `--json` carries `reporter` as a display name: `null` when Jira reports none,
+  and Absent when Jira hides the name, as a comment's `author` is. Absent from
+  `ls` and `search`. The human-readable output shows a `reporter:` line above
+  `assignee:`, reading `(nobody)` or `(hidden)` in those two cases.
+
 - `ergon new` and `ergon edit` take `--assignee me` to assign the issue to the
   account ergon runs as, and `--assignee none` to leave it or make it
   unassigned. Any other value is refused before anything is sent. Without the

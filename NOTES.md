@@ -35,6 +35,7 @@
 - [x] Listing an issue's Children (`children` on `ergon get`)
 - [x] Plain help and one-line usage errors, for captured output
 - [x] Assigning an issue to the operator (`--assignee me|none` on `new`, `edit`)
+- [x] Naming an issue's Reporter (`reporter` on `ergon get`)
 - [ ] `--sprint <name>` matching future Sprints, on `edit` and on `new` in both
       modes, through `listOpenSprints`
 - [ ] A command that takes up an issue in one step — assign it to the operator,
@@ -45,6 +46,20 @@
       people (`matt` fits two on PCK).
 
 ## Updates
+
+- `reporter` on `ergon get` comes from the issue read that already fetches every
+  field, so it costs no request. Over the last 1,000 PCK issues the Reporter was
+  always set and always named, and differed from the Creator on 23: one person
+  filing for another (Adriana Malkanova filing PCK-811 with Andrew Grosso as
+  Reporter). So the Reporter is who asks, and the Creator only who typed it in.
+  `creator` is left out: free to fetch, but nothing asks who typed an issue in,
+  and on an issue filed through ergon both name the operator anyway. `ls` does
+  not ask for `reporter`, so it is Absent there, like `links`.
+- **Follow-up:** a hidden Assignee reads as `null` ("Unassigned"), because
+  `mapIssue` folds a nameless user object into null. ADR 0006 says it should be
+  Absent, as the Reporter and a comment's `author` are. Fixing it changes the
+  type of `assignee`, which Children and `ls --json` share, so it was left out
+  of the Reporter change.
 
 - `--assignee` is `me` or `none` only; see `specs/assign-issue.md`. PCK and PGR
   both default new issues to unassigned (`assigneeType: UNASSIGNED`), and the

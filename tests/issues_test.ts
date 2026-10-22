@@ -120,6 +120,39 @@ Deno.test("a fetched issue carries its links, empty or not", () => {
   assertEquals(issue.links, []);
 });
 
+Deno.test("a fetched issue carries its Reporter's display name", () => {
+  const issue = mapIssue(
+    searched({
+      reporter: { accountId: "5f1a", displayName: "Bobby Vazquez" },
+    }),
+    PROJECTS,
+  );
+
+  assertEquals(issue.reporter, "Bobby Vazquez");
+});
+
+Deno.test("an issue Jira reports no Reporter for has a null one", () => {
+  const issue = mapIssue(searched({ reporter: null }), PROJECTS);
+
+  assert("reporter" in issue);
+  assertEquals(issue.reporter, null);
+});
+
+Deno.test("a Reporter Jira hides is Absent, so it never reads as nobody", () => {
+  const issue = mapIssue(
+    searched({ reporter: { accountId: "5f1a" } }),
+    PROJECTS,
+  );
+
+  assertFalse("reporter" in issue);
+});
+
+Deno.test("a searched issue has no reporter key, because nobody asked Jira", () => {
+  const issue = mapIssue(searched(), PROJECTS);
+
+  assertFalse("reporter" in issue);
+});
+
 Deno.test("a search asks for every declared project's custom fields, once", () => {
   const fields = searchFields({
     PCK: {
