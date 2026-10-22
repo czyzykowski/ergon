@@ -52,12 +52,7 @@ async function createdFields(
     return Promise.resolve(Response.json({
       id: "10012",
       key: "PCK-12",
-      fields: {
-        summary: "Fix login redirect",
-        status: { name: "Open", statusCategory: { key: "new" } },
-        issuetype: { name: "Task" },
-        project: { key: "PCK" },
-      },
+      self: "https://jira.example/rest/api/3/issue/10012",
     }));
   });
 

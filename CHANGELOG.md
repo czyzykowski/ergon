@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- `ergon new` prints the new issue's summary after its key. It printed
+  `Created PGR-2009:` with nothing after the colon, interactive or not.
+
 - `ergon get` names the issue's Reporter — who Jira records as asking for it.
   `--json` carries `reporter` as a display name: `null` when Jira reports none,
   and Absent when Jira hides the name, as a comment's `author` is. Absent from

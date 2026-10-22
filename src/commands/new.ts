@@ -647,6 +647,6 @@ export function registerNewCommand(program: Command): void {
         cache: useCache ? cache : state.cache,
       });
 
-      console.log(`Created ${issue.key}: ${issue.summary}`);
+      console.log(`Created ${issue.key}: ${summary}`);
     });
 }

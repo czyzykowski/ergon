@@ -47,6 +47,13 @@
 
 ## Updates
 
+- Jira answers `POST /rest/api/3/issue` with `{id, key, self}` and no fields.
+  `createIssue` used to map that through `mapIssue`, whose `fields ?? {}` guard
+  (added when the missing fields crashed it) read every field as empty, so
+  `ergon new` printed `Created PGR-2009:` with no summary, in both modes. It now
+  returns only `{id, key}`, and `new` prints the summary it sent. The
+  `assignee_test` stub had returned fields, which is why no test caught it.
+
 - `reporter` on `ergon get` comes from the issue read that already fetches every
   field, so it costs no request. Over the last 1,000 PCK issues the Reporter was
   always set and always named, and differed from the Creator on 23: one person

@@ -235,7 +235,7 @@ export class JiraClient {
     /** null makes the issue unassigned; leaving it out takes Jira's default. */
     assignee?: AssigneeField;
     customFields?: Record<string, unknown>;
-  }): Promise<JiraIssue> {
+  }): Promise<Pick<JiraIssue, "id" | "key">> {
     const fields: Record<string, unknown> = {
       project: { key: input.projectKey },
       summary: input.summary,
@@ -264,7 +264,10 @@ export class JiraClient {
       }
     }
 
-    const response = await this.request<JiraIssueResponse>(
+    // Jira answers a create with the new issue's id and key and no fields, so
+    // that is all there is to hand back; mapping it as an issue would read
+    // every field as empty.
+    const response = await this.request<Pick<JiraIssue, "id" | "key">>(
       "/rest/api/3/issue",
       {
         method: "POST",
@@ -272,7 +275,7 @@ export class JiraClient {
       },
     );
 
-    return mapIssue(response, this.projects);
+    return { id: response.id, key: response.key };
   }
 
   async getIssue(key: string): Promise<JiraIssue> {
