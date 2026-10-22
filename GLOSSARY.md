@@ -57,6 +57,11 @@ projects ergon serves is nobody, and gains an Assignee only when someone names
 one. Never Inherited: whoever holds the Parent has not thereby taken on the work
 beneath it. _Avoid_: owner, assigned user, responsible
 
+**Reporter**: The person Jira records as asking for an issue — whoever filed it,
+unless they named someone else when filing it. It is a record, not a guarantee:
+an issue filed through ergon names the account its credentials belong to, as Me
+does, whoever the request came from. _Avoid_: requester, author, filer
+
 **Sprint**: A named, time-boxed iteration on a board. An issue carries a
 _history_ of them rather than a slot: a ticket carried over twice reports three,
 and one planned ahead reports a Sprint it is not yet working in. This is the
