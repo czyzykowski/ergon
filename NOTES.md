@@ -36,6 +36,7 @@
 - [x] Plain help and one-line usage errors, for captured output
 - [x] Assigning an issue to the operator (`--assignee me|none` on `new`, `edit`)
 - [x] Naming an issue's Reporter (`reporter` on `ergon get`)
+- [x] Searching issues as data (`ergon search --json`)
 - [ ] `--sprint <name>` matching future Sprints, on `edit` and on `new` in both
       modes, through `listOpenSprints`
 - [ ] A command that takes up an issue in one step — assign it to the operator,

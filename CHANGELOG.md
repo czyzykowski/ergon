@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- `ergon search --json` emits the matching issues as the same array
+  `ergon ls --json` does: `links`, `reporter`, `statusSince` and `children`
+  Absent, as from any search. An empty result is `[]`; without `--json` it stays
+  `No issues found.`
+
 - `ergon search --project` refuses a project ergon has no configuration for,
   naming the key to add, as `ergon ls --project` does. Jira answers a project
   key it does not know with no issues rather than an error, so a typo read as

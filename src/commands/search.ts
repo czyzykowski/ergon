@@ -5,6 +5,7 @@ import { loadConfig, requireDeclaredProject } from "../config.ts";
 interface SearchOptions {
   project?: string;
   status?: string;
+  json?: boolean;
   limit: number;
 }
 
@@ -14,6 +15,7 @@ export function registerSearchCommand(program: Command): void {
     .description("Search Jira issues by text.")
     .option("--project <project:string>", "Filter by project key")
     .option("--status <status:string>", "Comma-separated statuses")
+    .option("--json", "Output raw JSON")
     .option("--limit <limit:number>", "Max results", { default: 20 })
     .action(async (options: SearchOptions, query: string) => {
       const config = await loadConfig();
@@ -27,6 +29,11 @@ export function registerSearchCommand(program: Command): void {
       const jira = new JiraClient(config.jira, config.defaults?.projects);
       const jql = buildJql(query, options.project, options.status);
       const issues = await jira.search(jql, options.limit);
+
+      if (options.json) {
+        console.log(JSON.stringify(issues, null, 2));
+        return;
+      }
 
       if (issues.length === 0) {
         console.log("No issues found.");

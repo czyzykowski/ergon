@@ -250,6 +250,22 @@ ergon ls --since 2026-09-17 --json         # only what has moved since
   an issue from an unknown project still returns it, with `sprints` and
   `clientSow` missing.
 
+### Searching issues
+
+```
+ergon search "login redirect"                  # any project, most recently updated first
+ergon search "login redirect" --project PCK --json
+ergon search sso --status "In Progress,Blocked"
+```
+
+- Matches the text anywhere in an issue (JQL `text ~`), in everyone's issues,
+  not only yours.
+- `--json` emits the same array `ergon ls --json` does. An empty result is `[]`;
+  without `--json` it stays `No issues found.`
+- `--project` on an undeclared project is an error, as on `ls`: Jira answers an
+  unknown key with no issues rather than an error, so a typo would read as
+  nothing found. `--status` is not checked, so a misspelt status finds nothing.
+
 ### Reading a day's time
 
 ```
