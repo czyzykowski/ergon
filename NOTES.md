@@ -47,6 +47,15 @@
 
 ## Updates
 
+- Jira's `/rest/api/3/search/jql` answers an unknown project key or status name
+  with `{"issues":[],"isLast":true}`: no error, no warning. `search --project`
+  now refuses an undeclared project, as `ls --project` does, so a typo cannot
+  read as "nothing matched". `--status` is still unchecked and fails the same
+  way — a misspelt status reads as no issues. Checking it needs Jira's status
+  list (`/rest/api/3/status`), one more request per search or a new Cache entry,
+  which was more than adding `search --json` warranted. A known gap, not an
+  oversight.
+
 - Jira answers `POST /rest/api/3/issue` with `{id, key, self}` and no fields.
   `createIssue` used to map that through `mapIssue`, whose `fields ?? {}` guard
   (added when the missing fields crashed it) read every field as empty, so

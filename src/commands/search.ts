@@ -1,6 +1,6 @@
 import type { Command } from "cliffy/command/mod.ts";
 import { JiraClient } from "../api/jira.ts";
-import { loadConfig } from "../config.ts";
+import { loadConfig, requireDeclaredProject } from "../config.ts";
 
 interface SearchOptions {
   project?: string;
@@ -17,6 +17,13 @@ export function registerSearchCommand(program: Command): void {
     .option("--limit <limit:number>", "Max results", { default: 20 })
     .action(async (options: SearchOptions, query: string) => {
       const config = await loadConfig();
+
+      // Jira answers a project key it does not know with no issues rather
+      // than an error, so a typo would read as "nothing matched".
+      if (options.project) {
+        requireDeclaredProject(config.defaults?.projects, options.project);
+      }
+
       const jira = new JiraClient(config.jira, config.defaults?.projects);
       const jql = buildJql(query, options.project, options.status);
       const issues = await jira.search(jql, options.limit);

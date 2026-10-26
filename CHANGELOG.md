@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- `ergon search --project` refuses a project ergon has no configuration for,
+  naming the key to add, as `ergon ls --project` does. Jira answers a project
+  key it does not know with no issues rather than an error, so a typo read as
+  `No issues found.` Searching without `--project` still finds issues in any
+  project.
+
 - `ergon new` prints the new issue's summary after its key. It printed
   `Created PGR-2009:` with nothing after the colon, interactive or not.
 
