@@ -91,9 +91,11 @@ Deno.test("--version is plain text on stdout, and -V the bare number", async () 
 /**
  * Runs `test` with a fresh HOME holding a config whose Jira goes nowhere and
  * which declares PCK, so whatever a run reaches it reaches without network.
+ * `jiraBaseUrl` points Jira somewhere that answers instead.
  */
 async function withTestHome(
   test: (env: Record<string, string>) => Promise<void>,
+  jiraBaseUrl = "http://127.0.0.1:9",
 ): Promise<void> {
   const home = await Deno.makeTempDir();
   // Deno keeps its module cache under HOME, so a fresh HOME alone would
@@ -110,7 +112,7 @@ async function withTestHome(
       configPath,
       [
         "jira:",
-        "  baseUrl: http://127.0.0.1:9",
+        `  baseUrl: ${jiraBaseUrl}`,
         "  email: test@example.com",
         "  apiToken: token",
         "clockwork:",
@@ -170,5 +172,51 @@ Deno.test("new without a terminal names --summary when none is given", async () 
       stdout: "",
       stderr: "Summary is required; pass --summary.\n",
     });
+  });
+});
+
+Deno.test("move without a terminal names --to before calling Jira", async () => {
+  // Jira goes nowhere, so a refusal that came after fetching the transitions
+  // would fail with a connection error instead.
+  await withTestHome(async (env) => {
+    const run = await runErgonWith(env, "move", "X-1");
+
+    assertEquals(run, {
+      code: 1,
+      stdout: "",
+      stderr: "Target status is required; pass --to.\n",
+    });
+  });
+});
+
+Deno.test("move with an unknown --to lists the available transitions", async () => {
+  await using jira = Deno.serve(
+    { hostname: "127.0.0.1", port: 0, onListen: () => {} },
+    () =>
+      Response.json({
+        transitions: [
+          { id: "11", name: "In Progress" },
+          { id: "21", name: "Done" },
+        ],
+      }),
+  );
+
+  await withTestHome(async (env) => {
+    const run = await runErgonWith(env, "move", "X-1", "--to", "Shipped");
+
+    assertEquals(run, {
+      code: 1,
+      stdout: "",
+      stderr:
+        "No transition found for 'Shipped'. Available: In Progress, Done\n",
+    });
+  }, `http://127.0.0.1:${jira.addr.port}`);
+});
+
+Deno.test("menu without a terminal refuses to start", async () => {
+  assertEquals(await runErgon("menu"), {
+    code: 1,
+    stdout: "",
+    stderr: "ergon menu needs a terminal.\n",
   });
 });

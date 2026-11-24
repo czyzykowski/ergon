@@ -469,6 +469,12 @@
   feeds, the last project and epic someone chose. Only `lastClientSow` (and the
   `lastEpic` read) follow ADR 0001. Left as it was, since flagged runs already
   behaved so; with detection it now reaches every scripted and agent run.
+- `ergon move` and `ergon menu` read the same `isInteractive` decision: `move`
+  without `--to` refuses before `getTransitions`, `menu` refuses outright. The
+  subprocess test that an unknown `--to` still lists the transitions needs a
+  Jira that answers, so it serves one with `Deno.serve` on loopback and the
+  `test` and `coverage` tasks gained `--allow-net=127.0.0.1` — loopback only, so
+  no test can reach a real Jira.
 - `toAdf` already normalises trailing newlines: `"a\n\n- b"`, `"a\n\n- b\n"` and
   `"a\n\n- b\n\n"` all produce the same two blocks. A file Source therefore
   needs no trimming, which is what made the file path a smaller change than

@@ -15,6 +15,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   is required; pass --summary.". `--non-interactive` stays, for a run at a
   terminal that should not prompt.
 
+- `ergon move` and `ergon menu` run without a terminal fail instead of waiting
+  on a prompt nobody can answer. `ergon move <key>` without `--to` fails with
+  "Target status is required; pass --to." before calling Jira; an unknown `--to`
+  still lists the available transitions. `ergon menu` refuses to start with
+  "ergon menu needs a terminal.". At a terminal both prompt as before.
+
 - `ergon search --json` emits the matching issues as the same array
   `ergon ls --json` does: `links`, `reporter`, `statusSince` and `children`
   Absent, as from any search. An empty result is `[]`; without `--json` it stays

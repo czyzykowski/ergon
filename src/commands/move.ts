@@ -2,6 +2,7 @@ import type { Command } from "cliffy/command/mod.ts";
 import { Select } from "cliffy/prompt/mod.ts";
 import { JiraClient } from "../api/jira.ts";
 import { loadConfig } from "../config.ts";
+import { isInteractive } from "../interactive.ts";
 import { loadState } from "../state.ts";
 
 export function registerMoveCommand(program: Command): void {
@@ -16,6 +17,12 @@ export function registerMoveCommand(program: Command): void {
 
       if (!key) {
         throw new Error("Provide an issue key or run from a previous issue.");
+      }
+
+      // Checked before fetching the transitions, so the refusal needs no
+      // network. An unknown --to lists them, for a caller that needs the names.
+      if (!options.to && !isInteractive()) {
+        throw new Error("Target status is required; pass --to.");
       }
 
       const jira = new JiraClient(config.jira, config.defaults?.projects);
