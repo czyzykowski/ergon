@@ -38,6 +38,10 @@ every run without a terminal turned Non-interactive: a script that omitted
 `--project` filed its issue wherever the operator last worked. A Non-interactive
 run now resolves the project from `--project`, then config, and writes neither.
 The writes are settled in one pure function, `rememberCreated` in
-`src/commands/new_fields.ts`. `state.lastIssueKey` is not Remembered state in
-this sense — it is the default key for follow-up commands such as `ergon edit`,
-not a prompt's pre-selection — and is still written in every mode.
+`src/commands/new_fields.ts`. The reads are not: the project and epic defaults
+are each gated on `interactive` inline in the `ergon new` action in
+`src/commands/new.ts`, beside the prompts that follow them, so `resolveFields`
+is no longer the one place the mode split shows. Search for `state.last` there.
+`state.lastIssueKey` is not Remembered state in this sense — it is the default
+key for follow-up commands such as `ergon edit`, not a prompt's pre-selection —
+and is still written in every mode.
