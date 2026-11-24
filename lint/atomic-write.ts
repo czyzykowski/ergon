@@ -1,9 +1,3 @@
-// `ergon/atomic-write`: under src/, a Deno.writeFile or Deno.writeTextFile
-// must write a temp path that the same function then renames into place, so
-// a crash mid-write never leaves a half-written state or download behind.
-// A write that needs no atomicity (a scratch file) says why in a
-// `// deno-lint-ignore ergon/atomic-write` comment.
-
 type Node = Deno.lint.Node;
 
 const WRITES = new Set([
@@ -13,6 +7,7 @@ const WRITES = new Set([
   "writeTextFileSync",
 ]);
 const RENAMES = new Set(["rename", "renameSync"]);
+const TEMP_FILES = new Set(["makeTempFile", "makeTempFileSync"]);
 const FUNCTIONS = new Set([
   "ArrowFunctionExpression",
   "FunctionDeclaration",
@@ -53,8 +48,24 @@ const atomicWrite: Deno.lint.Rule = {
 
     const writes: Array<{ call: Deno.lint.CallExpression; scope?: Node }> = [];
     const renamed = new Map<Node | undefined, Set<string>>();
+    const scratch = new Map<Node | undefined, Set<string>>();
 
     return {
+      VariableDeclarator(declarator) {
+        const init = declarator.init?.type === "AwaitExpression"
+          ? declarator.init.argument
+          : declarator.init;
+        if (
+          declarator.id.type !== "Identifier" ||
+          init?.type !== "CallExpression" ||
+          !TEMP_FILES.has(denoMethod(init) ?? "")
+        ) return;
+
+        const scope = enclosingFunction(declarator);
+        const names = scratch.get(scope) ?? new Set();
+        scratch.set(scope, names.add(declarator.id.name));
+      },
+
       CallExpression(call) {
         const method = denoMethod(call);
         if (method === undefined) return;
@@ -73,15 +84,18 @@ const atomicWrite: Deno.lint.Rule = {
       "Program:exit"() {
         for (const { call, scope } of writes) {
           const path = pathVariable(call);
-          if (path !== undefined && renamed.get(scope)?.has(path)) continue;
+          if (
+            path !== undefined &&
+            (renamed.get(scope)?.has(path) || scratch.get(scope)?.has(path))
+          ) continue;
           context.report({
             node: call,
             message:
               "Write to a temp path and Deno.rename it into place, in the same function.",
             hint:
               "A crash mid-write would otherwise leave a half-written file. " +
-              "For a scratch file, add `// deno-lint-ignore ergon/atomic-write` " +
-              "with the reason.",
+              "A scratch file needs no rename when the same function made it " +
+              "with Deno.makeTempFile.",
           });
         }
       },

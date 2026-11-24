@@ -39,7 +39,6 @@ export async function editInBuffer(
   });
 
   try {
-    // deno-lint-ignore ergon/atomic-write -- a fresh scratch file, read back once
     await Deno.writeTextFile(path, edit.current);
 
     const [command, ...args] = editor.trim().split(/\s+/);
