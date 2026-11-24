@@ -60,3 +60,29 @@ Deno.test("files outside src/ may write directly", () => {
     [],
   );
 });
+
+Deno.test("a fresh temp file from the same function may be written directly", () => {
+  assertEquals(
+    lint(`
+      export async function scratch(text: string) {
+        const path = await Deno.makeTempFile();
+        await Deno.writeTextFile(path, text);
+        const other = Deno.makeTempFileSync();
+        Deno.writeFileSync(other, new Uint8Array());
+      }
+    `),
+    [],
+  );
+});
+
+Deno.test("a temp file does not cover a write to another path", () => {
+  assertEquals(
+    lint(`
+      export async function save(path: string) {
+        const temp = await Deno.makeTempFile();
+        await Deno.writeTextFile(path, temp);
+      }
+    `),
+    ["ergon/atomic-write"],
+  );
+});
