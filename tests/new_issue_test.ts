@@ -743,6 +743,21 @@ Deno.test("an Interactive Sub-task asks for a Task Parent and no Epic", async ()
   assertEquals(args.parentQuery, [["Task"]]);
 });
 
+Deno.test("an Interactive parent search escapes backslashes and quotes in its text", async () => {
+  const { calls } = await run({
+    interactive: true,
+    draft: { project: "PCK", epic: "none", labels: "a", clientSow: "none" },
+    fixtures: { matches: [{ key: "PCK-5", summary: "A story" }] },
+    script: [["parentQuery", 'say "hi" C:\\'], ["parent", "PCK-5"]],
+  });
+
+  assertEquals(
+    calls.find((call) => call.startsWith("search")),
+    String
+      .raw`search project = PCK AND issuetype in ("Story") AND text ~ "say \"hi\" C:\\" ORDER BY updated DESC 20`,
+  );
+});
+
 Deno.test("an Interactive parent search with no matches is refused", async () => {
   await assertRejects(
     () =>

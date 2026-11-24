@@ -234,10 +234,10 @@ async function askParentIssue(
   }
 
   const typesList = parentTypes.map((type) => `"${type}"`).join(", ");
+  // Backslash first, or the one escaping a quote is escaped in turn.
+  const text = query.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
   const jql =
-    `project = ${projectKey} AND issuetype in (${typesList}) AND text ~ "${
-      query.replace(/"/g, '\\"')
-    }" ORDER BY updated DESC`;
+    `project = ${projectKey} AND issuetype in (${typesList}) AND text ~ "${text}" ORDER BY updated DESC`;
   const matches = await jira.search(jql, 20);
 
   if (matches.length === 0) {

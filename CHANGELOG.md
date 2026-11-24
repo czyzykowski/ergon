@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- An Interactive `ergon new` parent search finds text containing a backslash.
+  Before, the backslash went into the JQL unescaped, so a search ending in one
+  was refused by Jira.
+
 - `ergon new --sprint "Sprint 5"` files into the active sprint of that name
   without a terminal, as `ergon edit --sprint` already did, and at a terminal
   finds it without asking for a board. Before, a Non-interactive run was refused
