@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- `ergon new` run without a terminal on both stdin and stdout — piped, captured,
+  or started by a script or agent — is Non-interactive without
+  `--non-interactive`, exactly as if the flag had been passed: it never prompts
+  and neither reads nor writes the remembered Client SOW. Before, such a run
+  hung silently at its first prompt. Where it lacks a project or a summary it
+  fails naming the flag: "Project key is required; pass --project." and "Summary
+  is required; pass --summary.". `--non-interactive` stays, for a run at a
+  terminal that should not prompt.
+
 - `ergon search --json` emits the matching issues as the same array
   `ergon ls --json` does: `links`, `reporter`, `statusSince` and `children`
   Absent, as from any search. An empty result is `[]`; without `--json` it stays

@@ -452,14 +452,23 @@
   still prompt cannot be left to fail on its own — it produces no output at all
   — which is why `planSource` refuses the combination up front.
 - `Deno.stdin.isTerminal()` is available on Deno 2.6.4 and reports `false` for a
-  pipe, so the condition is cheaply detectable. **Not acted on, and the
-  follow-up worth doing:** wrapping `ergon new`'s seven prompt sites in that
-  check would turn every variant of the hang into a named error ("needs a Client
-  SOW but stdin is not a terminal; pass --client-sow or --non-interactive"),
-  including the ones that predate this work — any non-tty `ergon new` that needs
-  a prompt hangs today. It was left out because it rewrites prompting for runs
-  that have nothing to do with sourcing a description, and it subsumes
-  `planSource`'s narrower refusal when it lands.
+  pipe, so the condition is cheaply detectable. **Done** for `ergon new` by
+  detection rather than per prompt site: `isInteractive` in `src/interactive.ts`
+  makes any run without a terminal on both ends Non-interactive (ADR 0014), so
+  the hang becomes "Project key is required; pass --project." or "Summary is
+  required; pass --summary.". The original follow-up read: wrapping
+  `ergon new`'s seven prompt sites in that check would turn every variant of the
+  hang into a named error ("needs a Client SOW but stdin is not a terminal; pass
+  --client-sow or --non-interactive"), including the ones that predate this work
+  — any non-tty `ergon new` that needs a prompt hangs today. It was left out
+  because it rewrites prompting for runs that have nothing to do with sourcing a
+  description, and it subsumes `planSource`'s narrower refusal when it lands.
+- Open question, found while making detected runs Non-interactive: `ergon new`
+  reads `state.lastProject` in every mode and writes `lastProject` and
+  `lastEpic` in every mode, so a Non-interactive run still depends on, and
+  feeds, the last project and epic someone chose. Only `lastClientSow` (and the
+  `lastEpic` read) follow ADR 0001. Left as it was, since flagged runs already
+  behaved so; with detection it now reaches every scripted and agent run.
 - `toAdf` already normalises trailing newlines: `"a\n\n- b"`, `"a\n\n- b\n"` and
   `"a\n\n- b\n\n"` all produce the same two blocks. A file Source therefore
   needs no trimming, which is what made the file path a smaller change than

@@ -49,12 +49,19 @@ written by its id.
 
 ### Scripted creation
 
-With `--non-interactive`, `ergon new` never prompts and inherits Client SOW and
-labels from the parent issue:
+Run without a terminal on both stdin and stdout — piped, captured with
+`KEY=$(ergon new …)`, or started by a script or agent — `ergon new` is
+Non-interactive on its own: it never prompts, and inherits Client SOW and labels
+from the parent issue. At a terminal, `--non-interactive` does the same, for a
+shell loop that should never stop at a prompt:
 
 ```
 ergon new "Fix login" --non-interactive --parent PCK-12
 ```
+
+- Where a Non-interactive run lacks a value it cannot do without, it fails at
+  once naming the flag: `--project` when neither the flag, the last project nor
+  config names one, `--summary` when no summary was given.
 
 - The parent is `--parent`, or the epic when `--parent` is omitted.
 - Anything passed explicitly wins; `--labels` replaces the inherited set rather
@@ -92,10 +99,11 @@ ergon log PCK-12 2h --description - < note.md
   only command that prompts and so the only one where stdin is contended.
   Elsewhere `--description - < spec.md` already reads a file
   ([ADR 0012](./docs/adr/0012-a-file-flag-only-where-stdin-is-contended.md)).
-- Reading stdin on a run that may still prompt is refused, because `ergon new`
-  would consume stdin and then hang waiting for an answer to the epic prompt.
-  Pass `--non-interactive`, or use `--description-file <path>`, which leaves
-  stdin alone and still prompts.
+- A piped stdin makes the run Non-interactive, so `--description - < spec.md`
+  needs no other flag. Typing the description into stdin at a terminal is
+  refused, because `ergon new` would consume stdin and then hang waiting for an
+  answer to the epic prompt. Pass `--non-interactive`, or use
+  `--description-file <path>`, which leaves stdin alone and still prompts.
 - Passing both `--description` and `--description-file` is refused rather than
   resolved by precedence.
 - An empty file, a whitespace-only file and an empty pipe are refused: naming a

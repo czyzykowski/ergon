@@ -11,6 +11,7 @@ import type {
   JiraIssue,
 } from "../types.ts";
 import { loadConfig, requireDeclaredProject } from "../config.ts";
+import { isInteractive } from "../interactive.ts";
 import {
   isActiveSprintKeyword,
   normalizeBoardId,
@@ -332,14 +333,14 @@ export function registerNewCommand(program: Command): void {
     .option("--no-cache", "Disable cached Jira metadata")
     .option(
       "--non-interactive",
-      "Never prompt. Client SOW and labels are inherited from the parent (or the epic), then from project config; remembered state is ignored. Use 'none' as a value to explicitly clear --epic/--labels/--client-sow/--sprint.",
+      "Never prompt, as every run without a terminal already is. Client SOW and labels are inherited from the parent (or the epic), then from project config; remembered state is ignored. Use 'none' as a value to explicitly clear --epic/--labels/--client-sow/--sprint.",
     )
     .action(async (options: NewOptions, summaryArg?: string) => {
       const config = await loadConfig();
       const jira = new JiraClient(config.jira, config.defaults?.projects);
       const state = await loadState();
 
-      const interactive = !options.nonInteractive;
+      const interactive = isInteractive(options);
 
       // Settled and read before the first prompt and the first Jira call: a
       // typo'd path, an empty file or a construct ergon cannot write costs an
@@ -372,7 +373,7 @@ export function registerNewCommand(program: Command): void {
       }
 
       if (!projectKey) {
-        throw new Error("Project key is required.");
+        throw new Error("Project key is required; pass --project.");
       }
 
       // Creating an issue in a project asserts ergon is configured for it —
@@ -429,7 +430,7 @@ export function registerNewCommand(program: Command): void {
           : undefined);
 
       if (!summary) {
-        throw new Error("Summary is required.");
+        throw new Error("Summary is required; pass --summary.");
       }
       let parentKey = options.parent;
       if (!parentKey && issueTypeRequiresParent(issueType) && interactive) {

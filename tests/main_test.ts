@@ -88,10 +88,13 @@ Deno.test("--version is plain text on stdout, and -V the bare number", async () 
   });
 });
 
-Deno.test("search refuses a project ergon is not configured for", async () => {
-  // Jira would answer an unknown key with no issues, so the refusal is the
-  // only thing telling a typo apart from "nothing matched". The base URL goes
-  // nowhere, so a refusal that came too late would fail differently.
+/**
+ * Runs `test` with a fresh HOME holding a config whose Jira goes nowhere and
+ * which declares PCK, so whatever a run reaches it reaches without network.
+ */
+async function withTestHome(
+  test: (env: Record<string, string>) => Promise<void>,
+): Promise<void> {
   const home = await Deno.makeTempDir();
   // Deno keeps its module cache under HOME, so a fresh HOME alone would
   // download every dependency again before ergon ran a line.
@@ -121,13 +124,18 @@ Deno.test("search refuses a project ergon is not configured for", async () => {
       ].join("\n"),
     );
 
-    const run = await runErgonWith(
-      { HOME: home, DENO_DIR: denoDir },
-      "search",
-      "login",
-      "--project",
-      "PGR",
-    );
+    await test({ HOME: home, DENO_DIR: denoDir });
+  } finally {
+    await Deno.remove(home, { recursive: true });
+  }
+}
+
+Deno.test("search refuses a project ergon is not configured for", async () => {
+  // Jira would answer an unknown key with no issues, so the refusal is the
+  // only thing telling a typo apart from "nothing matched". The base URL goes
+  // nowhere, so a refusal that came too late would fail differently.
+  await withTestHome(async (env) => {
+    const run = await runErgonWith(env, "search", "login", "--project", "PGR");
 
     assertEquals(run.code, 1);
     assertEquals(run.stdout, "");
@@ -135,7 +143,32 @@ Deno.test("search refuses a project ergon is not configured for", async () => {
       run.stderr.startsWith("No configuration for project PGR."),
       run.stderr,
     );
-  } finally {
-    await Deno.remove(home, { recursive: true });
-  }
+  });
+});
+
+// Without a terminal a run is Non-interactive unasked, so each of these
+// completing at all is the proof that it no longer waits on a prompt.
+
+Deno.test("new without a terminal names --project when none resolves", async () => {
+  await withTestHome(async (env) => {
+    const run = await runErgonWith(env, "new", "A summary");
+
+    assertEquals(run, {
+      code: 1,
+      stdout: "",
+      stderr: "Project key is required; pass --project.\n",
+    });
+  });
+});
+
+Deno.test("new without a terminal names --summary when none is given", async () => {
+  await withTestHome(async (env) => {
+    const run = await runErgonWith(env, "new", "--project", "PCK");
+
+    assertEquals(run, {
+      code: 1,
+      stdout: "",
+      stderr: "Summary is required; pass --summary.\n",
+    });
+  });
 });
