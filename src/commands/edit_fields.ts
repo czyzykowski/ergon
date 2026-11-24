@@ -36,6 +36,26 @@ export interface EditOptions {
 }
 
 /**
+ * The flag behind each field option, in the order a refusal lists them. Keyed
+ * on `EditOptions`, so a field option added there without a flag here fails to
+ * type-check rather than going unmentioned when no field was named.
+ */
+const FIELD_FLAGS: Record<Exclude<keyof EditOptions, "force">, string> = {
+  summary: "--summary",
+  description: "--description",
+  due: "--due",
+  sprint: "--sprint",
+  assignee: "--assignee",
+};
+
+/** The field flags as prose: "--summary, --description, … or --assignee". */
+export function fieldFlagList(): string {
+  const flags = Object.values(FIELD_FLAGS);
+
+  return `${flags.slice(0, -1).join(", ")} or ${flags.at(-1)}`;
+}
+
+/**
  * What an invocation writes: name a field and `edit` writes that field, name
  * none and it opens the Description.
  *

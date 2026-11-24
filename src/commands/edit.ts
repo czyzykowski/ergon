@@ -9,7 +9,7 @@ import { requireSprintFieldId, resolveSprintId } from "../sprint.ts";
 import { loadState } from "../state.ts";
 import type { ProjectFieldDefaults } from "../types.ts";
 import type { EditOptions, SprintTarget } from "./edit_fields.ts";
-import { planEdit } from "./edit_fields.ts";
+import { fieldFlagList, planEdit } from "./edit_fields.ts";
 import { assigneeField } from "./new_fields.ts";
 
 export function registerEditCommand(program: Command): void {
@@ -47,8 +47,7 @@ export function registerEditCommand(program: Command): void {
 
       if (plan.opensEditor && !isInteractive()) {
         throw new Error(
-          "A field to edit is required; pass --summary, --description, " +
-            "--due, --sprint or --assignee.",
+          `A field to edit is required; pass ${fieldFlagList()}.`,
         );
       }
 
