@@ -288,7 +288,7 @@ Deno.test({
       const config = await loadConfig(tempDir);
 
       assertEquals(
-        config.defaults?.projects?.PCK.fields?.sprintFieldId,
+        config.defaults?.projects?.PCK?.fields?.sprintFieldId,
         "customfield_10010",
       );
     } finally {
