@@ -15,6 +15,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   is required; pass --summary.". `--non-interactive` stays, for a run at a
   terminal that should not prompt.
 
+- `ergon move` and `ergon menu` run without a terminal fail instead of waiting
+  on a prompt nobody can answer. `ergon move <key>` without `--to` fails with
+  "Target status is required; pass --to." before calling Jira; an unknown `--to`
+  still lists the available transitions. `ergon menu` refuses to start with
+  "ergon menu needs a terminal.". At a terminal both prompt as before.
+
 - `ergon edit` with no field flag, and `ergon comment` with no `--body`, fail
   without a terminal instead of opening `$EDITOR`, which hung the run even with
   `$EDITOR` set. `edit` names its field flags ("A field to edit is required;

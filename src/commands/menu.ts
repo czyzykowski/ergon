@@ -1,11 +1,16 @@
 import type { Command } from "cliffy/command/mod.ts";
 import { Select } from "cliffy/prompt/mod.ts";
+import { isInteractive } from "../interactive.ts";
 
 export function registerMenuCommand(program: Command): void {
   program
     .command("menu")
     .description("Open an interactive command menu.")
     .action(async () => {
+      if (!isInteractive()) {
+        throw new Error("ergon menu needs a terminal.");
+      }
+
       const choice = await Select.prompt({
         message: "Choose an action",
         options: [
