@@ -15,6 +15,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   is required; pass --summary.". `--non-interactive` stays, for a run at a
   terminal that should not prompt.
 
+- `ergon edit` with no field flag, and `ergon comment` with no `--body`, fail
+  without a terminal instead of opening `$EDITOR`, which hung the run even with
+  `$EDITOR` set. `edit` names its field flags ("A field to edit is required;
+  pass --summary, --description, --due, --sprint or --assignee."), `comment`
+  names `--body` ("A comment body is required; pass --body."), whether adding a
+  comment or editing one with `--id`. Both refuse before calling Jira. At a
+  terminal both open the editor as before.
+
 - `ergon search --json` emits the matching issues as the same array
   `ergon ls --json` does: `links`, `reporter`, `statusSince` and `children`
   Absent, as from any search. An empty result is `[]`; without `--json` it stays

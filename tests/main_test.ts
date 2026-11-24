@@ -33,6 +33,9 @@ async function runErgonWith(
       "--allow-read",
       "--allow-env",
       "--allow-write",
+      // As the installed binary has it, so an editor ergon wrongly opened
+      // would really run rather than fail on a permission.
+      "--allow-run",
       MAIN,
       ...args,
     ],
@@ -171,4 +174,59 @@ Deno.test("new without a terminal names --summary when none is given", async () 
       stderr: "Summary is required; pass --summary.\n",
     });
   });
+});
+
+/**
+ * Runs `test` in a test home whose `$EDITOR` and `$VISUAL` would succeed and
+ * leave `marker` behind, so a marker still absent afterwards proves the editor
+ * never ran.
+ */
+async function withWillingEditor(
+  test: (env: Record<string, string>, marker: string) => Promise<void>,
+): Promise<void> {
+  await withTestHome(async (env) => {
+    const marker = `${env.HOME}/editor-ran`;
+    const editor = `touch ${marker}`;
+
+    await test({ ...env, EDITOR: editor, VISUAL: editor }, marker);
+  });
+}
+
+async function exists(path: string): Promise<boolean> {
+  try {
+    await Deno.stat(path);
+    return true;
+  } catch (error) {
+    if (error instanceof Deno.errors.NotFound) return false;
+    throw error;
+  }
+}
+
+Deno.test("edit without a terminal names the field flags instead of opening the editor", async () => {
+  await withWillingEditor(async (env, marker) => {
+    const run = await runErgonWith(env, "edit", "X-1");
+
+    assertEquals(run, {
+      code: 1,
+      stdout: "",
+      stderr:
+        "A field to edit is required; pass --summary, --description, --due, --sprint or --assignee.\n",
+    });
+    assertEquals(await exists(marker), false);
+  });
+});
+
+Deno.test("comment without a terminal names --body instead of opening the editor", async () => {
+  for (const args of [["X-1"], ["X-1", "--id", "10001"]]) {
+    await withWillingEditor(async (env, marker) => {
+      const run = await runErgonWith(env, "comment", ...args);
+
+      assertEquals(run, {
+        code: 1,
+        stdout: "",
+        stderr: "A comment body is required; pass --body.\n",
+      }, args.join(" "));
+      assertEquals(await exists(marker), false, args.join(" "));
+    });
+  }
 });

@@ -377,6 +377,7 @@ ergon blocked-by PCK-12 PCK-9 --remove
 
 `ergon comment` appends a comment to an issue. With no `--body` it opens an
 empty buffer in `$VISUAL` or `$EDITOR`; quitting without typing posts nothing.
+Without a terminal it opens no editor and fails naming `--body`.
 
 ```
 ergon comment PCK-12 --body "Deployed to staging; waiting on QA."
@@ -503,7 +504,8 @@ ergon attachments PCK-12 10423 --download ./att --json
 
 Name a field and `ergon edit` writes that field; name none and it opens the
 current description in `$VISUAL` or `$EDITOR`, where saving an unchanged buffer
-writes nothing.
+writes nothing. Without a terminal it opens no editor and fails naming the field
+flags.
 
 ```
 ergon edit PCK-12

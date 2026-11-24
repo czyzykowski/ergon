@@ -3,6 +3,7 @@ import { renderAdf, toAdf } from "../adf.ts";
 import { JiraClient } from "../api/jira.ts";
 import { loadConfig } from "../config.ts";
 import { editInBuffer } from "../editor.ts";
+import { isInteractive } from "../interactive.ts";
 import { assertRewritable } from "../rewrite.ts";
 import { requireSprintFieldId, resolveSprintId } from "../sprint.ts";
 import { loadState } from "../state.ts";
@@ -43,6 +44,14 @@ export function registerEditCommand(program: Command): void {
       }
 
       const plan = planEdit(options);
+
+      if (plan.opensEditor && !isInteractive()) {
+        throw new Error(
+          "A field to edit is required; pass --summary, --description, " +
+            "--due, --sprint or --assignee.",
+        );
+      }
+
       const jira = new JiraClient(config.jira, config.defaults?.projects);
 
       // Only what this invocation actually needs: a write that does not touch

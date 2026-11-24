@@ -3,6 +3,7 @@ import { renderAdf, toAdf } from "../adf.ts";
 import { JiraClient } from "../api/jira.ts";
 import { loadConfig } from "../config.ts";
 import { editInBuffer } from "../editor.ts";
+import { isInteractive } from "../interactive.ts";
 import { assertRewritable } from "../rewrite.ts";
 import { loadState } from "../state.ts";
 import { refuseBlank } from "../text_source.ts";
@@ -51,6 +52,10 @@ export function registerCommentCommand(program: Command): void {
           "--force is not available on the editor path; pass --body to " +
             "replace the comment outright.",
         );
+      }
+
+      if (!supplied && !isInteractive()) {
+        throw new Error("A comment body is required; pass --body.");
       }
 
       const jira = new JiraClient(config.jira, config.defaults?.projects);
