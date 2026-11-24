@@ -12,7 +12,10 @@
         pkgs = import nixpkgs { inherit system; };
       in
       {
-        devShells.default = pkgs.mkShell {
+        # NoCC: on Darwin, mkShell's stdenv exports DEVELOPER_DIR at a Nix Apple
+        # SDK whose old xcrun prints "unhandled Platform key FamilyDisplayName"
+        # whenever a /usr/bin Xcode shim (git, say) runs. Deno needs no C toolchain.
+        devShells.default = pkgs.mkShellNoCC {
           packages = with pkgs; [
             deno
             git
