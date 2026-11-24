@@ -124,7 +124,7 @@ export async function fileNewIssue(
 
   const fieldDefaults = config.defaults?.projects?.[projectKey]?.fields;
   const clientSowFieldId = fieldDefaults?.clientSowFieldId;
-  // Inherit from the Parent, else the Epic, which becomes this issue's parent
+  // Inherit from the Parent, else the Epic, which becomes this issue's Parent
   // when there is no Parent — in either mode.
   const inheritFromKey = parentKey ?? epicKey;
   const parent = inheritFromKey
@@ -469,8 +469,8 @@ function optionPayload(option: ClientSowValue): Record<string, string> {
 }
 
 /**
- * Read the inheritable fields out of a raw Jira issue `fields` object. A project
- * with no Client SOW field declared inherits labels alone.
+ * Read the Inheritable fields out of a raw Jira issue `fields` object. A project
+ * with no Client SOW field declared Inherits labels alone.
  */
 function parentFieldsFrom(
   fields: Record<string, unknown>,
@@ -502,7 +502,7 @@ function resolveLabels(
 
   // Jira cannot express "deliberately unlabelled" — an issue nobody labelled
   // and an issue someone cleared both arrive as [] — so an empty array is read
-  // as nothing to inherit rather than as an inherited answer.
+  // as nothing to Inherit rather than as an Inherited answer.
   const parentLabels = input.parent?.labels;
   const inherited = parentLabels?.length ? parentLabels : undefined;
   const labels = inherited ?? input.fieldDefaults?.labels;
@@ -564,7 +564,7 @@ interface CreatedIssue {
 
 /**
  * The Remembered state after `created`. The issue key is always recorded, as
- * the default for follow-up commands; the project, epic and Client SOW only
+ * the default for follow-up commands; the project, Epic and Client SOW only
  * pre-select a human's next answer, so a Non-interactive run leaves them as
  * they were — see docs/adr/0001.
  */
