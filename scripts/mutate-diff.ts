@@ -105,6 +105,11 @@ export function failuresOf(report: Report): string[] {
   );
 }
 
+/** For a removal that has nothing to do when the path is already gone. */
+function ignoreMissing(error: unknown): void {
+  if (!(error instanceof Deno.errors.NotFound)) throw error;
+}
+
 async function git(...args: string[]): Promise<string> {
   const { success, stdout, stderr } = await new Deno.Command("git", { args })
     .output();
@@ -160,11 +165,11 @@ if (import.meta.main) {
 
   await Deno.mkdir("reports/mutation", { recursive: true });
   // A report left from an earlier run must not pass for this one.
-  await Deno.remove(REPORT).catch((error) => {
-    if (!(error instanceof Deno.errors.NotFound)) throw error;
-  });
+  await Deno.remove(REPORT).catch(ignoreMissing);
 
   if (!await mutate(ranges)) {
+    // Stopped, Stryker never removes its copy of the project.
+    await Deno.remove(".stryker-tmp", { recursive: true }).catch(ignoreMissing);
     console.error(
       `Mutation testing took over ${LIMIT_MS / 60_000} minutes and was ` +
         `stopped. Split the branch, or run \`deno task mutate\` on the ` +

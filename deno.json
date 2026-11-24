@@ -58,6 +58,6 @@
     "coverage:report": "deno coverage coverage",
     "coverage:check": "deno task coverage && deno coverage --lcov --exclude=tests/ coverage | deno run scripts/check-coverage.ts 68 81",
     "mutate": "deno run --allow-read --allow-write --allow-env --allow-run --allow-sys --allow-net=0.0.0.0,127.0.0.1,localhost scripts/mutate.ts",
-    "mutate:diff": "deno run --allow-read --allow-write=reports --allow-run scripts/mutate-diff.ts"
+    "mutate:diff": "deno run --allow-read --allow-write=reports,.stryker-tmp --allow-run scripts/mutate-diff.ts"
   }
 }
