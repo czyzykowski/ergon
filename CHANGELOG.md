@@ -10,6 +10,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   as it was, as its help text says. Before, the flag did nothing: the Cache was
   always read and always saved.
 
+- An Interactive `ergon new` whose Parent or Epic has no labels takes the
+  project's configured labels, as a Non-interactive run already did, and asks
+  for labels only when neither `--labels`, the Parent nor the config gives any.
+  Before, an unlabelled Parent or Epic skipped the configured labels and a
+  person at a terminal got a label prompt.
+
 - An Interactive `ergon new` takes its labels and Client SOW from the Epic it
   files under when there is no `--parent`, as a Non-interactive `--epic` already
   did. An Epic picked at the prompt, passed with `--epic` or remembered from the

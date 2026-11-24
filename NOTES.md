@@ -40,8 +40,10 @@
 - [x] `ergon new` behind one module, `fileNewIssue` (specs/new-issue-module.md,
       commit 1 of 4; no behaviour change)
 - [x] `new` Inherits from an Epic picked in an Interactive run (spec drift 1)
-- [ ] The other two `new` drifts the spec fixes: an empty Parent labels array is
-      nothing to Inherit, `--sprint <name>` resolved like `edit`
+- [x] `new` reads an empty Parent labels array as nothing to Inherit, in both
+      modes (spec drift 2)
+- [ ] The last `new` drift the spec fixes: `--sprint <name>` resolved like
+      `edit`
 - [ ] `--sprint <name>` matching future Sprints, on `edit` and on `new` in both
       modes, through `listOpenSprints`
 - [ ] A command that takes up an issue in one step — assign it to the operator,
@@ -52,6 +54,13 @@
       people (`matt` fits two on PCK).
 
 ## Updates
+
+- `resolveLabels` reads `--labels`, then the Parent's (or Epic's) non-empty
+  labels, then the configured labels, in both modes; an Interactive run prompts
+  only when none of them gives any. Before, an Interactive Parent or Epic with
+  `labels: []` stopped the chain and prompted. Beside the flipped pinned test,
+  one covers a picked Epic and one an Interactive run that still prompts when
+  nothing is configured.
 
 - `fileNewIssue` Inherits from the Parent, else the Epic, in both modes; before,
   an Interactive run inherited only from an explicit `--parent`. So an Epic
