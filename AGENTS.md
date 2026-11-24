@@ -42,9 +42,9 @@ rules for every change you make.
 
 ### Check
 
-- `deno task check` runs format check, lint, type check and tests, as CI does.
-  The pre-commit hook in `.githooks/` runs only `deno task check:static` (no
-  tests, under a second), once a clone has run
+- `deno task check` runs format check, lint, type check, oxlint and tests, as CI
+  does. The pre-commit hook in `.githooks/` runs only `deno task check:static`
+  (no tests, under a second), once a clone has run
   `git config core.hooksPath .githooks`, so run `deno task test` yourself before
   committing a behaviour change. Fix formatting with `deno fmt`.
 - Run tests through `deno task test`: plain `deno test` lacks the permissions

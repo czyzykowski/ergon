@@ -752,8 +752,13 @@ function renderInlineNode(node: AdfNode, degraded: Set<string>): string {
   }
 }
 
+/** A node's text, or nothing when it carries none (or a non-string one). */
+function textOf(node: AdfNode): string {
+  return typeof node.text === "string" ? node.text : "";
+}
+
 function renderText(node: AdfNode, degraded: Set<string>): string {
-  const raw = typeof node.text === "string" ? node.text : "";
+  const raw = textOf(node);
 
   if (raw.length === 0) return "";
 
@@ -794,8 +799,7 @@ function fallbackText(node: AdfNode): string {
 }
 
 function rawText(nodes: AdfNode[]): string {
-  return nodes.map((node) => typeof node.text === "string" ? node.text : "")
-    .join("");
+  return nodes.map(textOf).join("");
 }
 
 /** A quote's blank lines need the marker too, or the quote ends at them. */
@@ -1119,7 +1123,7 @@ function coalesce(nodes: AdfNode[]): AdfNode[] {
     ) {
       out[out.length - 1] = {
         ...last,
-        text: `${last.text ?? ""}${node.text ?? ""}`,
+        text: textOf(last) + textOf(node),
       };
       continue;
     }

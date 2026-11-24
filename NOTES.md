@@ -57,9 +57,22 @@
   off on purpose: `no-console` (a CLI prints), `no-await-in-loop` (sequential
   API calls are deliberate), `no-boolean-literal-for-arguments` and
   `prefer-ascii` (dozens of hits each, little value). `noUncheckedIndexedAccess`
-  is the strongest option still off, at about 40 errors;
-  `exactOptionalPropertyTypes` and `noPropertyAccessFromIndexSignature` cost
-  about 50 each for less.
+  is on; tests reach a single result through `only()` and `itemAt()` in
+  `tests/only.ts`, which fail the test where `list[0]?.x` would quietly compare
+  `undefined`. `exactOptionalPropertyTypes` and
+  `noPropertyAccessFromIndexSignature` stay off: about 50 errors each for little
+  value.
+
+- oxlint runs type-aware in `deno task check:static` (`deno task lint:ox`), for
+  the promise rules `deno lint` cannot check: `no-floating-promises`,
+  `no-misused-promises`, `await-thenable`, on top of oxlint's correctness
+  category. It comes from the flake's devShell, wrapped with tsgolint; 1.39 from
+  the pinned nixpkgs. Two traps: tsgolint reads only a file named
+  `tsconfig.json` (`--tsconfig` does not reach it), so the root one exists for
+  oxlint alone, and without Deno's types it misses a floating `Deno.*` call, so
+  the task regenerates `.deno-types.d.ts` (gitignored, 0.04s) each run. Import
+  map and `npm:` specifiers stay unresolved for it, so values typed by cliffy or
+  mdast are invisible to the type-aware rules.
 
 - `ergon new` is wiring around one module, `fileNewIssue(draft, deps)` in
   `src/commands/new/issue.ts`; every precedence chain, in both modes, lives

@@ -65,7 +65,7 @@ const CHILD_RESPONSE = {
  */
 function stubJira(children: () => Response) {
   return stub(globalThis, "fetch", (input: string | URL | Request, init?) => {
-    const url = String(input);
+    const url = input instanceof Request ? input.url : String(input);
     if (url.endsWith("/search/jql")) {
       const body = JSON.parse(
         String((init as { body?: string } | undefined)?.body),

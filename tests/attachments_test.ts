@@ -308,7 +308,7 @@ const readText = async (path: string) =>
 async function entriesOf(dir: string): Promise<string[]> {
   const names = [];
   for await (const entry of Deno.readDir(dir)) names.push(entry.name);
-  return names.sort();
+  return names.sort((a, b) => a.localeCompare(b));
 }
 
 Deno.test("downloads land at the selected paths, creating a missing dir", async () => {
