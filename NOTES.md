@@ -50,6 +50,17 @@
 
 ## Updates
 
+- `deno.json` opts into stricter `deno lint` rules and compiler options, so the
+  hook and CI enforce what AGENTS.md used to ask for in prose (explicit return
+  types on exports, among others). Each one was proven to fire on a planted
+  violation, because `deno lint` accepts a misspelled rule name in silence. Left
+  off on purpose: `no-console` (a CLI prints), `no-await-in-loop` (sequential
+  API calls are deliberate), `no-boolean-literal-for-arguments` and
+  `prefer-ascii` (dozens of hits each, little value). `noUncheckedIndexedAccess`
+  is the strongest option still off, at about 40 errors;
+  `exactOptionalPropertyTypes` and `noPropertyAccessFromIndexSignature` cost
+  about 50 each for less.
+
 - `ergon new` is wiring around one module, `fileNewIssue(draft, deps)` in
   `src/commands/new/issue.ts`; every precedence chain, in both modes, lives
   there. It reaches out through two seams: a Prompter

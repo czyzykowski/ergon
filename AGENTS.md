@@ -56,7 +56,6 @@ rules for every change you make.
 
 - Use 2-space indentation; no tabs.
 - Prefer `const` over `let` when possible.
-- Use explicit return types for exported functions.
 - Keep modules small; extract helpers for clarity.
 - Use `async/await` for IO and API calls.
 - Avoid `any` unless interfacing with external APIs.

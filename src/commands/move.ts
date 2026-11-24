@@ -35,14 +35,6 @@ export function registerMoveCommand(program: Command): void {
         transition = transitions.find(
           (t) => t.name.toLowerCase() === target.toLowerCase(),
         );
-
-        if (!transition) {
-          throw new Error(
-            `No transition found for '${target}'. Available: ${
-              transitions.map((t) => t.name).join(", ")
-            }`,
-          );
-        }
       } else {
         const selectedId = await Select.prompt({
           message: "Transition to",
@@ -52,7 +44,16 @@ export function registerMoveCommand(program: Command): void {
         transition = transitions.find((t) => t.id === selectedId);
       }
 
-      await jira.transitionIssue(key, transition!.id);
-      console.log(`Moved ${key} to ${transition!.name}`);
+      // Only an unknown --to gets here: the prompt offers listed ids alone.
+      if (!transition) {
+        throw new Error(
+          `No transition found for '${options.to}'. Available: ${
+            transitions.map((t) => t.name).join(", ")
+          }`,
+        );
+      }
+
+      await jira.transitionIssue(key, transition.id);
+      console.log(`Moved ${key} to ${transition.name}`);
     });
 }

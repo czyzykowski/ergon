@@ -70,7 +70,7 @@ export interface JiraIssueFields {
     timeSpentSeconds?: number;
     originalEstimateSeconds?: number;
   };
-  customfield_10008?: Array<{ key: string; fields?: { summary?: string } }>;
+  "customfield_10008"?: Array<{ key: string; fields?: { summary?: string } }>;
   priority?: { name?: string } | null;
   duedate?: string | null;
   issuelinks?: JiraIssueLink[];

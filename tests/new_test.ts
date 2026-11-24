@@ -1,5 +1,5 @@
 import { Command } from "cliffy/command/mod.ts";
-import { assertEquals } from "testing/asserts.ts";
+import { assertEquals, assertExists } from "testing/asserts.ts";
 import type { NewOptions } from "../src/commands/new/mod.ts";
 import { registerNewCommand, usesCache } from "../src/commands/new/mod.ts";
 
@@ -9,13 +9,16 @@ async function parseNew(args: string[]): Promise<NewOptions> {
   const program = new Command().throwErrors();
   registerNewCommand(program);
   let parsed: NewOptions | undefined;
-  program.getCommand("new")!.action((options: NewOptions) => {
+  const command = program.getCommand("new");
+  assertExists(command);
+  command.action((options: NewOptions) => {
     parsed = options;
   });
 
   await program.parse(["new", ...args]);
 
-  return parsed!;
+  assertExists(parsed);
+  return parsed;
 }
 
 Deno.test("ergon new --no-cache does not use the Cache", async () => {
