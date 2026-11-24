@@ -1,14 +1,7 @@
 import { isDate } from "../dates.ts";
-import { isActiveSprintKeyword } from "../sprint.ts";
+import { parseSprint, type SprintTarget } from "../sprint.ts";
 import type { AssigneeTarget } from "./new_issue.ts";
 import { isNoneValue, parseAssignee } from "./new_issue.ts";
-
-/** Which Sprint a `--sprint` value asks for, before Jira has been consulted. */
-export type SprintTarget =
-  | { kind: "none" }
-  | { kind: "id"; id: number }
-  | { kind: "active" }
-  | { kind: "name"; name: string };
 
 /** One field an invocation writes. A Description's value needs IO to settle. */
 export type EditWrite =
@@ -109,16 +102,4 @@ function parseDue(value: string): string | null {
   }
 
   return value.trim();
-}
-
-function parseSprint(value: string): SprintTarget {
-  const trimmed = value.trim();
-
-  if (isNoneValue(trimmed)) return { kind: "none" };
-
-  if (/^\d+$/.test(trimmed)) return { kind: "id", id: Number(trimmed) };
-
-  if (isActiveSprintKeyword(trimmed)) return { kind: "active" };
-
-  return { kind: "name", name: trimmed };
 }
