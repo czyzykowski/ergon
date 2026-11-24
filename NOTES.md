@@ -42,8 +42,8 @@
 - [x] `new` Inherits from an Epic picked in an Interactive run (spec drift 1)
 - [x] `new` reads an empty Parent labels array as nothing to Inherit, in both
       modes (spec drift 2)
-- [ ] The last `new` drift the spec fixes: `--sprint <name>` resolved like
-      `edit`
+- [x] The last `new` drift the spec fixes: `--sprint <name>` resolved like
+      `edit` (spec drift 3)
 - [ ] `--sprint <name>` matching future Sprints, on `edit` and on `new` in both
       modes, through `listOpenSprints`
 - [ ] A command that takes up an issue in one step — assign it to the operator,
@@ -54,6 +54,17 @@
       people (`matt` fits two on PCK).
 
 ## Updates
+
+- `ergon new --sprint` is parsed by `parseSprint` and resolved by
+  `resolveSprintId` exactly as `edit` does: `none`, an id, `active` and a name
+  each mean the same on both commands, in both modes, and a name never prompts.
+  `parseSprint` and `SprintTarget` moved from `edit_fields.ts` into
+  `src/sprint.ts`; `parseSprint` checks `none` itself, since importing
+  `isNoneValue` from `new_issue.ts` would make the two modules import each
+  other. `settleSprint` reads boards from Jira past the Cache for `active` and a
+  name alike; only the Interactive board prompt, with no `--sprint`, still reads
+  the cached boards. The two pinned `--sprint <name>` drift tests became tests
+  of the fixed behaviour, plus one for an unknown name.
 
 - `resolveLabels` reads `--labels`, then the Parent's (or Epic's) non-empty
   labels, then the configured labels, in both modes; an Interactive run prompts
@@ -257,9 +268,9 @@
   still open, a write to it succeeds, and completing it carries unfinished
   issues into the new one. Only a closed sprint fails, and nothing ergon reads
   live can name one.
-- `ergon new --sprint active` reads the project's boards from Jira, not the
-  board cache: the cache holds no board type. The interactive board prompt and
-  `--sprint <name>` still use the cache.
+- `ergon new --sprint active` and `--sprint <name>` read the project's boards
+  from Jira, not the board cache: the cache holds no board type. The interactive
+  board prompt still uses the cache.
 - Board order replaces raw Rank (ADR 0013, superseding 0009). Facts found on the
   way: PGR has no board of its own and lives on the Unified Client Board (26)
   with PCK and ~15 other projects; PCK's own board (373) shows only sprints

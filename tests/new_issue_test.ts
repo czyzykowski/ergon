@@ -641,37 +641,6 @@ Deno.test("an Interactive Parent with labels: [] and none configured asks for la
   assertEquals(created[0].labels, ["a"]);
 });
 
-// The drift ticket 06 fixes, pinned as it is today.
-
-Deno.test("pinned drift: a Non-interactive --sprint <name> is refused", async () => {
-  await assertRejects(
-    () =>
-      run({
-        draft: { project: "PCK", parent: "PCK-5", sprint: "Sprint 5" },
-        fields: { ...FIELDS, sprintBoardId: 7 },
-        fixtures: { sprints: { 7: [{ id: 5, name: "Sprint 5" }] } },
-      }),
-    Error,
-    "Resolving --sprint by name needs interactive mode",
-  );
-});
-
-Deno.test("pinned drift: an Interactive --sprint <name> asks for a board first", async () => {
-  const { created, asked } = await run({
-    interactive: true,
-    draft: { ...INTERACTIVE_STORY, labels: "a", sprint: "sprint 5" },
-    fixtures: {
-      options: SOW_OPTIONS,
-      boards: [{ id: 7, name: "Board" }, { id: 8, name: "Other" }],
-      sprints: { 7: [{ id: 5, name: "Sprint 5" }] },
-    },
-    script: [["clientSow", { id: "10001" }], ["board", 7]],
-  });
-
-  assertEquals(asked, ["clientSow", "board"]);
-  assertEquals(created[0].customFields?.[SPRINT_FIELD], 5);
-});
-
 // Project, Epic, summary and Parent, Interactive
 
 Deno.test("an Interactive run asks every question a bare draft leaves open", async () => {
@@ -804,6 +773,47 @@ Deno.test("the Active Sprint resolves from uncached boards", async () => {
     ["listBoards PCK", "listActiveSprints 7"],
   );
   assertEquals(created[0].customFields?.[SPRINT_FIELD], 5);
+});
+
+Deno.test("a Non-interactive --sprint <name> files into that Active Sprint", async () => {
+  const { created } = await run({
+    draft: { project: "PCK", parent: "PCK-5", sprint: "Sprint 5" },
+    fields: { ...FIELDS, sprintBoardId: 7 },
+    fixtures: { sprints: { 7: [{ id: 5, name: "Sprint 5" }] } },
+  });
+
+  assertEquals(created[0].customFields?.[SPRINT_FIELD], 5);
+});
+
+Deno.test("an Interactive --sprint <name> asks for neither board nor Sprint", async () => {
+  const { created, asked } = await run({
+    interactive: true,
+    draft: { ...INTERACTIVE_STORY, labels: "a", sprint: "sprint 5" },
+    fixtures: {
+      options: SOW_OPTIONS,
+      boards: [{ id: 7, name: "Board" }, { id: 8, name: "Other" }],
+      sprints: { 7: [{ id: 5, name: "Sprint 5" }] },
+    },
+    script: [["clientSow", { id: "10001" }]],
+  });
+
+  assertEquals(asked, ["clientSow"]);
+  assertEquals(created[0].customFields?.[SPRINT_FIELD], 5);
+});
+
+Deno.test("a --sprint <name> no board has active is refused", async () => {
+  await assertRejects(
+    () =>
+      run({
+        draft: { project: "PCK", parent: "PCK-5", sprint: "Sprint 9" },
+        fixtures: {
+          boards: [{ id: 7, name: "Board", type: "scrum" }],
+          sprints: { 7: [{ id: 5, name: "Sprint 5" }] },
+        },
+      }),
+    Error,
+    'Active sprint "Sprint 9" not found.',
+  );
 });
 
 Deno.test("an Interactive run with a configured board asks only for the Sprint", async () => {

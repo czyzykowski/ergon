@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- `ergon new --sprint "Sprint 5"` files into the active sprint of that name
+  without a terminal, as `ergon edit --sprint` already did, and at a terminal
+  finds it without asking for a board. Before, a Non-interactive run was refused
+  with "Resolving --sprint by name needs interactive mode", and an Interactive
+  one asked which board first. A name no board has active fails with
+  `Active sprint "<name>" not found.`, as on `edit`.
+
 - An Interactive `ergon new` whose Parent or Epic has no labels takes the
   project's configured labels, as a Non-interactive run already did, and asks
   for labels only when neither `--labels`, the Parent nor the config gives any.

@@ -6,14 +6,12 @@
  * Prompter the caller passes.
  */
 
-import type { JiraSprint } from "../api/jira.ts";
 import { requireDeclaredProject } from "../config.ts";
 import {
-  isActiveSprintKeyword,
   normalizeBoardId,
+  parseSprint,
   requireSprintFieldId,
   resolveSprintId,
-  sprintsHint,
 } from "../sprint.ts";
 import { omitIfBlank } from "../text_source.ts";
 import type {
@@ -290,7 +288,10 @@ async function settleClientSow(
   };
 }
 
-/** The Sprint to file into, from `--sprint`, or else asked; none is fine. */
+/**
+ * The Sprint to file into, from `--sprint` resolved as `edit` resolves it, or
+ * else asked on an Interactive run; none is fine.
+ */
 async function settleSprint(input: {
   sprint?: string;
   interactive: boolean;
@@ -303,73 +304,47 @@ async function settleSprint(input: {
 }): Promise<number | undefined> {
   const { sprint, interactive, projectKey, jira, prompter } = input;
   const configuredBoardId = input.fieldDefaults?.sprintBoardId;
-  const sprintNone = isNoneValue(sprint);
-  const sprintActive = sprint !== undefined && isActiveSprintKeyword(sprint);
-  const sprintIdOverride = parseSprintId(sprint);
-  const sprintName = sprint && !sprintIdOverride && !sprintNone &&
-      !sprintActive
-    ? sprint
-    : undefined;
 
-  if (sprintActive) {
-    // Boards straight from Jira: the cached ones carry no board type.
-    return await resolveSprintId({
-      projectKey,
-      jira,
-      boards: await input.uncachedJira.listBoards(projectKey),
-      configuredBoardId,
-    });
+  if (sprint === undefined) {
+    // A plain absence leaves a Non-interactive run without a Sprint.
+    return interactive
+      ? await askSprint(prompter, jira, projectKey, configuredBoardId)
+      : undefined;
   }
 
-  if (sprintIdOverride || sprintNone) {
-    return sprintIdOverride;
-  }
+  const target = parseSprint(sprint);
+  if (target.kind === "none") return undefined;
+  if (target.kind === "id") return target.id;
 
-  // A plain absence leaves a Non-interactive run without a Sprint.
-  if (!interactive && !sprintName) {
-    return undefined;
-  }
+  // Boards straight from Jira: the cached ones carry no board type.
+  return await resolveSprintId({
+    projectKey,
+    jira,
+    boards: await input.uncachedJira.listBoards(projectKey),
+    configuredBoardId,
+    name: target.kind === "name" ? target.name : undefined,
+  });
+}
 
-  if (!interactive) {
-    throw new Error(
-      "Resolving --sprint by name needs interactive mode; pass a numeric sprint id or 'active'.",
-    );
-  }
-
+/** The Active Sprint the person picks, on a board they pick if they must. */
+async function askSprint(
+  prompter: Prompter,
+  jira: NewIssueJira,
+  projectKey: string,
+  configuredBoardId?: number | string,
+): Promise<number | undefined> {
   const boardId = await chooseSprintBoard(
     prompter,
     await jira.listBoards(projectKey),
     configuredBoardId,
   );
 
-  if (!boardId) {
-    if (sprintName) {
-      throw new Error("No board available to resolve the sprint.");
-    }
-
-    return undefined;
-  }
+  if (!boardId) return undefined;
 
   // Never cached: an active Sprint is a fact with a shelf life.
-  return await chooseSprint(
-    prompter,
-    projectKey,
-    await jira.listActiveSprints(boardId),
-    sprintName,
-  );
-}
+  const sprints = await jira.listActiveSprints(boardId);
 
-function parseSprintId(value?: string): number | undefined {
-  if (!value) {
-    return undefined;
-  }
-
-  const trimmed = value.trim();
-  if (/^\d+$/.test(trimmed)) {
-    return Number(trimmed);
-  }
-
-  return undefined;
+  return sprints.length > 0 ? await prompter.sprint(sprints) : undefined;
 }
 
 /**
@@ -395,41 +370,6 @@ async function chooseSprintBoard(
   }
 
   return await prompter.board(boards);
-}
-
-/**
- * The Active Sprint named by --sprint, or else the one the person picks; none
- * when the board has no Active Sprint and no name was given.
- */
-async function chooseSprint(
-  prompter: Prompter,
-  projectKey: string,
-  sprints: JiraSprint[],
-  sprintName?: string,
-): Promise<number | undefined> {
-  if (sprints.length === 0) {
-    if (sprintName) {
-      throw new Error("No active sprints available for the board.");
-    }
-
-    return undefined;
-  }
-
-  if (sprintName) {
-    const match = sprints.find((sprint) =>
-      sprint.name.toLowerCase() === sprintName.toLowerCase()
-    );
-
-    if (!match) {
-      throw new Error(
-        `Active sprint "${sprintName}" not found. ${sprintsHint(projectKey)}`,
-      );
-    }
-
-    return match.id;
-  }
-
-  return await prompter.sprint(sprints);
 }
 
 /** The Client SOW and labels carried by the issue being inherited from. */

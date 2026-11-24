@@ -71,6 +71,8 @@ ergon new "Fix login" --non-interactive --parent PCK-12
   same issue.
 - Use `none` to clear a field: `--labels none`, `--client-sow none`,
   `--epic none`, `--sprint none`.
+- `--sprint` takes a sprint id, `active`, or an active sprint's name, resolved
+  as `ergon edit --sprint` resolves it: `--sprint "Sprint 5"` needs no terminal.
 
 Interactive runs are unaffected: the parent still pre-selects the Client SOW
 prompt, and the label prompt still appears when nothing supplied labels.
