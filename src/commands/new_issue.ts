@@ -598,25 +598,17 @@ function resolveLabels(
     return { labels: override, needsLabelPrompt: false };
   }
 
+  // Jira cannot express "deliberately unlabelled" — an issue nobody labelled
+  // and an issue someone cleared both arrive as [] — so an empty array is read
+  // as nothing to inherit rather than as an inherited answer.
   const parentLabels = input.parent?.labels;
+  const inherited = parentLabels?.length ? parentLabels : undefined;
+  const labels = inherited ?? input.fieldDefaults?.labels;
 
-  if (!input.interactive) {
-    // Jira cannot express "deliberately unlabelled" — an issue nobody labelled
-    // and an issue someone cleared both arrive as [] — so an empty array is
-    // read as nothing to inherit rather than as an inherited answer.
-    const inherited = parentLabels?.length ? parentLabels : undefined;
-
-    return {
-      labels: inherited ?? input.fieldDefaults?.labels,
-      needsLabelPrompt: false,
-    };
-  }
-
-  // Interactive keeps the older reading, where an empty parent array short
-  // circuits the chain and leaves the operator to answer the prompt.
-  const labels = parentLabels ?? input.fieldDefaults?.labels;
-
-  return { labels, needsLabelPrompt: !labels || labels.length === 0 };
+  return {
+    labels,
+    needsLabelPrompt: input.interactive && !labels?.length,
+  };
 }
 
 function resolveClientSow(input: ResolveFieldsInput): ClientSowPlan {

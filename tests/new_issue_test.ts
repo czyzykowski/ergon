@@ -588,12 +588,46 @@ Deno.test("an Interactive run Inherits from the Epic it picks, ahead of Remember
   assertEquals(created[0].labels, ["Druid", "Infrastructure"]);
 });
 
-// The drifts tickets 05–06 fix, pinned as they are today.
-
-Deno.test("pinned drift: an Interactive Parent with labels: [] asks for labels over config's", async () => {
+Deno.test("an Interactive Parent with labels: [] falls through to the configured labels", async () => {
   const { created, asked } = await run({
     interactive: true,
     draft: { ...INTERACTIVE_STORY, parent: "PCK-5" },
+    fixtures: {
+      issueFields: { "PCK-5": PARENT_BARE },
+      labels: ["a"],
+      options: SOW_OPTIONS,
+    },
+    script: [["clientSow", { id: "10001" }]],
+  });
+
+  assertEquals(asked, ["clientSow"]);
+  assertEquals(created[0].labels, ["client-a"]);
+});
+
+Deno.test("an Interactive Epic with labels: [] falls through to the configured labels", async () => {
+  const { created, asked } = await run({
+    interactive: true,
+    draft: { project: "PCK", type: "Story", sprint: "none" },
+    state: {},
+    fixtures: {
+      epics: [{ key: "PCK-10", summary: "An epic" }],
+      issueFields: { "PCK-10": PARENT_BARE },
+      labels: ["a"],
+      options: SOW_OPTIONS,
+    },
+    script: [["epic", "PCK-10"], ["clientSow", { id: "10001" }]],
+  });
+
+  assertEquals(asked, ["epic", "clientSow"]);
+  assertEquals(created[0].parentKey, "PCK-10");
+  assertEquals(created[0].labels, ["client-a"]);
+});
+
+Deno.test("an Interactive Parent with labels: [] and none configured asks for labels", async () => {
+  const { created, asked, args } = await run({
+    interactive: true,
+    draft: { ...INTERACTIVE_STORY, parent: "PCK-5" },
+    fields: { clientSowFieldId: SOW_FIELD, sprintFieldId: SPRINT_FIELD },
     fixtures: {
       issueFields: { "PCK-5": PARENT_BARE },
       labels: ["a"],
@@ -603,8 +637,11 @@ Deno.test("pinned drift: an Interactive Parent with labels: [] asks for labels o
   });
 
   assertEquals(asked, ["labels", "clientSow"]);
+  assertEquals(args.labels, [["a"]]);
   assertEquals(created[0].labels, ["a"]);
 });
+
+// The drift ticket 06 fixes, pinned as it is today.
 
 Deno.test("pinned drift: a Non-interactive --sprint <name> is refused", async () => {
   await assertRejects(
