@@ -1,0 +1,6 @@
+#!/bin/sh
+# Enabled by: git config core.hooksPath .githooks
+# Mutation testing of the lines this branch changed since origin/develop;
+# a survivor or timeout blocks the push. Under a few seconds when no line in
+# the mutation scope changed, at most three minutes otherwise.
+exec deno task mutate:diff

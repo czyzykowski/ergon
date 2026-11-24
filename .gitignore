@@ -2,5 +2,8 @@
 .deno-types.d.ts
 .direnv/
 .scratch/
+.stryker-tmp/
 coverage/
+node_modules/
+reports/
 specs/
