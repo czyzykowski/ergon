@@ -48,6 +48,17 @@
 
 ## Updates
 
+- `ergon new` asks every question through a Prompter
+  (`src/commands/new_prompter.ts`), the first seam of the deep module the spec
+  `specs/new-issue-module.md` describes. The cliffy adapter keeps the `__none__`
+  select sentinels to itself and answers "None" as `undefined`; the
+  Non-interactive one rejects every method, naming it, since a Non-interactive
+  run reaching a question is a bug (ADR 0014). `parent(matches, types)` takes
+  the searched types beside the matches, which the spec's `parent(matches)` left
+  out, so the pick keeps its `Select parent Story` heading. What is not a
+  question stays out of the Prompter: the configured or only board, and an
+  Active Sprint named by `--sprint`, settle without asking, as before.
+
 - Jira's `/rest/api/3/search/jql` answers an unknown project key or status name
   with `{"issues":[],"isLast":true}`: no error, no warning. `search --project`
   now refuses an undeclared project, as `ls --project` does, so a typo cannot
