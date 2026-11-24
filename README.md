@@ -60,8 +60,8 @@ ergon new "Fix login" --non-interactive --parent PCK-12
 ```
 
 - Where a Non-interactive run lacks a value it cannot do without, it fails at
-  once naming the flag: `--project` when neither the flag, the last project nor
-  config names one, `--summary` when no summary was given.
+  once naming the flag: `--project` when neither the flag nor config names one,
+  `--summary` when no summary was given.
 
 - The parent is `--parent`, or the epic when `--parent` is omitted.
 - Anything passed explicitly wins; `--labels` replaces the inherited set rather
