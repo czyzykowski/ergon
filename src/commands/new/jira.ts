@@ -1,10 +1,10 @@
-import type { JiraClient } from "../api/jira.ts";
+import type { JiraClient } from "../../api/jira.ts";
 import type {
   CachedBoard,
   CachedIssue,
   CachedOption,
   CacheState,
-} from "../types.ts";
+} from "../../types.ts";
 
 /**
  * The Jira calls `ergon new` makes, and no others. `JiraClient` satisfies it

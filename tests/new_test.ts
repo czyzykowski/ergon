@@ -1,7 +1,7 @@
 import { Command } from "cliffy/command/mod.ts";
 import { assertEquals } from "testing/asserts.ts";
-import type { NewOptions } from "../src/commands/new.ts";
-import { registerNewCommand, usesCache } from "../src/commands/new.ts";
+import type { NewOptions } from "../src/commands/new/mod.ts";
+import { registerNewCommand, usesCache } from "../src/commands/new/mod.ts";
 
 // Parses through the real `ergon new` declaration, with the action swapped for
 // one that keeps the options, so the flags are read as cliffy hands them over.

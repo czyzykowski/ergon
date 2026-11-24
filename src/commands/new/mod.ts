@@ -1,12 +1,16 @@
 import type { Command } from "cliffy/command/mod.ts";
-import { JiraClient } from "../api/jira.ts";
-import { loadConfig } from "../config.ts";
-import { parseAssignee } from "../flags.ts";
-import { isInteractive } from "../interactive.ts";
-import { loadState, saveState } from "../state.ts";
-import { assertExpressible, planSource, readSource } from "../text_source.ts";
-import { fileNewIssue } from "./new_issue.ts";
-import { cliffyPrompter, nonInteractivePrompter } from "./new_prompter.ts";
+import { JiraClient } from "../../api/jira.ts";
+import { loadConfig } from "../../config.ts";
+import { parseAssignee } from "../../flags.ts";
+import { isInteractive } from "../../interactive.ts";
+import { loadState, saveState } from "../../state.ts";
+import {
+  assertExpressible,
+  planSource,
+  readSource,
+} from "../../text_source.ts";
+import { fileNewIssue } from "./issue.ts";
+import { cliffyPrompter, nonInteractivePrompter } from "./prompter.ts";
 
 export interface NewOptions {
   project?: string;

@@ -25,7 +25,7 @@ interactive prompt.
 
 The precedence chain differs by mode, which looks like an oversight if you meet
 it in the code without this context. Resolution therefore lives in one pure
-function, `resolveFields` in `src/commands/new_issue.ts`, which takes
+function, `resolveFields` in `src/commands/new/issue.ts`, which takes
 `interactive` as an explicit input so the divergence is visible in one place and
 covered by tests.
 
@@ -38,7 +38,7 @@ every run without a terminal turned Non-interactive: a script that omitted
 `--project` filed its issue wherever the operator last worked. A Non-interactive
 run now resolves the project from `--project`, then config, and writes neither.
 Both directions of the mode split live in one module, `fileNewIssue` in
-`src/commands/new_issue.ts`: the reads of `lastProject`, `lastEpic` and
+`src/commands/new/issue.ts`: the reads of `lastProject`, `lastEpic` and
 `lastClientSow`, and the writes, in its internal `rememberCreated`. Its tests in
 `tests/new_issue_test.ts` run each mode through the same path.
 `state.lastIssueKey` is not Remembered state in this sense — it is the default

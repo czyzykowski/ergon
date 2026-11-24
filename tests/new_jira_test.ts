@@ -1,5 +1,5 @@
 import { assertEquals } from "testing/asserts.ts";
-import { CachedJira, type NewIssueJira } from "../src/commands/new_jira.ts";
+import { CachedJira, type NewIssueJira } from "../src/commands/new/jira.ts";
 import type { CacheState } from "../src/types.ts";
 
 /** Answers from fixtures and records every call, by method name. */

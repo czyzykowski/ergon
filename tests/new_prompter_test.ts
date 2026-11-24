@@ -2,7 +2,7 @@ import { assertRejects } from "testing/asserts.ts";
 import {
   nonInteractivePrompter,
   type Prompter,
-} from "../src/commands/new_prompter.ts";
+} from "../src/commands/new/prompter.ts";
 
 const QUESTIONS: Record<keyof Prompter, () => Promise<unknown>> = {
   project: () => nonInteractivePrompter.project({ PCK: "Pickaxe" }),

@@ -1,8 +1,8 @@
 import { assertEquals, assertRejects } from "testing/asserts.ts";
 import type { JiraSprint } from "../src/api/jira.ts";
-import { fileNewIssue, type NewIssueDraft } from "../src/commands/new_issue.ts";
-import type { NewIssueJira } from "../src/commands/new_jira.ts";
-import type { Prompter } from "../src/commands/new_prompter.ts";
+import { fileNewIssue, type NewIssueDraft } from "../src/commands/new/issue.ts";
+import type { NewIssueJira } from "../src/commands/new/jira.ts";
+import type { Prompter } from "../src/commands/new/prompter.ts";
 import type {
   CachedIssue,
   CachedOption,

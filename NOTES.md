@@ -51,11 +51,11 @@
 ## Updates
 
 - `ergon new` is wiring around one module, `fileNewIssue(draft, deps)` in
-  `src/commands/new_issue.ts`; every precedence chain, in both modes, lives
+  `src/commands/new/issue.ts`; every precedence chain, in both modes, lives
   there. It reaches out through two seams: a Prompter
-  (`src/commands/new_prompter.ts`; cliffy, Non-interactive that rejects every
+  (`src/commands/new/prompter.ts`; cliffy, Non-interactive that rejects every
   method per ADR 0014, scripted in tests) and the `NewIssueJira` port
-  (`src/commands/new_jira.ts`), with the Cache read-through written once in the
+  (`src/commands/new/jira.ts`), with the Cache read-through written once in the
   `CachedJira` decorator. Decisions:
   - The module takes the _uncached_ port plus `useCache` and builds `CachedJira`
     itself: it needs the decorator's Cache for the next state, and the Sprint

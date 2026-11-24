@@ -6,29 +6,29 @@
  * Prompter the caller passes.
  */
 
-import { requireDeclaredProject } from "../config.ts";
+import { requireDeclaredProject } from "../../config.ts";
 import {
   assigneeField,
   type AssigneeTarget,
   isNoneValue,
   parseLabels,
-} from "../flags.ts";
+} from "../../flags.ts";
 import {
   normalizeBoardId,
   parseSprint,
   requireSprintFieldId,
   resolveSprintId,
-} from "../sprint.ts";
-import { omitIfBlank } from "../text_source.ts";
+} from "../../sprint.ts";
+import { omitIfBlank } from "../../text_source.ts";
 import type {
   CachedBoard,
   ClientSowValue,
   ErgonConfig,
   ErgonState,
   ProjectFieldDefaults,
-} from "../types.ts";
-import { CachedJira, type NewIssueJira } from "./new_jira.ts";
-import type { Prompter } from "./new_prompter.ts";
+} from "../../types.ts";
+import { CachedJira, type NewIssueJira } from "./jira.ts";
+import type { Prompter } from "./prompter.ts";
 
 /** What the person asked for: the flags as given, and the Description read. */
 export interface NewIssueDraft {
