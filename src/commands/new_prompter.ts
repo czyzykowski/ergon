@@ -46,6 +46,20 @@ export interface Prompter {
 // Only ever a select's value here: callers get `undefined` instead.
 const NONE_VALUE = "__none__";
 
+/** A select led by a "None" option, whose choice comes back as `undefined`. */
+async function selectOrNone(prompt: {
+  message: string;
+  options: { name: string; value: string }[];
+  search?: boolean;
+}): Promise<string | undefined> {
+  const selection = await Select.prompt({
+    ...prompt,
+    options: [{ name: "None", value: NONE_VALUE }, ...prompt.options],
+  });
+
+  return selection === NONE_VALUE ? undefined : selection;
+}
+
 function parentTypeLabel(types: string[]): string {
   return types.join("/");
 }
@@ -69,19 +83,14 @@ export const cliffyPrompter: Prompter = {
   },
 
   async epic(epics) {
-    const selection = await Select.prompt({
+    return await selectOrNone({
       message: "Epic",
       search: true,
-      options: [
-        { name: "None", value: NONE_VALUE },
-        ...epics.map((epic) => ({
-          name: `${epic.key} ${epic.summary}`,
-          value: epic.key,
-        })),
-      ],
+      options: epics.map((epic) => ({
+        name: `${epic.key} ${epic.summary}`,
+        value: epic.key,
+      })),
     });
-
-    return selection === NONE_VALUE ? undefined : selection;
   },
 
   async summary() {
@@ -170,33 +179,27 @@ export const cliffyPrompter: Prompter = {
   },
 
   async board(boards) {
-    const selection = await Select.prompt({
+    const selection = await selectOrNone({
       message: "Board",
-      options: [
-        { name: "None", value: NONE_VALUE },
-        ...boards.map((board) => ({
-          name: board.name,
-          value: board.id.toString(),
-        })),
-      ],
+      options: boards.map((board) => ({
+        name: board.name,
+        value: board.id.toString(),
+      })),
     });
 
-    return selection === NONE_VALUE ? undefined : Number(selection);
+    return selection === undefined ? undefined : Number(selection);
   },
 
   async sprint(sprints) {
-    const selection = await Select.prompt({
+    const selection = await selectOrNone({
       message: "Sprint",
-      options: [
-        { name: "None", value: NONE_VALUE },
-        ...sprints.map((sprint) => ({
-          name: sprint.name,
-          value: sprint.id.toString(),
-        })),
-      ],
+      options: sprints.map((sprint) => ({
+        name: sprint.name,
+        value: sprint.id.toString(),
+      })),
     });
 
-    return selection === NONE_VALUE ? undefined : Number(selection);
+    return selection === undefined ? undefined : Number(selection);
   },
 };
 
