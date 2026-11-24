@@ -44,6 +44,8 @@
       modes (spec drift 2)
 - [x] The last `new` drift the spec fixes: `--sprint <name>` resolved like
       `edit` (spec drift 3)
+- [x] `ergon new --no-cache` turns the Cache off (found during the
+      new-issue-module work)
 - [ ] `--sprint <name>` matching future Sprints, on `edit` and on `new` in both
       modes, through `listOpenSprints`
 - [ ] A command that takes up an issue in one step — assign it to the operator,
