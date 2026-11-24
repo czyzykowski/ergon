@@ -37,13 +37,11 @@
 - [x] Assigning an issue to the operator (`--assignee me|none` on `new`, `edit`)
 - [x] Naming an issue's Reporter (`reporter` on `ergon get`)
 - [x] Searching issues as data (`ergon search --json`)
-- [x] `ergon new` behind one module, `fileNewIssue` (specs/new-issue-module.md,
-      commit 1 of 4; no behaviour change)
-- [x] `new` Inherits from an Epic picked in an Interactive run (spec drift 1)
+- [x] `ergon new` behind one module, `fileNewIssue` (no behaviour change)
+- [x] `new` Inherits from an Epic picked in an Interactive run (drift 1)
 - [x] `new` reads an empty Parent labels array as nothing to Inherit, in both
-      modes (spec drift 2)
-- [x] The last `new` drift the spec fixes: `--sprint <name>` resolved like
-      `edit` (spec drift 3)
+      modes (drift 2)
+- [x] `new` resolves `--sprint <name>` like `edit`, in both modes (drift 3)
 - [x] `ergon new --no-cache` turns the Cache off (found during the
       new-issue-module work)
 - [ ] `--sprint <name>` matching future Sprints, on `edit` and on `new` in both
@@ -129,7 +127,7 @@
   `CachedBoard`), since a cached answer cannot produce a full `JiraIssue`;
   `JiraClient` still satisfies it unchanged. The Active Sprint is still resolved
   from `JiraClient.listBoards` directly: the Cache keeps no board type. A
-  prefactor for `specs/new-issue-module.md`.
+  prefactor for `fileNewIssue`.
 
 - `ergon new --no-cache` did not disable the Cache. cliffy turns `--no-cache`
   into `options.cache === false`, while the action read `options.noCache`, which
@@ -140,15 +138,15 @@
   swapped for one that keeps the options.
 
 - `ergon new` asks every question through a Prompter
-  (`src/commands/new_prompter.ts`), the first seam of the deep module the spec
-  `specs/new-issue-module.md` describes. The cliffy adapter keeps the `__none__`
-  select sentinels to itself and answers "None" as `undefined`; the
-  Non-interactive one rejects every method, naming it, since a Non-interactive
-  run reaching a question is a bug (ADR 0014). `parent(matches, types)` takes
-  the searched types beside the matches, which the spec's `parent(matches)` left
-  out, so the pick keeps its `Select parent Story` heading. What is not a
-  question stays out of the Prompter: the configured or only board, and an
-  Active Sprint named by `--sprint`, settle without asking, as before.
+  (`src/commands/new_prompter.ts`), the first seam of the deep module
+  `fileNewIssue`. The cliffy adapter keeps the `__none__` select sentinels to
+  itself and answers "None" as `undefined`; the Non-interactive one rejects
+  every method, naming it, since a Non-interactive run reaching a question is a
+  bug (ADR 0014). `parent(matches, types)` takes the searched types beside the
+  matches, which the spec's `parent(matches)` left out, so the pick keeps its
+  `Select parent Story` heading. What is not a question stays out of the
+  Prompter: the configured or only board, and an Active Sprint named by
+  `--sprint`, settle without asking, as before.
 
 - Jira's `/rest/api/3/search/jql` answers an unknown project key or status name
   with `{"issues":[],"isLast":true}`: no error, no warning. `search --project`
