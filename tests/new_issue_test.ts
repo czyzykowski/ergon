@@ -11,6 +11,7 @@ import type {
   JiraIssue,
   ProjectFieldDefaults,
 } from "../src/types.ts";
+import { only } from "./only.ts";
 
 const SOW_FIELD = "customfield_10200";
 const SPRINT_FIELD = "customfield_10010";
@@ -212,8 +213,8 @@ Deno.test("a Non-interactive run inherits both fields from a populated Parent", 
 function fieldsOf(created: CreateInput[]) {
   assertEquals(created.length, 1);
   return {
-    labels: created[0].labels,
-    clientSow: created[0].customFields?.[SOW_FIELD],
+    labels: only(created).labels,
+    clientSow: only(created).customFields?.[SOW_FIELD],
   };
 }
 
@@ -239,7 +240,7 @@ Deno.test("a Non-interactive run never reads Remembered state", async () => {
   });
 
   assertEquals(fieldsOf(created), { labels: undefined, clientSow: undefined });
-  assertEquals(created[0].projectKey, "PCK");
+  assertEquals(only(created).projectKey, "PCK");
   assertEquals(calls.includes(`getFieldOptions ${SOW_FIELD}`), false);
 });
 
@@ -257,7 +258,7 @@ Deno.test("a Non-interactive run with no --project takes config's, not the remem
     useCache: true,
   });
 
-  assertEquals(jira.created[0].projectKey, "PCK");
+  assertEquals(only(jira.created).projectKey, "PCK");
 });
 
 Deno.test("a Non-interactive run with no project anywhere is refused", async () => {
@@ -298,7 +299,7 @@ Deno.test("a Non-interactive run never calls the Prompter", async () => {
   });
 
   assertEquals(asked, []);
-  assertEquals(created[0].customFields, {});
+  assertEquals(only(created).customFields, {});
 });
 
 Deno.test("a Non-interactive run Inherits from --epic when no --parent is given", async () => {
@@ -308,7 +309,7 @@ Deno.test("a Non-interactive run Inherits from --epic when no --parent is given"
   });
 
   assertEquals(calls[0], `getIssueFields PCK-10 ${SOW_FIELD},labels`);
-  assertEquals(created[0].parentKey, "PCK-10");
+  assertEquals(only(created).parentKey, "PCK-10");
   assertEquals(fieldsOf(created), {
     labels: ["Druid", "Infrastructure"],
     clientSow: { id: "10084" },
@@ -321,7 +322,7 @@ Deno.test("--epic none files under no Epic", async () => {
   });
 
   assertEquals(calls, ["createIssue"]);
-  assertEquals(created[0].parentKey, undefined);
+  assertEquals(only(created).parentKey, undefined);
 });
 
 Deno.test("--epic __none__ is an Epic key, not None", async () => {
@@ -329,7 +330,7 @@ Deno.test("--epic __none__ is an Epic key, not None", async () => {
     draft: { project: "PCK", epic: "__none__", labels: "a", clientSow: "none" },
   });
 
-  assertEquals(created[0].parentKey, "__none__");
+  assertEquals(only(created).parentKey, "__none__");
 });
 
 Deno.test("explicit labels replace Inherited ones", async () => {
@@ -338,7 +339,7 @@ Deno.test("explicit labels replace Inherited ones", async () => {
     fixtures: { issueFields: { "PCK-5": PARENT_LABELLED } },
   });
 
-  assertEquals(created[0].labels, ["urgent", "spike"]);
+  assertEquals(only(created).labels, ["urgent", "spike"]);
 });
 
 Deno.test("--labels none clears Inherited labels in both modes", async () => {
@@ -355,7 +356,7 @@ Deno.test("--labels none clears Inherited labels in both modes", async () => {
       fixtures: { issueFields: { "PCK-5": PARENT_LABELLED } },
     });
 
-    assertEquals(created[0].labels, undefined);
+    assertEquals(only(created).labels, undefined);
     assertEquals(asked, []);
   }
 });
@@ -365,7 +366,7 @@ Deno.test("none is only a sentinel when it is the whole --labels value", async (
     draft: { project: "PCK", parent: "PCK-5", labels: "none,urgent" },
   });
 
-  assertEquals(created[0].labels, ["none", "urgent"]);
+  assertEquals(only(created).labels, ["none", "urgent"]);
 });
 
 Deno.test("--client-sow none clears an Inherited Client SOW", async () => {
@@ -374,7 +375,7 @@ Deno.test("--client-sow none clears an Inherited Client SOW", async () => {
     fixtures: { issueFields: { "PCK-5": PARENT_LABELLED } },
   });
 
-  assertEquals(created[0].customFields, {});
+  assertEquals(only(created).customFields, {});
 });
 
 Deno.test("--client-sow overrides an Inherited one, matched to its option", async () => {
@@ -443,8 +444,8 @@ Deno.test("a project with no Client SOW field Inherits labels alone", async () =
   });
 
   assertEquals(calls[0], "getIssueFields PCK-5 labels");
-  assertEquals(created[0].labels, ["Druid"]);
-  assertEquals(created[0].customFields, {});
+  assertEquals(only(created).labels, ["Druid"]);
+  assertEquals(only(created).customFields, {});
 });
 
 Deno.test("a Client SOW that needs a field is refused without one configured", async () => {
@@ -492,7 +493,7 @@ Deno.test("an Interactive run takes a Parent's labels without asking", async () 
     script: [["clientSow", { id: "10084", value: "Pickaxe" }]],
   });
 
-  assertEquals(created[0].labels, ["Druid", "Infrastructure"]);
+  assertEquals(only(created).labels, ["Druid", "Infrastructure"]);
   assertEquals(asked, ["clientSow"]);
 });
 
@@ -520,7 +521,7 @@ Deno.test("an Interactive run with no Parent takes the configured labels", async
     script: [["clientSow", { id: "10001" }]],
   });
 
-  assertEquals(created[0].labels, ["client-a"]);
+  assertEquals(only(created).labels, ["client-a"]);
   assertEquals(asked, ["clientSow"]);
 });
 
@@ -596,8 +597,8 @@ Deno.test("an Interactive run Inherits from the Epic it picks, ahead of Remember
     [`getIssueFields PCK-10 ${SOW_FIELD},labels`],
   );
   assertEquals(args.clientSow, [SOW_OPTIONS, "10084"]);
-  assertEquals(created[0].parentKey, "PCK-10");
-  assertEquals(created[0].labels, ["Druid", "Infrastructure"]);
+  assertEquals(only(created).parentKey, "PCK-10");
+  assertEquals(only(created).labels, ["Druid", "Infrastructure"]);
 });
 
 Deno.test("an Interactive Parent with labels: [] falls through to the configured labels", async () => {
@@ -613,7 +614,7 @@ Deno.test("an Interactive Parent with labels: [] falls through to the configured
   });
 
   assertEquals(asked, ["clientSow"]);
-  assertEquals(created[0].labels, ["client-a"]);
+  assertEquals(only(created).labels, ["client-a"]);
 });
 
 Deno.test("an Interactive Epic with labels: [] falls through to the configured labels", async () => {
@@ -631,8 +632,8 @@ Deno.test("an Interactive Epic with labels: [] falls through to the configured l
   });
 
   assertEquals(asked, ["epic", "clientSow"]);
-  assertEquals(created[0].parentKey, "PCK-10");
-  assertEquals(created[0].labels, ["client-a"]);
+  assertEquals(only(created).parentKey, "PCK-10");
+  assertEquals(only(created).labels, ["client-a"]);
 });
 
 Deno.test("an Interactive Parent with labels: [] and none configured asks for labels", async () => {
@@ -650,7 +651,7 @@ Deno.test("an Interactive Parent with labels: [] and none configured asks for la
 
   assertEquals(asked, ["labels", "clientSow"]);
   assertEquals(args.labels, [["a"]]);
-  assertEquals(created[0].labels, ["a"]);
+  assertEquals(only(created).labels, ["a"]);
 });
 
 // Project, Epic, summary and Parent, Interactive
@@ -721,8 +722,8 @@ Deno.test("an Interactive run defaults the project and Epic from Remembered stat
   });
 
   assertEquals(asked, []);
-  assertEquals(created[0].projectKey, "PGR");
-  assertEquals(created[0].parentKey, "PGR-1");
+  assertEquals(only(created).projectKey, "PGR");
+  assertEquals(only(created).parentKey, "PGR-1");
 });
 
 Deno.test("an Interactive Sub-task asks for a Task Parent and no Epic", async () => {
@@ -778,7 +779,7 @@ Deno.test("a numeric --sprint is written as it is", async () => {
     draft: { project: "PCK", parent: "PCK-5", sprint: "42" },
   });
 
-  assertEquals(created[0].customFields?.[SPRINT_FIELD], 42);
+  assertEquals(only(created).customFields?.[SPRINT_FIELD], 42);
   assertEquals(calls.some((call) => call.startsWith("listBoards")), false);
 });
 
@@ -799,7 +800,7 @@ Deno.test("the Active Sprint resolves from uncached boards", async () => {
     calls.filter((call) => /^list(Boards|ActiveSprints)/.test(call)),
     ["listBoards PCK", "listActiveSprints 7"],
   );
-  assertEquals(created[0].customFields?.[SPRINT_FIELD], 5);
+  assertEquals(only(created).customFields?.[SPRINT_FIELD], 5);
 });
 
 Deno.test("a Non-interactive --sprint <name> files into that Active Sprint", async () => {
@@ -809,7 +810,7 @@ Deno.test("a Non-interactive --sprint <name> files into that Active Sprint", asy
     fixtures: { sprints: { 7: [{ id: 5, name: "Sprint 5" }] } },
   });
 
-  assertEquals(created[0].customFields?.[SPRINT_FIELD], 5);
+  assertEquals(only(created).customFields?.[SPRINT_FIELD], 5);
 });
 
 Deno.test("an Interactive --sprint <name> asks for neither board nor Sprint", async () => {
@@ -825,7 +826,7 @@ Deno.test("an Interactive --sprint <name> asks for neither board nor Sprint", as
   });
 
   assertEquals(asked, ["clientSow"]);
-  assertEquals(created[0].customFields?.[SPRINT_FIELD], 5);
+  assertEquals(only(created).customFields?.[SPRINT_FIELD], 5);
 });
 
 Deno.test("a --sprint <name> no board has active is refused", async () => {
@@ -862,7 +863,7 @@ Deno.test("an Interactive run with a configured board asks only for the Sprint",
 
   assertEquals(asked, ["sprint"]);
   assertEquals(args.sprint, [[{ id: 5, name: "Sprint 5" }]]);
-  assertEquals(created[0].customFields?.[SPRINT_FIELD], 5);
+  assertEquals(only(created).customFields?.[SPRINT_FIELD], 5);
 });
 
 Deno.test("an Interactive run with no board writes no Sprint", async () => {
@@ -877,7 +878,7 @@ Deno.test("an Interactive run with no board writes no Sprint", async () => {
   });
 
   assertEquals(asked, []);
-  assertEquals(created[0].customFields, {});
+  assertEquals(only(created).customFields, {});
 });
 
 // Assignee and Description
@@ -890,8 +891,8 @@ Deno.test("--assignee me asks Jira who me is; none sends null", async () => {
     draft: { project: "PCK", parent: "PCK-5", assignee: "none" },
   });
 
-  assertEquals(me.created[0].assignee, { accountId: "me-123" });
-  assertEquals(none.created[0].assignee, null);
+  assertEquals(only(me.created).assignee, { accountId: "me-123" });
+  assertEquals(only(none.created).assignee, null);
   assertEquals(none.calls.includes("getMyAccountId"), false);
 });
 
@@ -903,8 +904,8 @@ Deno.test("a blank Description is left out of the create", async () => {
     draft: { project: "PCK", parent: "PCK-5", description: "Body" },
   });
 
-  assertEquals(blank.created[0].description, undefined);
-  assertEquals(given.created[0].description, "Body");
+  assertEquals(only(blank.created).description, undefined);
+  assertEquals(only(given.created).description, "Body");
 });
 
 // The next state

@@ -37,7 +37,7 @@ export class CachedJira implements NewIssueJira {
   #cache: CacheState;
 
   constructor(private readonly jira: NewIssueJira, cache?: CacheState) {
-    this.#cache = { ...(cache ?? {}) };
+    this.#cache = { ...cache };
   }
 
   /** The Cache as read and extended so far; the caller's copy is untouched. */

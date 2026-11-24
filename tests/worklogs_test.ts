@@ -7,6 +7,7 @@ import {
   totalSeconds,
 } from "../src/worklogs.ts";
 import { renderWorklogs } from "../src/commands/worklogs/mod.ts";
+import { only } from "./only.ts";
 
 const ME = "557058:me";
 const SOMEONE_ELSE = "557058:them";
@@ -113,7 +114,7 @@ Deno.test("a shared issue's other contributors are not my hours", () => {
   );
 
   assertEquals(day.length, 1);
-  assertEquals(day[0].timeSpentSeconds, 1800);
+  assertEquals(only(day).timeSpentSeconds, 1800);
 });
 
 Deno.test("an issue worked across several days reports only the day asked for", () => {
@@ -140,7 +141,7 @@ Deno.test("an issue worked across several days reports only the day asked for", 
   );
 
   assertEquals(day.length, 1);
-  assertEquals(day[0].started, "2026-09-17T09:00:00.000+0100");
+  assertEquals(only(day).started, "2026-09-17T09:00:00.000+0100");
 });
 
 Deno.test("a worklog comment holding formatting still reads as text", () => {
@@ -172,7 +173,7 @@ Deno.test("a worklog comment holding formatting still reads as text", () => {
     "2026-09-17",
   );
 
-  assertEquals(day[0].description, "- Standup");
+  assertEquals(only(day).description, "- Standup");
 });
 
 Deno.test("an empty day is an empty array and says so", () => {
@@ -372,8 +373,8 @@ Deno.test("a worklog comment that lost structure says what it lost", () => {
     "2026-09-17",
   );
 
-  assertEquals(day[0].description, "> Billed to the retainer");
-  assertEquals(day[0].descriptionDegraded, ["panel"]);
+  assertEquals(only(day).description, "> Billed to the retainer");
+  assertEquals(only(day).descriptionDegraded, ["panel"]);
 });
 
 Deno.test("the listing names what a comment lost, beside the text", () => {

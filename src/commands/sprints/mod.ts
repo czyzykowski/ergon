@@ -52,8 +52,9 @@ export function renderSprints(
     return `No open sprints on ${boards.map(boardLabel).join(", ")}.`;
   }
 
+  const header = ["ID", "STATE", "NAME", "START", "END", "BOARDS"];
   const rows = [
-    ["ID", "STATE", "NAME", "START", "END", "BOARDS"],
+    header,
     ...sprints.map((sprint) => [
       String(sprint.id),
       sprint.state,
@@ -63,13 +64,13 @@ export function renderSprints(
       sprint.boards.map(boardLabel).join(", "),
     ]),
   ];
-  const widths = rows[0].map((_, column) =>
-    Math.max(...rows.map((row) => row[column].length))
+  const widths = header.map((_, column) =>
+    Math.max(...rows.map((row) => row[column]?.length ?? 0))
   );
 
   return rows
     .map((row) =>
-      row.map((cell, column) => cell.padEnd(widths[column])).join("  ")
+      row.map((cell, column) => cell.padEnd(widths[column] ?? 0)).join("  ")
         .trimEnd()
     )
     .join("\n");

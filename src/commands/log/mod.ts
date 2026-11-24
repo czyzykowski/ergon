@@ -109,8 +109,13 @@ function resolveStartedAt(date?: string, time?: string): string {
     throw new Error("Time must be in HH:MM format.");
   }
 
-  const [year, month, day] = resolvedDate.split("-").map(Number);
-  const [hour, minute] = safeTime.split(":").map(Number);
+  // The format checks above leave exactly three numbers, then two.
+  const [year, month, day] = resolvedDate.split("-").map(Number) as [
+    number,
+    number,
+    number,
+  ];
+  const [hour, minute] = safeTime.split(":").map(Number) as [number, number];
   const started = new Date(year, month - 1, day, hour, minute, 0, 0);
 
   return formatJiraDate(started);

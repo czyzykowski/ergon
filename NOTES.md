@@ -62,9 +62,37 @@
   off on purpose: `no-console` (a CLI prints), `no-await-in-loop` (sequential
   API calls are deliberate), `no-boolean-literal-for-arguments` and
   `prefer-ascii` (dozens of hits each, little value). `noUncheckedIndexedAccess`
-  is the strongest option still off, at about 40 errors;
-  `exactOptionalPropertyTypes` and `noPropertyAccessFromIndexSignature` cost
-  about 50 each for less.
+  is on; tests reach a single result through `only()` and `itemAt()` in
+  `tests/only.ts`, which fail the test where `list[0]?.x` would quietly compare
+  `undefined`. `exactOptionalPropertyTypes` and
+  `noPropertyAccessFromIndexSignature` stay off: about 50 errors each for little
+  value.
+
+- Atomic writes are a lint rule, not an AGENTS.md line: `lint/atomic-write.ts`
+  (`ergon/atomic-write`, a `deno lint` plugin) reports a `Deno.writeFile` or
+  `Deno.writeTextFile` under `src/` unless the same function `Deno.rename`s the
+  variable it wrote. It is a heuristic on variable names, not data flow; the
+  editor's scratch file is the one exemption, by `deno-lint-ignore` with its
+  reason.
+
+- CI runs the tests once, under coverage, through `deno task coverage:check`: it
+  fails below 68% of lines or 81% of branches outside `tests/` (69.2% and 82.1%
+  when set, a point of slack each so one untested branch does not break the
+  build). Raise the two numbers in `deno.json` as coverage grows. In the Claude
+  sandbox `deno coverage` reports "Missing transpiled source code", because the
+  default `DENO_DIR` is read-only there; a copy of its `remote/` and `npm/`
+  under `$TMPDIR`, named by `DENO_DIR`, works.
+
+- oxlint runs type-aware in `deno task check:static` (`deno task lint:ox`), for
+  the promise rules `deno lint` cannot check: `no-floating-promises`,
+  `no-misused-promises`, `await-thenable`, on top of oxlint's correctness
+  category. It comes from the flake's devShell, wrapped with tsgolint; 1.39 from
+  the pinned nixpkgs. Two traps: tsgolint reads only a file named
+  `tsconfig.json` (`--tsconfig` does not reach it), so the root one exists for
+  oxlint alone, and without Deno's types it misses a floating `Deno.*` call, so
+  the task regenerates `.deno-types.d.ts` (gitignored, 0.04s) each run. Import
+  map and `npm:` specifiers stay unresolved for it, so values typed by cliffy or
+  mdast are invisible to the type-aware rules.
 
 - `ergon new` is wiring around one module, `fileNewIssue(draft, deps)` in
   `src/commands/new/issue.ts`; every precedence chain, in both modes, lives

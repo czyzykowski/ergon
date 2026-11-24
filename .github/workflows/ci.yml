@@ -15,8 +15,12 @@ jobs:
       - uses: cachix/install-nix-action@v31
 
       # The devShell pins Deno through flake.lock, so CI runs what a laptop runs.
-      - name: Format, lint, type check and tests
-        run: nix develop --command deno task check
+      - name: Format, lint, type check and oxlint
+        run: nix develop --command deno task check:static
+
+      # The tests run once, under coverage, so the floor costs no second run.
+      - name: Tests, with a coverage floor
+        run: nix develop --command deno task coverage:check
 
       - name: Nix lint
         run: nix develop --command deno task check:nix

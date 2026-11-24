@@ -38,12 +38,6 @@ export function boardForScope(
 ): number {
   const keys = projectKey ? [projectKey] : Object.keys(projects ?? {});
 
-  if (keys.length === 0) {
-    throw new Error(
-      "--order board needs a configured project to find the board from.",
-    );
-  }
-
   const boards = keys.map((key) => {
     const id = normalizeBoardId(projects?.[key]?.fields?.sprintBoardId);
 
@@ -58,8 +52,14 @@ export function boardForScope(
     return { key, id };
   });
 
-  const distinct = new Set(boards.map((board) => board.id));
-  if (distinct.size > 1) {
+  const [first, ...others] = boards;
+  if (!first) {
+    throw new Error(
+      "--order board needs a configured project to find the board from.",
+    );
+  }
+
+  if (others.some((board) => board.id !== first.id)) {
     const where = boards.map((board) => `${board.key} on ${board.id}`).join(
       ", ",
     );
@@ -68,7 +68,7 @@ export function boardForScope(
     );
   }
 
-  return boards[0].id;
+  return first.id;
 }
 
 /**
