@@ -71,6 +71,19 @@
     state and which Prompter methods were asked. `tests/new_test.ts` checks
     `--no-cache` by parsing through the real command with its action swapped.
 
+- Checks are split by cost. The pre-commit hook runs `deno task check:static`
+  (fmt, lint, type check of `src`, `tests` and `scripts`; about 0.7s), and CI
+  (`.github/workflows/ci.yml`) runs the full `deno task check`,
+  `deno task check:nix` and `scripts/check-changelog.ts`. There is no pre-push
+  hook: it would only repeat CI. The CHANGELOG check fails a pushed `feat` or
+  `fix` commit that changes `src/` without `CHANGELOG.md`; work lands on
+  `develop` without PRs, so it checks commits, not a PR's diff. Over the history
+  so far it flags 4 of 50 such commits, and no `refactor` (none touch the
+  CHANGELOG, rightly). `deno.json` excludes `.claude/`, `.scratch/`, `.direnv/`
+  and `coverage/`. Before that, `deno test` also ran the tests of every worktree
+  under `.claude/worktrees/` (978 tests and 15s instead of 318 and 3s), and
+  `deno fmt --check` failed on untracked notes in `.scratch/`.
+
 - Jira's `/rest/api/3/search/jql` answers an unknown project key or status name
   with `{"issues":[],"isLast":true}`: no error, no warning. `search --project`
   now refuses an undeclared project, as `ls --project` does, so a typo cannot

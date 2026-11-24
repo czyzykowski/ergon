@@ -169,6 +169,44 @@ Deno.test("toAdf refuses a footnote and a partly ticked list", () => {
   );
 });
 
+Deno.test("toAdf refuses inline code inside bold, italics or strikethrough", () => {
+  for (
+    const [markdown, construct] of [
+      ["**run `x` now**", "inline code inside bold"],
+      ["_run `x` now_", "inline code inside italics"],
+      ["~~run `x` now~~", "inline code inside strikethrough"],
+      ["**[run `x`](https://example.test/a)**", "inline code inside bold"],
+    ]
+  ) {
+    assertThrows(
+      () => toAdf(markdown),
+      Error,
+      `ergon cannot write ${construct}. Jira's code formatting combines only with a link.`,
+    );
+  }
+});
+
+Deno.test("toAdf writes inline code inside a link", () => {
+  assertEquals(toAdf("[run `x`](https://example.test/a)").content, [{
+    type: "paragraph",
+    content: [
+      {
+        type: "text",
+        text: "run ",
+        marks: [{ type: "link", attrs: { href: "https://example.test/a" } }],
+      },
+      {
+        type: "text",
+        text: "x",
+        marks: [
+          { type: "link", attrs: { href: "https://example.test/a" } },
+          { type: "code" },
+        ],
+      },
+    ],
+  }]);
+});
+
 Deno.test("toAdf writes a heading at the level it was written", () => {
   for (let level = 1; level <= 6; level += 1) {
     assertEquals(toAdf(`${"#".repeat(level)} Goal`).content, [{

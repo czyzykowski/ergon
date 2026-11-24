@@ -349,6 +349,7 @@ function inlineNodeFrom(node: MdNode, marks: AdfNode[]): AdfNode[] {
       return [{ type: "hardBreak" }];
 
     case "inlineCode":
+      refuseMarksAroundCode(marks);
       return node.value
         ? [textNode(node.value, [...marks, { type: "code" }])]
         : [];
@@ -370,6 +371,29 @@ function inlineNodeFrom(node: MdNode, marks: AdfNode[]): AdfNode[] {
 
     default:
       refuse(node);
+  }
+}
+
+const WRAPPING_MARK_NAMES: Record<string, string> = {
+  strong: "bold",
+  em: "italics",
+  strike: "strikethrough",
+};
+
+/**
+ * ADF's `code` mark combines with `link` and nothing else, so code inside bold
+ * has no ADF form at all. Jira would reject the document; refusing here names
+ * the problem before anything is sent.
+ */
+function refuseMarksAroundCode(marks: AdfNode[]): void {
+  const wrapping = marks.find((mark) => mark.type !== "link");
+
+  if (wrapping) {
+    throw new UnexpressibleError(
+      `inline code inside ${WRAPPING_MARK_NAMES[String(wrapping.type)]}`,
+      "Jira's code formatting combines only with a link.",
+      "Move the code out of the formatting, or drop the formatting.",
+    );
   }
 }
 
