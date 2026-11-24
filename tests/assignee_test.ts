@@ -1,7 +1,7 @@
 import { assertEquals, assertThrows } from "testing/asserts.ts";
 import { stub } from "testing/mock.ts";
 import { JiraClient } from "../src/api/jira.ts";
-import { assigneeField, parseAssignee } from "../src/commands/new_issue.ts";
+import { assigneeField, parseAssignee } from "../src/flags.ts";
 import type { AssigneeField } from "../src/types.ts";
 
 const ME = "5b10ac8d82e05b22cc7d4ef5";

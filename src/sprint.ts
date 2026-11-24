@@ -9,6 +9,7 @@
  */
 
 import type { JiraBoard, JiraSprint } from "./api/jira.ts";
+import { isNoneValue } from "./flags.ts";
 
 /** Enough of a board to choose between boards and name the one chosen. */
 export interface BoardRef {
@@ -72,9 +73,9 @@ export type SprintTarget =
 
 /** What a `--sprint` value asks for, the same for every command taking one. */
 export function parseSprint(value: string): SprintTarget {
-  const trimmed = value.trim();
+  if (isNoneValue(value)) return { kind: "none" };
 
-  if (trimmed.toLowerCase() === "none") return { kind: "none" };
+  const trimmed = value.trim();
 
   if (/^\d+$/.test(trimmed)) return { kind: "id", id: Number(trimmed) };
 

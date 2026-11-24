@@ -1,6 +1,7 @@
 import { Input, Select } from "cliffy/prompt/mod.ts";
 import { Checkbox } from "cliffy/prompt/checkbox.ts";
 import type { JiraSprint } from "../api/jira.ts";
+import { parseLabels } from "../flags.ts";
 import type {
   CachedBoard,
   CachedIssue,
@@ -8,7 +9,6 @@ import type {
   ClientSowValue,
   JiraIssue,
 } from "../types.ts";
-import { parseLabels } from "./new_issue.ts";
 
 /**
  * Every question `ergon new` asks, one method each. A method takes the domain

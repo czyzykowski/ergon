@@ -55,16 +55,21 @@
 
 ## Updates
 
+- The flag parsing `new` and `edit` share — `isNoneValue`, `parseAssignee`,
+  `assigneeField`, `AssigneeTarget`, `parseLabels` — lives in `src/flags.ts`, so
+  `edit` no longer imports from the new-issue module, `new_prompter.ts` and
+  `new_issue.ts` no longer import each other, and `parseSprint` uses
+  `isNoneValue` instead of its own `none` check. Tests in `tests/flags_test.ts`.
+
 - `ergon new --sprint` is parsed by `parseSprint` and resolved by
   `resolveSprintId` exactly as `edit` does: `none`, an id, `active` and a name
   each mean the same on both commands, in both modes, and a name never prompts.
   `parseSprint` and `SprintTarget` moved from `edit_fields.ts` into
-  `src/sprint.ts`; `parseSprint` checks `none` itself, since importing
-  `isNoneValue` from `new_issue.ts` would make the two modules import each
-  other. `settleSprint` reads boards from Jira past the Cache for `active` and a
-  name alike; only the Interactive board prompt, with no `--sprint`, still reads
-  the cached boards. The two pinned `--sprint <name>` drift tests became tests
-  of the fixed behaviour, plus one for an unknown name.
+  `src/sprint.ts`, where `parseSprint` reads `none` through `isNoneValue`.
+  `settleSprint` reads boards from Jira past the Cache for `active` and a name
+  alike; only the Interactive board prompt, with no `--sprint`, still reads the
+  cached boards. The two pinned `--sprint <name>` drift tests became tests of
+  the fixed behaviour, plus one for an unknown name.
 
 - `resolveLabels` reads `--labels`, then the Parent's (or Epic's) non-empty
   labels, then the configured labels, in both modes; an Interactive run prompts

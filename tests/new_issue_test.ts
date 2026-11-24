@@ -1,11 +1,6 @@
 import { assertEquals, assertRejects } from "testing/asserts.ts";
 import type { JiraSprint } from "../src/api/jira.ts";
-import {
-  fileNewIssue,
-  isNoneValue,
-  type NewIssueDraft,
-  parseLabels,
-} from "../src/commands/new_issue.ts";
+import { fileNewIssue, type NewIssueDraft } from "../src/commands/new_issue.ts";
 import type { NewIssueJira } from "../src/commands/new_jira.ts";
 import type { Prompter } from "../src/commands/new_prompter.ts";
 import type {
@@ -998,20 +993,4 @@ Deno.test("--no-cache asks Jira and leaves state.cache untouched", async () => {
   assertEquals(args.epic, [[{ key: "PCK-1", summary: "Fresh epic" }]]);
   assertEquals(calls, ["listEpics PCK", "listLabels", "createIssue"]);
   assertEquals(state.cache, CACHE);
-});
-
-// Flag parsing `edit` shares
-
-Deno.test("parseLabels trims, drops blanks, and returns undefined when empty", () => {
-  assertEquals(parseLabels(" a , b ,, "), ["a", "b"]);
-  assertEquals(parseLabels(" , "), undefined);
-  assertEquals(parseLabels(""), undefined);
-  assertEquals(parseLabels(undefined), undefined);
-});
-
-Deno.test("isNoneValue matches the sentinel case-insensitively", () => {
-  assertEquals(isNoneValue(" None "), true);
-  assertEquals(isNoneValue("none"), true);
-  assertEquals(isNoneValue("nonexistent"), false);
-  assertEquals(isNoneValue(undefined), false);
 });
