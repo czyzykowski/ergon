@@ -3,6 +3,7 @@ import {
   isNoneValue,
   parentFieldsFrom,
   parseLabels,
+  rememberCreated,
   requireClientSowFieldId,
   resolveFields,
 } from "../src/commands/new_fields.ts";
@@ -240,5 +241,45 @@ Deno.test("requireClientSowFieldId lets a skipped SOW pass without a field", () 
   assertEquals(
     requireClientSowFieldId(plan, "customfield_10200", "PGR"),
     undefined,
+  );
+});
+
+const REMEMBERED = {
+  lastProject: "PGR",
+  lastEpic: "PGR-1",
+  lastIssueKey: "PGR-2",
+  lastClientSow: "10099",
+};
+
+const CREATED = {
+  projectKey: "PCK",
+  epicKey: "PCK-10",
+  issueKey: "PCK-11",
+  clientSow: "10084",
+};
+
+Deno.test("an interactive new remembers its project, epic, issue and Client SOW", () => {
+  assertEquals(rememberCreated(REMEMBERED, { interactive: true, ...CREATED }), {
+    lastProject: "PCK",
+    lastEpic: "PCK-10",
+    lastIssueKey: "PCK-11",
+    lastClientSow: "10084",
+  });
+});
+
+Deno.test("an interactive new keeps the remembered Client SOW when it set none", () => {
+  const next = rememberCreated(REMEMBERED, {
+    interactive: true,
+    ...CREATED,
+    clientSow: undefined,
+  });
+
+  assertEquals(next.lastClientSow, "10099");
+});
+
+Deno.test("a non-interactive new remembers only the issue it created", () => {
+  assertEquals(
+    rememberCreated(REMEMBERED, { interactive: false, ...CREATED }),
+    { ...REMEMBERED, lastIssueKey: "PCK-11" },
   );
 });

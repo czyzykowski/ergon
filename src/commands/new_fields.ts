@@ -1,4 +1,8 @@
-import type { AssigneeField, ProjectFieldDefaults } from "../types.ts";
+import type {
+  AssigneeField,
+  ErgonState,
+  ProjectFieldDefaults,
+} from "../types.ts";
 
 /** A Client SOW option, as either a Jira option id or its raw display value. */
 export interface ClientSowValue {
@@ -231,4 +235,37 @@ export function resolveFields(input: ResolveFieldsInput): ResolvedFields {
   const { labels, needsLabelPrompt } = resolveLabels(input);
 
   return { labels, needsLabelPrompt, clientSow: resolveClientSow(input) };
+}
+
+/** What a successful `ergon new` leaves behind for the next run. */
+export interface CreatedIssue {
+  interactive: boolean;
+  projectKey: string;
+  epicKey?: string;
+  issueKey: string;
+  /** The Client SOW the issue was given, as an option id or display value. */
+  clientSow?: string;
+}
+
+/**
+ * The Remembered state after `created`. The issue key is always recorded, as
+ * the default for follow-up commands; the project, epic and Client SOW only
+ * pre-select a human's next answer, so a Non-interactive run leaves them as
+ * they were — see docs/adr/0001.
+ */
+export function rememberCreated(
+  state: ErgonState,
+  created: CreatedIssue,
+): ErgonState {
+  if (!created.interactive) {
+    return { ...state, lastIssueKey: created.issueKey };
+  }
+
+  return {
+    ...state,
+    lastProject: created.projectKey,
+    lastEpic: created.epicKey,
+    lastIssueKey: created.issueKey,
+    lastClientSow: created.clientSow ?? state.lastClientSow,
+  };
 }

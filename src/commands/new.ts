@@ -32,6 +32,7 @@ import {
   parentFieldsFrom,
   parseAssignee,
   parseLabels,
+  rememberCreated,
   requireClientSowFieldId,
   resolveFields,
 } from "./new_fields.ts";
@@ -366,7 +367,10 @@ export function registerNewCommand(program: Command): void {
         ? undefined
         : parseAssignee(options.assignee);
 
-      let projectKey = options.project ?? state.lastProject ??
+      // Remembered state pre-selects a human's next answer, so a
+      // Non-interactive run neither reads nor writes it — see docs/adr/0001.
+      let projectKey = options.project ??
+        (interactive ? state.lastProject : undefined) ??
         config.defaults?.project ?? "";
       if (!projectKey && interactive) {
         projectKey = (await promptProject(config.projects)) ?? "";
@@ -633,18 +637,14 @@ export function registerNewCommand(program: Command): void {
         customFields,
       });
 
-      const nextClientSow = clientSowPayload?.id ?? clientSowPayload?.value;
-
       await saveState({
-        ...state,
-        lastProject: projectKey,
-        lastEpic: epicKey,
-        lastIssueKey: issue.key,
-        // The remembered SOW records what a human picked at the prompt, so a
-        // non-interactive run must not overwrite it — see docs/adr/0001.
-        lastClientSow: interactive
-          ? nextClientSow ?? state.lastClientSow
-          : state.lastClientSow,
+        ...rememberCreated(state, {
+          interactive,
+          projectKey,
+          epicKey,
+          issueKey: issue.key,
+          clientSow: clientSowPayload?.id ?? clientSowPayload?.value,
+        }),
         cache: useCache ? cache : state.cache,
       });
 

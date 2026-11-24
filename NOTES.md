@@ -463,12 +463,15 @@
   — any non-tty `ergon new` that needs a prompt hangs today. It was left out
   because it rewrites prompting for runs that have nothing to do with sourcing a
   description, and it subsumes `planSource`'s narrower refusal when it lands.
-- Open question, found while making detected runs Non-interactive: `ergon new`
-  reads `state.lastProject` in every mode and writes `lastProject` and
-  `lastEpic` in every mode, so a Non-interactive run still depends on, and
-  feeds, the last project and epic someone chose. Only `lastClientSow` (and the
-  `lastEpic` read) follow ADR 0001. Left as it was, since flagged runs already
-  behaved so; with detection it now reaches every scripted and agent run.
+- Resolved (2026-11-24), found while making detected runs Non-interactive:
+  `ergon new` read `state.lastProject` in every mode and wrote `lastProject` and
+  `lastEpic` in every mode, so a Non-interactive run still depended on, and fed,
+  the last project and epic someone chose. Now a Non-interactive run resolves
+  the project from `--project` and config alone and writes neither, as ADR 0001
+  (see its 2026-11-24 note) already required for `lastClientSow`. What a run
+  remembers is settled in one pure function, `rememberCreated` in
+  `src/commands/new_fields.ts`. `lastIssueKey` is still written in every mode:
+  it is the default key for follow-up commands, not a prompt's pre-selection.
 - `toAdf` already normalises trailing newlines: `"a\n\n- b"`, `"a\n\n- b\n"` and
   `"a\n\n- b\n\n"` all produce the same two blocks. A file Source therefore
   needs no trimming, which is what made the file path a smaller change than

@@ -23,6 +23,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   comment or editing one with `--id`. Both refuse before calling Jira. At a
   terminal both open the editor as before.
 
+- A Non-interactive `ergon new` no longer defaults the project to the one last
+  used, nor records its project and epic for the next run. It takes the project
+  from `--project`, then config's default project, and otherwise fails with
+  "Project key is required; pass --project." Before, a script that omitted
+  `--project` filed its issue wherever the operator last worked. Interactive
+  runs still default from, and record, the last project and epic; every run
+  still records the issue it created for follow-up commands.
+
 - `ergon search --json` emits the matching issues as the same array
   `ergon ls --json` does: `links`, `reporter`, `statusSince` and `children`
   Absent, as from any search. An empty result is `[]`; without `--json` it stays

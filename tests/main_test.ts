@@ -1,6 +1,7 @@
 import { dirname, fromFileUrl } from "path/mod.ts";
 import { assert, assertEquals } from "testing/asserts.ts";
 import { resolveConfigPath } from "../src/config.ts";
+import { saveState } from "../src/state.ts";
 
 const MAIN = fromFileUrl(new URL("../src/main.ts", import.meta.url));
 
@@ -155,6 +156,22 @@ Deno.test("search refuses a project ergon is not configured for", async () => {
 Deno.test("new without a terminal names --project when none resolves", async () => {
   await withTestHome(async (env) => {
     const run = await runErgonWith(env, "new", "A summary");
+
+    assertEquals(run, {
+      code: 1,
+      stdout: "",
+      stderr: "Project key is required; pass --project.\n",
+    });
+  });
+});
+
+Deno.test("new without a terminal ignores the remembered project", async () => {
+  // PCK is declared, so the remembered project would get as far as Jira and
+  // fail differently; naming --project proves it was never picked up.
+  await withTestHome(async (env) => {
+    await saveState({ lastProject: "PCK" }, env.HOME);
+
+    const run = await runErgonWith(env, "new", "--summary", "x");
 
     assertEquals(run, {
       code: 1,
