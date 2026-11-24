@@ -3,9 +3,8 @@
 `-` means stdin on every rich-text flag ergon has: `ergon edit --description -`,
 `ergon comment --body -`, and now `ergon new --description -` and
 `ergon log --description -`. A `--<field>-file` flag, which names a path
-instead, exists on `ergon new` alone. The table in
-[rich-text-from-a-source.md](../../specs/rich-text-from-a-source.md) therefore
-reads as though three commands were forgotten. They were not.
+instead, exists on `ergon new` alone. Laid out as a table of commands and flags,
+that reads as though three commands were forgotten. They were not.
 
 On a command that never prompts, `--description - < spec.md` already reads a
 file. A `--description-file` there would be a second spelling of a shell

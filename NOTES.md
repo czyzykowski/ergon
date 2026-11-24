@@ -114,14 +114,13 @@
   type of `assignee`, which Children and `ls --json` share, so it was left out
   of the Reporter change.
 
-- `--assignee` is `me` or `none` only; see `specs/assign-issue.md`. PCK and PGR
-  both default new issues to unassigned (`assigneeType: UNASSIGNED`), and the
-  Assignee is on the create and edit screens of every issue type there, so it
-  travels in the same request as the other fields. `me` is asked of
-  `/rest/api/3/myself` per run. Checked live with `ergon edit PGR-1975` both
-  ways. `ergon new --assignee` was not run live, since that creates an issue:
-  the payload is covered by tests, but Jira accepting `assignee: null` on create
-  is unconfirmed.
+- `--assignee` is `me` or `none` only. PCK and PGR both default new issues to
+  unassigned (`assigneeType: UNASSIGNED`), and the Assignee is on the create and
+  edit screens of every issue type there, so it travels in the same request as
+  the other fields. `me` is asked of `/rest/api/3/myself` per run. Checked live
+  with `ergon edit PGR-1975` both ways. `ergon new --assignee` was not run live,
+  since that creates an issue: the payload is covered by tests, but Jira
+  accepting `assignee: null` on create is unconfirmed.
 
 - Help and usage errors are set on the root command and inherited:
   `.help({ colors: false })` and `.throwErrors()`. Without `throwErrors`,
@@ -262,11 +261,10 @@
   `yaml/` entries beside it — and the tests import `testing/asserts.ts`. The std
   version is unchanged, so nothing resolves differently and `deno.lock` did not
   move.
-- `deno fmt --check` still reports seven files: `specs/ergon-status-tmux.md`,
-  `specs/move-issue-status.md`, `specs/open-issue-in-browser.md` and four
-  untracked files under `.scratch/`. All predate the lint fix and none is
-  reachable from `src/`; formatting them would rewrap three historical specs for
-  no reading benefit. `deno fmt` alone clears them whenever that is wanted.
+- `specs/` is working material, not part of the repo: it is gitignored and
+  excluded in `deno.json`, so a spec stays on the machine that wrote it. A
+  decision that must outlive its spec goes into an ADR, NOTES.md or the code,
+  never a link to `specs/`.
 - The Client SOW field id has no default. `requireClientSowFieldId` in
   `src/commands/new_fields.ts` decides when a missing id is an error: every plan
   kind but `skip` needs one — see
@@ -480,13 +478,13 @@
 - `blockFrom` in `src/adf.ts` lost an unused `parent` parameter it never read.
   `blocksFrom` still needs its own, for the container rule and the refusal text.
 
-- Measured on 2026-10-02, and the fact the whole of
-  `specs/rich-text-from-a-source.md` turns on. **A cliffy prompt against a piped
-  stdin hangs rather than failing.** `Input.prompt` with stdin at EOF from
-  `echo "" |` did not throw and did not return; it sat there until the command
-  was killed at two minutes. So reading a Source from stdin on a run that may
-  still prompt cannot be left to fail on its own — it produces no output at all
-  — which is why `planSource` refuses the combination up front.
+- Measured on 2026-10-02, and the fact reading rich text from a Source turns on.
+  **A cliffy prompt against a piped stdin hangs rather than failing.**
+  `Input.prompt` with stdin at EOF from `echo "" |` did not throw and did not
+  return; it sat there until the command was killed at two minutes. So reading a
+  Source from stdin on a run that may still prompt cannot be left to fail on its
+  own — it produces no output at all — which is why `planSource` refuses the
+  combination up front.
 - `Deno.stdin.isTerminal()` is available on Deno 2.6.4 and reports `false` for a
   pipe, so the condition is cheaply detectable. **Done** for `ergon new` by
   detection rather than per prompt site: `isInteractive` in `src/interactive.ts`

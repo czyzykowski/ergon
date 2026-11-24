@@ -1,7 +1,6 @@
 /**
  * Which Sprint is the Active Sprint, resolved the same way for every command
- * that writes one — see
- * [resolve-current-sprint.md](../specs/resolve-current-sprint.md).
+ * that writes one.
  *
  * Nothing here is cached. Which Sprint is active is a fact with a one-week
  * shelf life, and a remembered answer — a cache once, a copied id in a skill
