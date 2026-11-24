@@ -31,7 +31,7 @@
     "noUncheckedIndexedAccess": true
   },
   "lint": {
-    "plugins": ["./lint/atomic-write.ts"],
+    "plugins": ["./lint/atomic-write.ts", "./lint/stryker-disable.ts"],
     "rules": {
       "include": [
         "camelcase",
