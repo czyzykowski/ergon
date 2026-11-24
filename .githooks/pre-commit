@@ -1,3 +1,4 @@
 #!/bin/sh
 # Enabled by: git config core.hooksPath .githooks
-exec deno task check
+# Static checks only, to stay under a few seconds; CI runs the tests.
+exec deno task check:static
