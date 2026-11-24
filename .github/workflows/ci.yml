@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # the CHANGELOG check reads every pushed commit
+
+      - uses: cachix/install-nix-action@v31
+
+      # The devShell pins Deno through flake.lock, so CI runs what a laptop runs.
+      - name: Format, lint, type check and tests
+        run: nix develop --command deno task check
+
+      - name: Nix lint
+        run: nix develop --command deno task check:nix
+
+      - name: CHANGELOG entry for every feat and fix
+        env:
+          BEFORE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          AFTER: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          # A new branch has no "before", and a force push may leave it out of
+          # the clone; both fall back to everything not yet on develop.
+          if git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            range="$BEFORE..$AFTER"
+          else
+            range="origin/develop..$AFTER"
+          fi
+          nix develop --command deno run --allow-run=git scripts/check-changelog.ts "$range"
