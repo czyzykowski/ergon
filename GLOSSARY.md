@@ -205,12 +205,16 @@ time entry, log, timesheet
 
 ### Invocation
 
-**Interactive**: A run permitted to prompt. It may ask the operator to resolve
-anything it cannot determine, and it may read and write remembered state.
-_Avoid_: manual, human mode
+**Interactive**: A run permitted to prompt or open an editor. It may ask the
+operator to resolve anything it cannot determine, and it may read and write
+remembered state. A run is Interactive only when it has a terminal on both ends
+— input and output — and was not given `--non-interactive`. _Avoid_: manual,
+human mode
 
-**Non-interactive**: A run that must never prompt, selected with
-`--non-interactive`. It resolves every field from flags, the Parent, and config
+**Non-interactive**: A run that must never prompt or open an editor: any run
+without a terminal on both ends, or one given `--non-interactive`. Where it
+cannot determine something an Interactive run would have asked for, it fails
+rather than waits. It resolves every field from flags, the Parent, and config
 alone, so that the same command against the same Jira produces the same issue
 for anyone who runs it. _Avoid_: headless, scripted, batch
 

@@ -42,3 +42,13 @@ If a command other than `new` ever grows a prompt, it inherits both halves of
 this: stdin becomes contended there, and it needs a path flag. Nothing else
 about the rule changes, which is why the rule is phrased as a condition rather
 than as a list of commands.
+
+## Note (2026-11-24)
+
+"`ergon new` is the only command in the CLI that prompts" was not true when
+written: `ergon move` prompts for a transition without `--to`, and `ergon menu`
+prompts. Neither reads a rich-text Source, so stdin is not contended there and
+the rule above is unaffected. Since
+[ADR 0014](./0014-a-run-without-a-terminal-is-non-interactive.md), a run whose
+stdin is a pipe is Non-interactive and never prompts, so the hang this ADR
+describes can no longer happen through a piped Source.
