@@ -3,14 +3,18 @@ import { renderAdf, toAdf } from "../adf.ts";
 import { JiraClient } from "../api/jira.ts";
 import { loadConfig } from "../config.ts";
 import { editInBuffer } from "../editor.ts";
+import { assigneeField } from "../flags.ts";
 import { isInteractive } from "../interactive.ts";
 import { assertRewritable } from "../rewrite.ts";
-import { requireSprintFieldId, resolveSprintId } from "../sprint.ts";
+import {
+  requireSprintFieldId,
+  resolveSprintId,
+  type SprintTarget,
+} from "../sprint.ts";
 import { loadState } from "../state.ts";
 import type { ProjectFieldDefaults } from "../types.ts";
-import type { EditOptions, SprintTarget } from "./edit_fields.ts";
+import type { EditOptions } from "./edit_fields.ts";
 import { fieldFlagList, planEdit } from "./edit_fields.ts";
-import { assigneeField } from "./new_fields.ts";
 
 export function registerEditCommand(program: Command): void {
   program

@@ -9,6 +9,7 @@
  */
 
 import type { JiraBoard, JiraSprint } from "./api/jira.ts";
+import { isNoneValue } from "./flags.ts";
 
 /** Enough of a board to choose between boards and name the one chosen. */
 export interface BoardRef {
@@ -61,6 +62,26 @@ export function isActiveSprintKeyword(value: string): boolean {
   }
 
   return keyword === "active";
+}
+
+/** Which Sprint a `--sprint` value asks for, before Jira has been consulted. */
+export type SprintTarget =
+  | { kind: "none" }
+  | { kind: "id"; id: number }
+  | { kind: "active" }
+  | { kind: "name"; name: string };
+
+/** What a `--sprint` value asks for, the same for every command taking one. */
+export function parseSprint(value: string): SprintTarget {
+  if (isNoneValue(value)) return { kind: "none" };
+
+  const trimmed = value.trim();
+
+  if (/^\d+$/.test(trimmed)) return { kind: "id", id: Number(trimmed) };
+
+  if (isActiveSprintKeyword(trimmed)) return { kind: "active" };
+
+  return { kind: "name", name: trimmed };
 }
 
 /** A board id as config may hold it: a number, or a string out of YAML. */

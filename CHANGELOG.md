@@ -6,6 +6,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- An Interactive `ergon new` parent search finds text containing a backslash.
+  Before, the backslash went into the JQL unescaped, so a search ending in one
+  was refused by Jira.
+
+- `ergon new --sprint "Sprint 5"` files into the active sprint of that name
+  without a terminal, as `ergon edit --sprint` already did, and at a terminal
+  finds it without asking for a board. Before, a Non-interactive run was refused
+  with "Resolving --sprint by name needs interactive mode", and an Interactive
+  one asked which board first. A name no board has active fails with
+  `Active sprint "<name>" not found.`, as on `edit`.
+
+- `ergon new --no-cache` asks Jira for every lookup and leaves the saved Cache
+  as it was, as its help text says. Before, the flag did nothing: the Cache was
+  always read and always saved.
+
+- An Interactive `ergon new` whose Parent or Epic has no labels takes the
+  project's configured labels, as a Non-interactive run already did, and asks
+  for labels only when neither `--labels`, the Parent nor the config gives any.
+  Before, an unlabelled Parent or Epic skipped the configured labels and a
+  person at a terminal got a label prompt.
+
+- An Interactive `ergon new` takes its labels and Client SOW from the Epic it
+  files under when there is no `--parent`, as a Non-interactive `--epic` already
+  did. An Epic picked at the prompt, passed with `--epic` or remembered from the
+  last run gives the new issue its labels without asking for them, and its
+  Client SOW is the default the Client SOW prompt offers, ahead of the one last
+  used. Before, a person at a terminal got a label prompt and no Epic default.
+
 - Inline code inside bold, italics or strikethrough (`**run`x`now**`) is refused
   before anything reaches Jira, on every rich-text write: "ergon cannot write
   inline code inside bold. Jira's code formatting combines only with a link.

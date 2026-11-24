@@ -37,6 +37,8 @@
 - [x] Assigning an issue to the operator (`--assignee me|none` on `new`, `edit`)
 - [x] Naming an issue's Reporter (`reporter` on `ergon get`)
 - [x] Searching issues as data (`ergon search --json`)
+- [x] `ergon new` behind one module, `fileNewIssue`, and its fixes (see
+      CHANGELOG)
 - [ ] `--sprint <name>` matching future Sprints, on `edit` and on `new` in both
       modes, through `listOpenSprints`
 - [ ] A command that takes up an issue in one step — assign it to the operator,
@@ -47,6 +49,27 @@
       people (`matt` fits two on PCK).
 
 ## Updates
+
+- `ergon new` is wiring around one module, `fileNewIssue(draft, deps)` in
+  `src/commands/new/issue.ts`; every precedence chain, in both modes, lives
+  there. It reaches out through two seams: a Prompter
+  (`src/commands/new/prompter.ts`; cliffy, Non-interactive that rejects every
+  method per ADR 0014, scripted in tests) and the `NewIssueJira` port
+  (`src/commands/new/jira.ts`), with the Cache read-through written once in the
+  `CachedJira` decorator. Decisions:
+  - The module takes the _uncached_ port plus `useCache` and builds `CachedJira`
+    itself: it needs the decorator's Cache for the next state, and the Sprint
+    lookups read boards past the Cache, which keeps no board type. So the port's
+    `listBoards` answers `(CachedBoard & { type?: string })[]`.
+  - `parent(matches, types)` takes the searched types, so the pick keeps its
+    `Select parent Story` heading. The cliffy `__none__` sentinels stay inside
+    its adapter; "None" comes back as `undefined`.
+  - Flag parsing `new` and `edit` share (`isNoneValue`, `parseAssignee`,
+    `parseLabels`, …) lives in `src/flags.ts`; `parseSprint` and `SprintTarget`
+    in `src/sprint.ts`. `ClientSowValue` is in `src/types.ts`.
+  - `tests/new_issue_test.ts` asserts only the `createIssue` payload, the next
+    state and which Prompter methods were asked. `tests/new_test.ts` checks
+    `--no-cache` by parsing through the real command with its action swapped.
 
 - Checks are split by cost. The pre-commit hook runs `deno task check:static`
   (fmt, lint, type check of `src`, `tests` and `scripts`; about 0.7s), and CI
@@ -190,9 +213,9 @@
   still open, a write to it succeeds, and completing it carries unfinished
   issues into the new one. Only a closed sprint fails, and nothing ergon reads
   live can name one.
-- `ergon new --sprint active` reads the project's boards from Jira, not the
-  board cache: the cache holds no board type. The interactive board prompt and
-  `--sprint <name>` still use the cache.
+- `ergon new --sprint active` and `--sprint <name>` read the project's boards
+  from Jira, not the board cache: the cache holds no board type. The interactive
+  board prompt still uses the cache.
 - Board order replaces raw Rank (ADR 0013, superseding 0009). Facts found on the
   way: PGR has no board of its own and lives on the Unified Client Board (26)
   with PCK and ~15 other projects; PCK's own board (373) shows only sprints

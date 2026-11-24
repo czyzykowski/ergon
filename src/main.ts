@@ -11,7 +11,7 @@ import { registerLinkCommands } from "./commands/link.ts";
 import { registerLogCommand } from "./commands/log.ts";
 import { registerLsCommand } from "./commands/ls.ts";
 import { registerMenuCommand } from "./commands/menu.ts";
-import { registerNewCommand } from "./commands/new.ts";
+import { registerNewCommand } from "./commands/new/mod.ts";
 import { registerMoveCommand } from "./commands/move.ts";
 import { registerOpenCommand } from "./commands/open.ts";
 import { registerSearchCommand } from "./commands/search.ts";
