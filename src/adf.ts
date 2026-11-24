@@ -171,7 +171,7 @@ function refuse(node: MdNode): never {
  * anything; ADF's schema is not, and a document that breaks it comes back from
  * Jira as a 400 that says nothing about which part was wrong.
  */
-const CONTAINERS: Record<string, { allows: Set<string>; holds: string }> = {
+const CONTAINERS = {
   doc: {
     allows: new Set([
       "paragraph",
@@ -194,9 +194,12 @@ const CONTAINERS: Record<string, { allows: Set<string>; holds: string }> = {
     allows: new Set(["paragraph", "bulletList", "orderedList", "codeBlock"]),
     holds: "A Jira quote holds a paragraph, a list or a code block.",
   },
-};
+} satisfies Record<string, { allows: Set<string>; holds: string }>;
 
-function blocksFrom(nodes: MdNode[], parent: string): AdfNode[] {
+function blocksFrom(
+  nodes: MdNode[],
+  parent: keyof typeof CONTAINERS,
+): AdfNode[] {
   const container = CONTAINERS[parent];
 
   return nodes.map((node) => {
@@ -323,15 +326,16 @@ function taskListFrom(items: MdNode[]): AdfNode {
 /** A Jira task is a single line; anything else in the item has nowhere to go. */
 function taskContentFrom(item: MdNode): AdfNode[] {
   const blocks = item.children ?? [];
+  const [line] = blocks;
 
-  if (blocks.length !== 1 || blocks[0].type !== "paragraph") {
+  if (blocks.length !== 1 || line?.type !== "paragraph") {
     throw new UnexpressibleError(
       "a block inside a task",
       "A Jira task holds one line of text.",
     );
   }
 
-  return inlineFrom(blocks[0].children ?? []);
+  return inlineFrom(line.children ?? []);
 }
 
 function inlineFrom(nodes: MdNode[], marks: AdfNode[] = []): AdfNode[] {
@@ -822,8 +826,8 @@ function escapeInline(text: string): string {
   let out = "";
 
   for (let index = 0; index < text.length; index += 1) {
-    const char = text[index];
-    const next = text[index + 1] ?? "";
+    const char = text.charAt(index);
+    const next = text.charAt(index + 1);
 
     if ("\\`*[]~".includes(char)) {
       out += `\\${char}`;
@@ -858,11 +862,13 @@ function escapeBlockStart(line: string): string {
     }`;
   }
 
-  const opener = line.match(
+  const indent = line.match(
     /^( {0,3})(?:#{1,6}(?=[ \t]|$)|>|[-+](?=[ \t]|$)|=+[ \t]*$|-+[ \t]*$|\|)/,
-  );
+  )?.[1];
 
-  return opener ? `${opener[1]}\\${line.slice(opener[1].length)}` : line;
+  return indent === undefined
+    ? line
+    : `${indent}\\${line.slice(indent.length)}`;
 }
 
 function codeSpan(text: string): string {
@@ -1045,13 +1051,10 @@ function compare(
     found.add(`what sits inside ${nounOf(type)}`);
   }
 
-  for (
-    let index = 0;
-    index < Math.min(mine.length, theirs.length);
-    index += 1
-  ) {
-    compare(mine[index], theirs[index], found);
-  }
+  mine.forEach((node, index) => {
+    const other = theirs[index];
+    if (other) compare(node, other, found);
+  });
 }
 
 function compareAttrs(

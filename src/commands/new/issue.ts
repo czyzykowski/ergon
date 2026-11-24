@@ -368,12 +368,8 @@ async function chooseSprintBoard(
     return normalized;
   }
 
-  if (boards.length === 0) {
-    return undefined;
-  }
-
-  if (boards.length === 1) {
-    return boards[0].id;
+  if (boards.length <= 1) {
+    return boards[0]?.id;
   }
 
   return await prompter.board(boards);

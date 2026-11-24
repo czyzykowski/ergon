@@ -8,13 +8,17 @@ const USER_VISIBLE = /^\S+ (feat|fix)(\([^)]*\))?!?:/;
 /** Parses `git log --format=%x1e%h %s --name-only` output. */
 export function commitsMissingChangelog(log: string): string[] {
   return log.split("\x1e").slice(1)
-    .map((block) => block.trim().split("\n").filter((line) => line !== ""))
-    .filter(([subject, ...files]) =>
+    .map((block) => {
+      const [subject = "", ...files] = block.trim().split("\n")
+        .filter((line) => line !== "");
+      return { subject, files };
+    })
+    .filter(({ subject, files }) =>
       USER_VISIBLE.test(subject) &&
       files.some((file) => file.startsWith("src/")) &&
       !files.includes("CHANGELOG.md")
     )
-    .map(([subject]) => subject);
+    .map(({ subject }) => subject);
 }
 
 async function gitLog(range: string): Promise<string> {

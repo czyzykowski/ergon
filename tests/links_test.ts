@@ -7,6 +7,7 @@ import {
   renderLinks,
 } from "../src/links.ts";
 import type { JiraIssueLink } from "../src/links.ts";
+import { only } from "./only.ts";
 
 const BLOCKS = { name: "Blocks", inward: "is blocked by", outward: "blocks" };
 const DUPLICATE = {
@@ -59,16 +60,16 @@ Deno.test("a counterpart in outwardIssue reads with the outward phrase", () => {
 });
 
 Deno.test("a symmetric type reads the same either way", () => {
-  const [inward] = renderLinks([
+  const inward = only(renderLinks([
     { id: "3", type: RELATES, inwardIssue: counterpart("PCK-4", "A", "To Do") },
-  ]);
-  const [outward] = renderLinks([
+  ]));
+  const outward = only(renderLinks([
     {
       id: "4",
       type: RELATES,
       outwardIssue: counterpart("PCK-4", "A", "To Do"),
     },
-  ]);
+  ]));
 
   assertEquals(inward.phrase, "relates to");
   assertEquals(outward.phrase, "relates to");

@@ -50,19 +50,20 @@ export function registerWorklogsCommand(program: Command): void {
 export function renderWorklogs(worklogs: readonly Worklog[]): string {
   if (worklogs.length === 0) return "No worklogs found.";
 
-  const durations = worklogs.map((entry) =>
-    formatDuration(entry.timeSpentSeconds)
-  );
+  const rows = worklogs.map((entry) => ({
+    entry,
+    duration: formatDuration(entry.timeSpentSeconds),
+  }));
   const keyWidth = widest(worklogs.map((entry) => entry.issueKey));
   const idWidth = widest(worklogs.map((entry) => entry.id));
-  const durationWidth = widest(durations);
+  const durationWidth = widest(rows.map((row) => row.duration));
 
-  const lines = worklogs.map((entry, index) =>
+  const lines = rows.map(({ entry, duration }) =>
     [
       entry.issueKey.padEnd(keyWidth),
       entry.id.padEnd(idWidth),
       startTime(entry.started),
-      durations[index].padEnd(durationWidth),
+      duration.padEnd(durationWidth),
       describe(entry),
     ].join("  ").trimEnd()
   );

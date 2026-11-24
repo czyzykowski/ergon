@@ -178,12 +178,15 @@ export async function listOpenSprints(input: {
   boards: readonly JiraBoard[];
 }): Promise<OpenSprint[]> {
   const answers = await Promise.all(
-    input.boards.map((board) => input.jira.listOpenSprints(board.id)),
+    input.boards.map(async (board) => ({
+      board,
+      shown: await input.jira.listOpenSprints(board.id),
+    })),
   );
 
   const found = new Map<number, OpenSprint>();
-  input.boards.forEach((board, index) => {
-    for (const sprint of answers[index]) {
+  for (const { board, shown } of answers) {
+    for (const sprint of shown) {
       const known = found.get(sprint.id);
       if (known) {
         known.boards.push({ id: board.id, name: board.name });
@@ -200,7 +203,7 @@ export async function listOpenSprints(input: {
         boards: [{ id: board.id, name: board.name }],
       });
     }
-  });
+  }
 
   const sprints = [...found.values()];
   return [
@@ -232,16 +235,19 @@ export async function resolveSprintId(input: {
 }): Promise<number> {
   const boards = boardsToAsk(input.boards, input.configuredBoardId);
   const answers = await Promise.all(
-    boards.map((board) => input.jira.listActiveSprints(board.id)),
+    boards.map(async (board) => ({
+      board,
+      shown: await input.jira.listActiveSprints(board.id),
+    })),
   );
 
   // Each Sprint once, on the first board that showed it.
   const found = new Map<number, { sprint: JiraSprint; board: BoardRef }>();
-  boards.forEach((board, index) => {
-    for (const sprint of answers[index]) {
+  for (const { board, shown } of answers) {
+    for (const sprint of shown) {
       if (!found.has(sprint.id)) found.set(sprint.id, { sprint, board });
     }
-  });
+  }
   const sprints = [...found.values()];
 
   if (input.name !== undefined) {
@@ -260,13 +266,14 @@ export async function resolveSprintId(input: {
     return match.sprint.id;
   }
 
-  if (sprints.length === 0) {
+  const [only, ...others] = sprints;
+  if (!only) {
     throw new Error(
       `No active sprint on ${boards.map(boardLabel).join(", ")}.`,
     );
   }
 
-  if (sprints.length > 1) {
+  if (others.length > 0) {
     const listed = sprints
       .map(({ sprint, board }) =>
         `${sprint.name} (${sprint.id}) on ${boardLabel(board)}`
@@ -278,7 +285,7 @@ export async function resolveSprintId(input: {
     );
   }
 
-  const [{ sprint, board }] = sprints;
+  const { sprint, board } = only;
   console.error(
     `Using active sprint: ${sprint.name} (${sprint.id}) from board ${
       boardLabel(board)
