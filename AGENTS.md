@@ -79,7 +79,6 @@ rules for every change you make.
 
 ### File IO
 
-- Use atomic writes for state/config changes.
 - Keep filesystem paths built with `URL` or `path` helpers.
 
 ## Testing Guidelines

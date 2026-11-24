@@ -63,6 +63,13 @@
   `noPropertyAccessFromIndexSignature` stay off: about 50 errors each for little
   value.
 
+- Atomic writes are a lint rule, not an AGENTS.md line: `lint/atomic-write.ts`
+  (`ergon/atomic-write`, a `deno lint` plugin) reports a `Deno.writeFile` or
+  `Deno.writeTextFile` under `src/` unless the same function `Deno.rename`s the
+  variable it wrote. It is a heuristic on variable names, not data flow; the
+  editor's scratch file is the one exemption, by `deno-lint-ignore` with its
+  reason.
+
 - CI runs the tests once, under coverage, through `deno task coverage:check`: it
   fails below 68% of lines or 81% of branches outside `tests/` (69.2% and 82.1%
   when set, a point of slack each so one untested branch does not break the

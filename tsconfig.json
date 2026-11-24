@@ -10,5 +10,5 @@
     "lib": ["esnext"],
     "skipLibCheck": true
   },
-  "include": ["src", "tests", "scripts", ".deno-types.d.ts"]
+  "include": ["src", "tests", "scripts", "lint", ".deno-types.d.ts"]
 }
