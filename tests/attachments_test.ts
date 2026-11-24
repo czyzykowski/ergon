@@ -8,7 +8,7 @@ import {
   registerAttachmentsCommand,
   renderAttachments,
   selectAttachments,
-} from "../src/commands/attachments.ts";
+} from "../src/commands/attachments/mod.ts";
 
 const SCREENSHOT: JiraAttachmentResponse = {
   id: "10423",

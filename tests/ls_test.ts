@@ -1,5 +1,5 @@
 import { assert, assertEquals, assertThrows } from "testing/asserts.ts";
-import { buildJql, filterClauses, listOrder } from "../src/commands/ls.ts";
+import { buildJql, filterClauses, listOrder } from "../src/commands/ls/mod.ts";
 
 Deno.test("the default ordering is unchanged", () => {
   assertEquals(

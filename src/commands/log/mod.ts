@@ -1,8 +1,8 @@
 import type { Command } from "cliffy/command/mod.ts";
-import { JiraClient } from "../api/jira.ts";
-import { loadConfig } from "../config.ts";
-import { loadState, saveState } from "../state.ts";
-import { omitIfBlank, planSource, readSource } from "../text_source.ts";
+import { JiraClient } from "../../api/jira.ts";
+import { loadConfig } from "../../config.ts";
+import { loadState, saveState } from "../../state.ts";
+import { omitIfBlank, planSource, readSource } from "../../text_source.ts";
 
 interface LogOptions {
   date?: string;

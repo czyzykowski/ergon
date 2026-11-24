@@ -1,9 +1,9 @@
 import type { Command } from "cliffy/command/mod.ts";
-import { JiraClient } from "../api/jira.ts";
-import { loadConfig } from "../config.ts";
-import { loadState } from "../state.ts";
-import { timestamp } from "../timestamp.ts";
-import type { JiraComment } from "../types.ts";
+import { JiraClient } from "../../api/jira.ts";
+import { loadConfig } from "../../config.ts";
+import { loadState } from "../../state.ts";
+import { timestamp } from "../../timestamp.ts";
+import type { JiraComment } from "../../types.ts";
 
 interface CommentsOptions {
   json?: boolean;

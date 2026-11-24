@@ -1,9 +1,9 @@
 import type { Command } from "cliffy/command/mod.ts";
-import { formatDuration } from "../api/clockwork.ts";
-import { JiraClient } from "../api/jira.ts";
-import { loadConfig } from "../config.ts";
-import type { Worklog } from "../types.ts";
-import { removeWorklog, startStamp } from "../worklogs.ts";
+import { formatDuration } from "../../api/clockwork.ts";
+import { JiraClient } from "../../api/jira.ts";
+import { loadConfig } from "../../config.ts";
+import type { Worklog } from "../../types.ts";
+import { removeWorklog, startStamp } from "../../worklogs.ts";
 
 export function registerUnlogCommand(program: Command): void {
   program

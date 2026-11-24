@@ -1,8 +1,8 @@
 import type { Command } from "cliffy/command/mod.ts";
-import { JiraClient } from "../api/jira.ts";
-import { ClockworkClient } from "../api/clockwork.ts";
-import { loadConfig } from "../config.ts";
-import { loadState, saveState } from "../state.ts";
+import { JiraClient } from "../../api/jira.ts";
+import { ClockworkClient } from "../../api/clockwork.ts";
+import { loadConfig } from "../../config.ts";
+import { loadState, saveState } from "../../state.ts";
 
 export function registerStartCommand(program: Command): void {
   program

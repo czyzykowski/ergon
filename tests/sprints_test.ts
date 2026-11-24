@@ -1,5 +1,5 @@
 import { assertEquals } from "testing/asserts.ts";
-import { renderSprints } from "../src/commands/sprints.ts";
+import { renderSprints } from "../src/commands/sprints/mod.ts";
 import type { OpenSprint } from "../src/sprint.ts";
 
 const DELIVERY = { id: 26, name: "Delivery" };

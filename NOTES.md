@@ -50,6 +50,11 @@
 
 ## Updates
 
+- Every command lives in its own directory, `src/commands/<name>/mod.ts`, as
+  `ergon new` did first; a module only one command uses sits beside its `mod.ts`
+  (`edit/fields.ts`, `new/issue.ts`). Tests stay flat in `tests/`. Paths to the
+  old flat `src/commands/<name>.ts` files further down are history, left as
+  written.
 - `deno.json` opts into stricter `deno lint` rules and compiler options, so the
   hook and CI enforce what AGENTS.md used to ask for in prose (explicit return
   types on exports, among others). Each one was proven to fire on a planted

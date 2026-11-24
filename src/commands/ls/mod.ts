@@ -1,9 +1,9 @@
 import type { Command } from "cliffy/command/mod.ts";
-import { JiraClient, mapIssue } from "../api/jira.ts";
-import { boardForScope, listInBoardOrder } from "../board_order.ts";
-import { loadConfig, requireDeclaredProject } from "../config.ts";
-import { isDate } from "../dates.ts";
-import type { JiraIssue } from "../types.ts";
+import { JiraClient, mapIssue } from "../../api/jira.ts";
+import { boardForScope, listInBoardOrder } from "../../board_order.ts";
+import { loadConfig, requireDeclaredProject } from "../../config.ts";
+import { isDate } from "../../dates.ts";
+import type { JiraIssue } from "../../types.ts";
 
 export interface LsOptions {
   sprint?: boolean;

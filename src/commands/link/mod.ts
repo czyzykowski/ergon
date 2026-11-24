@@ -1,14 +1,14 @@
 import type { Command } from "cliffy/command/mod.ts";
-import { JiraClient } from "../api/jira.ts";
-import { loadConfig } from "../config.ts";
+import { JiraClient } from "../../api/jira.ts";
+import { loadConfig } from "../../config.ts";
 import {
   BLOCKED_BY,
   createLinkBody,
   DUPLICATES,
   findLink,
   type LinkKind,
-} from "../links.ts";
-import { loadState } from "../state.ts";
+} from "../../links.ts";
+import { loadState } from "../../state.ts";
 
 interface LinkOptions {
   remove?: boolean;

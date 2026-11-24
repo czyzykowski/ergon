@@ -1,8 +1,8 @@
 import type { Command } from "cliffy/command/mod.ts";
-import { JiraClient } from "../api/jira.ts";
-import { loadConfig } from "../config.ts";
-import { localDay } from "../dates.ts";
-import type { JiraIssue } from "../types.ts";
+import { JiraClient } from "../../api/jira.ts";
+import { loadConfig } from "../../config.ts";
+import { localDay } from "../../dates.ts";
+import type { JiraIssue } from "../../types.ts";
 
 interface GetOptions {
   json?: boolean;

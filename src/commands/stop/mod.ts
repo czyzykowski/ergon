@@ -1,7 +1,7 @@
 import type { Command } from "cliffy/command/mod.ts";
-import { ClockworkClient } from "../api/clockwork.ts";
-import { loadConfig } from "../config.ts";
-import { loadState, saveState } from "../state.ts";
+import { ClockworkClient } from "../../api/clockwork.ts";
+import { loadConfig } from "../../config.ts";
+import { loadState, saveState } from "../../state.ts";
 
 export function registerStopCommand(program: Command): void {
   program
