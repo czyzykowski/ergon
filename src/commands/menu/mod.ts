@@ -1,6 +1,6 @@
 import type { Command } from "cliffy/command/mod.ts";
 import { Select } from "cliffy/prompt/mod.ts";
-import { isInteractive } from "../interactive.ts";
+import { isInteractive } from "../../interactive.ts";
 
 export function registerMenuCommand(program: Command): void {
   program

@@ -1,9 +1,9 @@
 import type { Command } from "cliffy/command/mod.ts";
 import { Select } from "cliffy/prompt/mod.ts";
-import { JiraClient } from "../api/jira.ts";
-import { loadConfig } from "../config.ts";
-import { isInteractive } from "../interactive.ts";
-import { loadState } from "../state.ts";
+import { JiraClient } from "../../api/jira.ts";
+import { loadConfig } from "../../config.ts";
+import { isInteractive } from "../../interactive.ts";
+import { loadState } from "../../state.ts";
 
 export function registerMoveCommand(program: Command): void {
   program

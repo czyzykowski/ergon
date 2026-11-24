@@ -1,13 +1,13 @@
 import type { Command } from "cliffy/command/mod.ts";
-import { renderAdf, toAdf } from "../adf.ts";
-import { JiraClient } from "../api/jira.ts";
-import { loadConfig } from "../config.ts";
-import { editInBuffer } from "../editor.ts";
-import { isInteractive } from "../interactive.ts";
-import { assertRewritable } from "../rewrite.ts";
-import { loadState } from "../state.ts";
-import { refuseBlank } from "../text_source.ts";
-import type { JiraComment } from "../types.ts";
+import { renderAdf, toAdf } from "../../adf.ts";
+import { JiraClient } from "../../api/jira.ts";
+import { loadConfig } from "../../config.ts";
+import { editInBuffer } from "../../editor.ts";
+import { isInteractive } from "../../interactive.ts";
+import { assertRewritable } from "../../rewrite.ts";
+import { loadState } from "../../state.ts";
+import { refuseBlank } from "../../text_source.ts";
+import type { JiraComment } from "../../types.ts";
 
 const BLANK_COMMENT = "A comment needs a body.";
 

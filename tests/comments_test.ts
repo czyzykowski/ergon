@@ -1,7 +1,7 @@
 import { assertEquals } from "testing/asserts.ts";
 import { mapComment } from "../src/api/jira.ts";
 import type { JiraCommentResponse } from "../src/api/jira.ts";
-import { renderThread } from "../src/commands/comments.ts";
+import { renderThread } from "../src/commands/comments/mod.ts";
 import type { JiraComment } from "../src/types.ts";
 
 function paragraphs(...lines: string[]) {

@@ -1,10 +1,10 @@
 import type { Command } from "cliffy/command/mod.ts";
-import { formatDuration } from "../api/clockwork.ts";
-import { JiraClient } from "../api/jira.ts";
-import { loadConfig } from "../config.ts";
-import { today } from "../dates.ts";
-import { loadState } from "../state.ts";
-import { readDay, totalSeconds } from "../worklogs.ts";
+import { formatDuration } from "../../api/clockwork.ts";
+import { JiraClient } from "../../api/jira.ts";
+import { loadConfig } from "../../config.ts";
+import { today } from "../../dates.ts";
+import { loadState } from "../../state.ts";
+import { readDay, totalSeconds } from "../../worklogs.ts";
 
 interface StatusOutput {
   timer?: {

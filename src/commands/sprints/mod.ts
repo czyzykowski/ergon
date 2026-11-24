@@ -1,13 +1,13 @@
 import type { Command } from "cliffy/command/mod.ts";
-import { JiraClient } from "../api/jira.ts";
-import { loadConfig, requireDeclaredProject } from "../config.ts";
-import { localDay } from "../dates.ts";
+import { JiraClient } from "../../api/jira.ts";
+import { loadConfig, requireDeclaredProject } from "../../config.ts";
+import { localDay } from "../../dates.ts";
 import {
   boardLabel,
   listOpenSprints,
   type OpenSprint,
   scrumBoards,
-} from "../sprint.ts";
+} from "../../sprint.ts";
 
 interface SprintsOptions {
   json?: boolean;

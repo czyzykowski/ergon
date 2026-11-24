@@ -1,5 +1,5 @@
 import { assertEquals, assertThrows } from "testing/asserts.ts";
-import { planEdit } from "../src/commands/edit_fields.ts";
+import { planEdit } from "../src/commands/edit/fields.ts";
 
 Deno.test("--due writes the date and leaves the description alone", () => {
   const plan = planEdit({ due: "2026-09-20" });

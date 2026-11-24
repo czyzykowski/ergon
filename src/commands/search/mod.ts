@@ -1,6 +1,6 @@
 import type { Command } from "cliffy/command/mod.ts";
-import { JiraClient } from "../api/jira.ts";
-import { loadConfig, requireDeclaredProject } from "../config.ts";
+import { JiraClient } from "../../api/jira.ts";
+import { loadConfig, requireDeclaredProject } from "../../config.ts";
 
 interface SearchOptions {
   project?: string;

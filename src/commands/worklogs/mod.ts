@@ -1,10 +1,10 @@
 import type { Command } from "cliffy/command/mod.ts";
-import { formatDuration } from "../api/clockwork.ts";
-import { JiraClient } from "../api/jira.ts";
-import { loadConfig } from "../config.ts";
-import { isDate, today } from "../dates.ts";
-import type { Worklog } from "../types.ts";
-import { readDay, startTime, totalSeconds } from "../worklogs.ts";
+import { formatDuration } from "../../api/clockwork.ts";
+import { JiraClient } from "../../api/jira.ts";
+import { loadConfig } from "../../config.ts";
+import { isDate, today } from "../../dates.ts";
+import type { Worklog } from "../../types.ts";
+import { readDay, startTime, totalSeconds } from "../../worklogs.ts";
 
 interface WorklogsOptions {
   date?: string;

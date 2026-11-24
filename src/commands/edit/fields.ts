@@ -1,6 +1,10 @@
-import { isDate } from "../dates.ts";
-import { type AssigneeTarget, isNoneValue, parseAssignee } from "../flags.ts";
-import { parseSprint, type SprintTarget } from "../sprint.ts";
+import { isDate } from "../../dates.ts";
+import {
+  type AssigneeTarget,
+  isNoneValue,
+  parseAssignee,
+} from "../../flags.ts";
+import { parseSprint, type SprintTarget } from "../../sprint.ts";
 
 /** One field an invocation writes. A Description's value needs IO to settle. */
 export type EditWrite =

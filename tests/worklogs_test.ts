@@ -6,7 +6,7 @@ import {
   requireRemovableWorklog,
   totalSeconds,
 } from "../src/worklogs.ts";
-import { renderWorklogs } from "../src/commands/worklogs.ts";
+import { renderWorklogs } from "../src/commands/worklogs/mod.ts";
 import { only } from "./only.ts";
 
 const ME = "557058:me";

@@ -1,6 +1,6 @@
 import type { Command } from "cliffy/command/mod.ts";
-import { loadConfig } from "../config.ts";
-import { loadState } from "../state.ts";
+import { loadConfig } from "../../config.ts";
+import { loadState } from "../../state.ts";
 
 export function registerOpenCommand(program: Command): void {
   program
