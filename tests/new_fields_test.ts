@@ -33,7 +33,7 @@ function resolve(overrides: Partial<ResolveFieldsInput> = {}) {
   });
 }
 
-Deno.test("non-interactive inherits both fields from a populated parent", () => {
+Deno.test("Non-interactive inherits both fields from a populated parent", () => {
   const resolved = resolve({ parent: PARENT_LABELLED });
 
   assertEquals(resolved.labels, ["Druid", "Infrastructure"]);
@@ -44,7 +44,7 @@ Deno.test("non-interactive inherits both fields from a populated parent", () => 
   });
 });
 
-Deno.test("non-interactive falls through a bare parent to config defaults", () => {
+Deno.test("Non-interactive falls through a bare parent to config defaults", () => {
   const resolved = resolve({ parent: PARENT_BARE });
 
   assertEquals(resolved.labels, ["client-a"]);
@@ -52,14 +52,14 @@ Deno.test("non-interactive falls through a bare parent to config defaults", () =
   assertEquals(resolved.clientSow, { kind: "lookup", value: "Client SOW A" });
 });
 
-Deno.test("non-interactive never reads remembered state", () => {
+Deno.test("Non-interactive never reads remembered state", () => {
   const resolved = resolve({ parent: PARENT_BARE, fieldDefaults: undefined });
 
   assertEquals(resolved.labels, undefined);
   assertEquals(resolved.clientSow, { kind: "skip" });
 });
 
-Deno.test("interactive prompts for labels when the parent has none", () => {
+Deno.test("Interactive prompts for labels when the parent has none", () => {
   const resolved = resolve({ interactive: true, parent: PARENT_BARE });
 
   // An empty parent array short circuits the chain here, so the configured
@@ -68,33 +68,33 @@ Deno.test("interactive prompts for labels when the parent has none", () => {
   assertEquals(resolved.needsLabelPrompt, true);
 });
 
-Deno.test("interactive prompts for labels when there is no parent at all", () => {
+Deno.test("Interactive prompts for labels when there is no parent at all", () => {
   const resolved = resolve({ interactive: true, fieldDefaults: undefined });
 
   assertEquals(resolved.labels, undefined);
   assertEquals(resolved.needsLabelPrompt, true);
 });
 
-Deno.test("interactive takes parent labels without prompting", () => {
+Deno.test("Interactive takes parent labels without prompting", () => {
   const resolved = resolve({ interactive: true, parent: PARENT_LABELLED });
 
   assertEquals(resolved.labels, ["Druid", "Infrastructure"]);
   assertEquals(resolved.needsLabelPrompt, false);
 });
 
-Deno.test("interactive defaults the SOW prompt to the parent", () => {
+Deno.test("Interactive defaults the SOW prompt to the parent", () => {
   const resolved = resolve({ interactive: true, parent: PARENT_LABELLED });
 
   assertEquals(resolved.clientSow, { kind: "prompt", default: "10084" });
 });
 
-Deno.test("interactive defaults the SOW prompt to remembered state next", () => {
+Deno.test("Interactive defaults the SOW prompt to remembered state next", () => {
   const resolved = resolve({ interactive: true, parent: PARENT_BARE });
 
   assertEquals(resolved.clientSow, { kind: "prompt", default: "10099" });
 });
 
-Deno.test("interactive defaults the SOW prompt to config last", () => {
+Deno.test("Interactive defaults the SOW prompt to config last", () => {
   const resolved = resolve({ interactive: true, lastClientSow: undefined });
 
   assertEquals(resolved.clientSow, {
@@ -258,8 +258,8 @@ const CREATED = {
   clientSow: "10084",
 };
 
-Deno.test("an interactive new remembers its project, epic, issue and Client SOW", () => {
-  assertEquals(rememberCreated(REMEMBERED, { interactive: true, ...CREATED }), {
+Deno.test("an Interactive new remembers its project, epic, issue and Client SOW", () => {
+  assertEquals(rememberCreated(REMEMBERED, CREATED, true), {
     lastProject: "PCK",
     lastEpic: "PCK-10",
     lastIssueKey: "PCK-11",
@@ -267,19 +267,19 @@ Deno.test("an interactive new remembers its project, epic, issue and Client SOW"
   });
 });
 
-Deno.test("an interactive new keeps the remembered Client SOW when it set none", () => {
-  const next = rememberCreated(REMEMBERED, {
-    interactive: true,
-    ...CREATED,
-    clientSow: undefined,
-  });
+Deno.test("an Interactive new keeps the remembered Client SOW when it set none", () => {
+  const next = rememberCreated(
+    REMEMBERED,
+    { ...CREATED, clientSow: undefined },
+    true,
+  );
 
   assertEquals(next.lastClientSow, "10099");
 });
 
-Deno.test("a non-interactive new remembers only the issue it created", () => {
+Deno.test("a Non-interactive new remembers only the issue it created", () => {
   assertEquals(
-    rememberCreated(REMEMBERED, { interactive: false, ...CREATED }),
+    rememberCreated(REMEMBERED, CREATED, false),
     { ...REMEMBERED, lastIssueKey: "PCK-11" },
   );
 });

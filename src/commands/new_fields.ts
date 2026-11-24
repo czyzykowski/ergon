@@ -239,7 +239,6 @@ export function resolveFields(input: ResolveFieldsInput): ResolvedFields {
 
 /** What a successful `ergon new` leaves behind for the next run. */
 export interface CreatedIssue {
-  interactive: boolean;
   projectKey: string;
   epicKey?: string;
   issueKey: string;
@@ -256,8 +255,9 @@ export interface CreatedIssue {
 export function rememberCreated(
   state: ErgonState,
   created: CreatedIssue,
+  interactive: boolean,
 ): ErgonState {
-  if (!created.interactive) {
+  if (!interactive) {
     return { ...state, lastIssueKey: created.issueKey };
   }
 

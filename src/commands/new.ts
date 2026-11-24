@@ -639,12 +639,11 @@ export function registerNewCommand(program: Command): void {
 
       await saveState({
         ...rememberCreated(state, {
-          interactive,
           projectKey,
           epicKey,
           issueKey: issue.key,
           clientSow: clientSowPayload?.id ?? clientSowPayload?.value,
-        }),
+        }, interactive),
         cache: useCache ? cache : state.cache,
       });
 
