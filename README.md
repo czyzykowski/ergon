@@ -597,6 +597,15 @@ Run a quick API check:
 
 - `nix develop -c deno run --allow-net --allow-read --allow-env scripts/check-api.ts <ISSUE_KEY>`
 
+TypeScript carries no comments
+([ADR 0017](docs/adr/0017-code-carries-no-comments.md)), checked on changed
+lines only:
+
+- `deno task check:comments` checks the staged diff, as the pre-commit hook
+  does.
+- `deno task check:comments <base>` checks the commits since `<base>`, as CI
+  does.
+
 ## Tests
 
 - `deno task test` (uses read/write/env permissions)
