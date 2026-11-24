@@ -12,6 +12,7 @@ import {
   type SprintTarget,
 } from "../sprint.ts";
 import { loadState } from "../state.ts";
+import { readRichText } from "../text_source.ts";
 import type { ProjectFieldDefaults } from "../types.ts";
 import type { EditOptions } from "./edit_fields.ts";
 import { fieldFlagList, planEdit } from "./edit_fields.ts";
@@ -54,6 +55,15 @@ export function registerEditCommand(program: Command): void {
           `A field to edit is required; pass ${fieldFlagList()}.`,
         );
       }
+
+      // Read before the first Jira call, so an empty pipe or markdown ergon
+      // cannot write is refused before anything is fetched. `edit` never
+      // prompts once a field flag is given, so stdin is not contended here.
+      const description = await readRichText({
+        inline: options.description,
+        flag: "--description",
+        subject: "Description",
+      });
 
       const jira = new JiraClient(config.jira, config.defaults?.projects);
 
@@ -99,9 +109,9 @@ export function registerEditCommand(program: Command): void {
       for (const write of plan.writes) {
         switch (write.field) {
           case "description":
-            fields.description = toAdfField(
-              await resolveDescription(options.description as string),
-            );
+            // planEdit writes the Description only when --description was
+            // given, and readRichText returns text whenever it was.
+            fields.description = toAdfField(description as string);
             changed.push("description");
             break;
           case "summary":
@@ -150,16 +160,11 @@ export function registerEditCommand(program: Command): void {
     });
 }
 
-/** `-` means the body is on stdin; anything else is the body itself. */
-async function resolveDescription(value: string): Promise<string> {
-  if (value !== "-") return value;
-
-  return await new Response(Deno.stdin.readable).text();
-}
-
 /**
  * Jira clears a rich-text field with null rather than an empty document, so an
- * empty description has to be sent as null.
+ * empty description has to be sent as null. Only inline `--description ""` or
+ * an emptied editor buffer gets here empty: a pipe holding nothing is refused
+ * when it is read, because naming a Source asserts there is text.
  */
 function toAdfField(text: string): unknown {
   return text.length === 0 ? null : toAdf(text);
