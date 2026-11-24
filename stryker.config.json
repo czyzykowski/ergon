@@ -1,0 +1,22 @@
+{
+  "testRunner": "command",
+  "commandRunner": {
+    "command": "deno test --fail-fast --allow-read --allow-write --allow-env --allow-run --allow-net=127.0.0.1"
+  },
+  "mutate": [
+    "src/*.ts",
+    "!src/main.ts",
+    "!src/editor.ts",
+    "!src/interactive.ts"
+  ],
+  "concurrency": "50%",
+  "timeoutFactor": 2,
+  "incremental": false,
+  "appendPlugins": ["./scripts/stryker-error-messages.ts"],
+  "ignorers": ["error-messages"],
+  "reporters": ["clear-text", "progress", "html", "json"],
+  "htmlReporter": { "fileName": "reports/mutation/mutation.html" },
+  "jsonReporter": { "fileName": "reports/mutation/mutation.json" },
+  "tempDirName": ".stryker-tmp",
+  "tsconfigFile": "stryker-has-no-tsconfig.json"
+}

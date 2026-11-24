@@ -2,15 +2,20 @@
   "name": "ergon",
   "version": "0.1.0",
   "exports": "./src/main.ts",
+  "nodeModulesDir": "auto",
   "exclude": [
     ".claude/",
     ".deno-types.d.ts",
     ".direnv/",
     ".scratch/",
+    ".stryker-tmp/",
     "coverage/",
+    "reports/",
     "specs/"
   ],
   "imports": {
+    "@stryker-mutator/api/": "npm:/@stryker-mutator/api@10.1.1/",
+    "@stryker-mutator/core": "npm:@stryker-mutator/core@10.1.1",
     "cliffy/": "https://deno.land/x/cliffy@v0.25.7/",
     "mdast-util-from-markdown": "npm:mdast-util-from-markdown@^2.0.2",
     "mdast-util-gfm": "npm:mdast-util-gfm@^3.1.0",
@@ -51,6 +56,7 @@
     "check:nix": "deadnix --fail flake.nix && statix check flake.nix && nixfmt --check flake.nix",
     "coverage": "deno test --parallel --clean --allow-read --allow-write --allow-env --allow-run --allow-net=127.0.0.1 --coverage=coverage",
     "coverage:report": "deno coverage coverage",
-    "coverage:check": "deno task coverage && deno coverage --lcov --exclude=tests/ coverage | deno run scripts/check-coverage.ts 68 81"
+    "coverage:check": "deno task coverage && deno coverage --lcov --exclude=tests/ coverage | deno run scripts/check-coverage.ts 68 81",
+    "mutate": "deno run --allow-read --allow-write --allow-env --allow-run --allow-sys --allow-net=0.0.0.0,127.0.0.1,localhost scripts/mutate.ts"
   }
 }
