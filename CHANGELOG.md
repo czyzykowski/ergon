@@ -13,6 +13,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   one asked which board first. A name no board has active fails with
   `Active sprint "<name>" not found.`, as on `edit`.
 
+- `ergon new --no-cache` asks Jira for every lookup and leaves the saved Cache
+  as it was, as its help text says. Before, the flag did nothing: the Cache was
+  always read and always saved.
+
 - An Interactive `ergon new` whose Parent or Epic has no labels takes the
   project's configured labels, as a Non-interactive run already did, and asks
   for labels only when neither `--labels`, the Parent nor the config gives any.
