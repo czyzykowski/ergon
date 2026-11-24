@@ -573,3 +573,9 @@
   `planSource` is pure and tested directly, like `planEdit` and
   `requireSprintFieldId`; `readSource` takes its stdin reader as an argument so
   a pipe can be faked in a test, since `Deno.stdin` cannot be.
+- (2026-11-24) Its interface is now one call, `readRichText(flags, readStdin?)`:
+  plan, read and the expressibility check run in that order inside it, and
+  `planSource`, `readSource` and `assertExpressible` are internals. Callers had
+  to know the three-step order, and `log` had already skipped the third. Tests
+  go through `readRichText`, with a stdin fake that fails if it is read when it
+  should not be.

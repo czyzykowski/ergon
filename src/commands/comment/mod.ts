@@ -6,7 +6,7 @@ import { editInBuffer } from "../../editor.ts";
 import { isInteractive } from "../../interactive.ts";
 import { assertRewritable } from "../../rewrite.ts";
 import { loadState } from "../../state.ts";
-import { refuseBlank } from "../../text_source.ts";
+import { readRichText, refuseBlank } from "../../text_source.ts";
 import type { JiraComment } from "../../types.ts";
 
 const BLANK_COMMENT = "A comment needs a body.";
@@ -58,10 +58,22 @@ export function registerCommentCommand(program: Command): void {
         throw new Error("A comment body is required; pass --body.");
       }
 
+      // Read before the first Jira call, so an empty pipe or markdown ergon
+      // cannot write is refused before the Comment is fetched. Undefined means
+      // no --body: the editor opens instead.
+      const body = await readRichText({
+        inline: options.body,
+        flag: "--body",
+        subject: "Comment",
+      });
+
       const jira = new JiraClient(config.jira, config.defaults?.projects);
       const comment = options.id === undefined
-        ? await addComment(jira, key, options)
-        : await editComment(jira, key, options.id, options);
+        ? await addComment(jira, key, body)
+        : await editComment(jira, key, options.id, {
+          body,
+          force: options.force === true,
+        });
 
       if (comment === undefined) return;
 
@@ -81,9 +93,9 @@ export function registerCommentCommand(program: Command): void {
 async function addComment(
   jira: JiraClient,
   key: string,
-  options: CommentOptions,
+  supplied: string | undefined,
 ): Promise<JiraComment | undefined> {
-  const body = await resolveBody(options.body, {
+  const body = await resolveBody(supplied, {
     subject: `${key}-comment`,
     current: "",
     missingEditor:
@@ -110,18 +122,18 @@ async function editComment(
   jira: JiraClient,
   key: string,
   id: string,
-  options: CommentOptions,
+  supplied: { body: string | undefined; force: boolean },
 ): Promise<JiraComment | undefined> {
   const current = await jira.getComment(key, id);
   assertRewritable({
     subject: `Comment ${id} on ${key}`,
     doc: current.body,
-    supplied: options.body !== undefined,
-    force: options.force === true,
+    supplied: supplied.body !== undefined,
+    force: supplied.force,
     flag: "--body",
   });
 
-  const body = await resolveBody(options.body, {
+  const body = await resolveBody(supplied.body, {
     subject: `${key}-comment-${id}`,
     current: renderAdf(current.body).text,
     missingEditor:
@@ -142,13 +154,15 @@ async function editComment(
 }
 
 /**
- * The Comment to write, or undefined when the operator wrote nothing. `-` means
- * stdin; with no `--body` at all the editor opens on `buffer`.
+ * The Comment to write, or undefined when the operator wrote nothing.
+ * `supplied` is the `--body` text already read from its Source; without it the
+ * editor opens on `buffer`.
  *
- * An empty body is refused rather than treated as a clear, which is where the
+ * A blank body is refused rather than treated as a clear, which is where the
  * `ergon edit --description ""` analogy deliberately stops: a Description can
- * be blank, a Comment cannot. An untouched editor buffer is a different thing —
- * it returns undefined above, and means "changed my mind".
+ * be blank, a Comment cannot. An empty pipe never gets here — it is refused as
+ * a pipe when read. An untouched editor buffer is a different thing — it
+ * returns undefined above, and means "changed my mind".
  */
 async function resolveBody(
   supplied: string | undefined,
@@ -162,11 +176,7 @@ async function resolveBody(
       : refuseBlank(edited, BLANK_COMMENT);
   }
 
-  const body = supplied === "-"
-    ? await new Response(Deno.stdin.readable).text()
-    : supplied;
-
-  return refuseBlank(body, BLANK_COMMENT);
+  return refuseBlank(supplied, BLANK_COMMENT);
 }
 
 /**

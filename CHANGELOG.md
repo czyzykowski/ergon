@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- `ergon edit --description -` refuses an empty pipe with "Nothing arrived on
+  stdin; a Description needs text." instead of clearing the Description, as
+  `ergon new` and `ergon log` already did. `--description ""` still clears it.
+  `ergon comment --body -` refuses an empty pipe in the same words, "a Comment
+  needs text", where it used to say "A comment needs a body." as if the body had
+  been typed blank. Both now read `-`, and refuse markdown ergon cannot write,
+  before calling Jira, so neither fetches the issue or Comment for a write that
+  cannot happen.
+
 - A `$VISUAL` or `$EDITOR` of only spaces counts as unset, so commands that open
   an editor say no editor is configured. Before, ergon tried to run a command
   with an empty name and failed with Deno's error.

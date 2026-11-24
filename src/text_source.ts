@@ -2,15 +2,15 @@
  * Where a rich-text value comes from, for the flags that carry one.
  *
  * A flag either carries the text itself or names a Source to read it from: the
- * path `-` means stdin, a `--<field>-file` flag means that file. Settling which
- * is a pure decision; reading it is not, which is the line this module is
- * drawn along.
+ * path `-` means stdin, a `--<field>-file` flag means that file. Every command
+ * with a rich-text flag reads it through `readRichText`, so what `-` means, and
+ * what counts as nothing arriving, is decided here once.
  */
 
 import { toAdf, UnexpressibleError } from "./adf.ts";
 
 /** Where a rich-text value is read from. */
-export type Source =
+type Source =
   | { kind: "inline"; text: string }
   | { kind: "stdin" }
   | { kind: "file"; path: string };
@@ -37,11 +37,26 @@ export interface SourceFlags {
 /** How stdin is read, so that a test can hand over something else. */
 export type StdinReader = () => Promise<string>;
 
-export interface ReadOptions {
-  /** The text, as a bare noun phrase: `Description`. */
-  subject: string;
-  /** How to read stdin. Defaults to reading it for real. */
-  readStdin?: StdinReader;
+/**
+ * The rich text an invocation supplies, or undefined when it names no Source.
+ *
+ * Everything that can be refused is refused here, before the caller prompts or
+ * calls Jira: both flags at once, stdin on a run that may still prompt, a pipe
+ * or file holding nothing, and markdown ergon cannot write (ADR 0010). Inline
+ * text is handed back as it came, blank or not, because what blank means is the
+ * command's to decide.
+ */
+export async function readRichText(
+  flags: SourceFlags,
+  readStdin: StdinReader = readRealStdin,
+): Promise<string | undefined> {
+  const source = planSource(flags);
+  if (!source) return undefined;
+
+  const text = await readSource(source, flags.subject, readStdin);
+  assertExpressible(text, source);
+
+  return text;
 }
 
 /**
@@ -51,7 +66,7 @@ export interface ReadOptions {
  * the invocation says which was meant, and a precedence rule is a coin flip the
  * caller has to remember.
  */
-export function planSource(flags: SourceFlags): Source | undefined {
+function planSource(flags: SourceFlags): Source | undefined {
   if (flags.inline !== undefined && flags.file !== undefined) {
     throw new Error(
       `Pass either ${flags.flag} or ${flags.fileFlag}, not both.`,
@@ -102,22 +117,23 @@ function namedSource(flags: SourceFlags): Source | undefined {
  * came, blank or not, because the caller supplied it rather than naming a place
  * to find it.
  */
-export async function readSource(
+async function readSource(
   source: Source,
-  options: ReadOptions,
+  subject: string,
+  readStdin: StdinReader,
 ): Promise<string> {
   switch (source.kind) {
     case "inline":
       return source.text;
     case "stdin":
       return refuseBlank(
-        await (options.readStdin ?? readStdin)(),
-        `Nothing arrived on stdin; a ${options.subject} needs text.`,
+        await readStdin(),
+        `Nothing arrived on stdin; a ${subject} needs text.`,
       );
     case "file":
       return refuseBlank(
         await readFile(source.path),
-        `${source.path} is empty; a ${options.subject} needs text.`,
+        `${source.path} is empty; a ${subject} needs text.`,
       );
   }
 }
@@ -134,7 +150,7 @@ async function readFile(path: string): Promise<string> {
   }
 }
 
-function readStdin(): Promise<string> {
+function readRealStdin(): Promise<string> {
   return new Response(Deno.stdin.readable).text();
 }
 
@@ -147,7 +163,7 @@ function readStdin(): Promise<string> {
  * The cost is parsing the body twice, which is a pure in-memory parse of a
  * document small enough to be a ticket.
  */
-export function assertExpressible(text: string, source: Source): void {
+function assertExpressible(text: string, source: Source): void {
   try {
     toAdf(text);
   } catch (error) {

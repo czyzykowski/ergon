@@ -4,11 +4,7 @@ import { loadConfig } from "../../config.ts";
 import { parseAssignee } from "../../flags.ts";
 import { isInteractive } from "../../interactive.ts";
 import { loadState, saveState } from "../../state.ts";
-import {
-  assertExpressible,
-  planSource,
-  readSource,
-} from "../../text_source.ts";
+import { readRichText } from "../../text_source.ts";
 import { fileNewIssue } from "./issue.ts";
 import { cliffyPrompter, nonInteractivePrompter } from "./prompter.ts";
 
@@ -77,21 +73,14 @@ export function registerNewCommand(program: Command): void {
       // Settled and read before the first prompt and the first Jira call: a
       // typo'd path, an empty file or a construct ergon cannot write costs an
       // error rather than six answered prompts and two round-trips.
-      const subject = "Description";
-      const descriptionSource = planSource({
+      const description = await readRichText({
         inline: options.description,
         file: options.descriptionFile,
         flag: "--description",
         fileFlag: "--description-file",
-        subject,
+        subject: "Description",
         interactive,
       });
-      let description: string | undefined;
-
-      if (descriptionSource) {
-        description = await readSource(descriptionSource, { subject });
-        assertExpressible(description, descriptionSource);
-      }
 
       // Refused here for the same reason as a bad Description source.
       const assignee = options.assignee === undefined

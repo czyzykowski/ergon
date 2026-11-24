@@ -24,10 +24,27 @@ async function runErgonWith(
   overrides: Record<string, string>,
   ...args: string[]
 ): Promise<Run> {
+  return await spawnErgon(overrides, args);
+}
+
+/** As `runErgonWith`, with `input` piped to stdin and the pipe then closed. */
+async function runErgonPiping(
+  overrides: Record<string, string>,
+  input: string,
+  ...args: string[]
+): Promise<Run> {
+  return await spawnErgon(overrides, args, input);
+}
+
+async function spawnErgon(
+  overrides: Record<string, string>,
+  args: string[],
+  input?: string,
+): Promise<Run> {
   const env = { ...Deno.env.toObject(), ...overrides };
   delete env.NO_COLOR;
 
-  const { code, stdout, stderr } = await new Deno.Command(Deno.execPath(), {
+  const child = new Deno.Command(Deno.execPath(), {
     args: [
       "run",
       "--allow-net",
@@ -42,7 +59,18 @@ async function runErgonWith(
     ],
     clearEnv: true,
     env,
-  }).output();
+    stdin: input === undefined ? "inherit" : "piped",
+    stdout: "piped",
+    stderr: "piped",
+  }).spawn();
+
+  if (input !== undefined) {
+    const writer = child.stdin.getWriter();
+    await writer.write(new TextEncoder().encode(input));
+    await writer.close();
+  }
+
+  const { code, stdout, stderr } = await child.output();
   const decoder = new TextDecoder();
 
   return {
@@ -246,6 +274,48 @@ Deno.test("comment without a terminal names --body instead of opening the editor
         stderr: "A comment body is required; pass --body.\n",
       }, args.join(" "));
       assertEquals(await exists(marker), false, args.join(" "));
+    });
+  }
+});
+
+Deno.test("edit refuses an empty pipe instead of clearing the Description", async () => {
+  // Jira goes nowhere, so a run that got as far as fetching or writing the
+  // issue would fail with a connection error instead.
+  await withTestHome(async (env) => {
+    const run = await runErgonPiping(
+      env,
+      "",
+      "edit",
+      "X-1",
+      "--description",
+      "-",
+    );
+
+    assertEquals(run, {
+      code: 1,
+      stdout: "",
+      stderr: "Nothing arrived on stdin; a Description needs text.\n",
+    });
+  });
+});
+
+Deno.test("comment refuses an empty pipe before calling Jira, saying it was a pipe", async () => {
+  for (const args of [["X-1"], ["X-1", "--id", "10001"]]) {
+    await withTestHome(async (env) => {
+      const run = await runErgonPiping(
+        env,
+        "",
+        "comment",
+        ...args,
+        "--body",
+        "-",
+      );
+
+      assertEquals(run, {
+        code: 1,
+        stdout: "",
+        stderr: "Nothing arrived on stdin; a Comment needs text.\n",
+      }, args.join(" "));
     });
   }
 });

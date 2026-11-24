@@ -397,7 +397,8 @@ ergon comment PCK-12
 - The body is a flag rather than a positional argument, because the key is
   optional: `ergon comment "some text"` would otherwise be ambiguous.
 - `--body ""` is an error, not a clear. A description can be blank; a comment
-  cannot.
+  cannot. `--body -` with nothing on stdin is refused too, before Jira is
+  called.
 - The receipt names the id of the comment it created, which is the handle every
   later operation needs. `--json` returns the comment itself, in the same shape
   `ergon comments --json` lists.
@@ -544,7 +545,8 @@ EOF
   `ergon new --assignee` takes the same values; without it a new issue gets the
   project's default Assignee, which on PCK and PGR is nobody.
 - `--description ""` clears the description. `none` is not a sentinel here: it
-  would collide with a real description.
+  would collide with a real description. An empty pipe does not clear it:
+  `--description -` with nothing on stdin is refused, as on `ergon new`.
 - Descriptions are markdown. Markdown ergon cannot express — an image, raw HTML,
   or a nesting Jira's schema forbids such as a table inside a list item — is
   refused by name, with no flag to override it: the draft is yours, so rewrite

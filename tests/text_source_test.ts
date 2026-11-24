@@ -6,10 +6,8 @@ import {
 } from "testing/asserts.ts";
 import { toAdf } from "../src/adf.ts";
 import {
-  assertExpressible,
   omitIfBlank,
-  planSource,
-  readSource,
+  readRichText,
   refuseBlank,
   type SourceFlags,
 } from "../src/text_source.ts";
@@ -23,143 +21,153 @@ function flags(overrides: Partial<SourceFlags> = {}): SourceFlags {
   };
 }
 
-Deno.test("planSource settles the Source an invocation names", () => {
-  assertEquals(planSource(flags({ inline: "Just this." })), {
-    kind: "inline",
-    text: "Just this.",
-  });
-  assertEquals(planSource(flags({ inline: "-" })), { kind: "stdin" });
-  assertEquals(planSource(flags({ file: "spec.md" })), {
-    kind: "file",
-    path: "spec.md",
-  });
-  assertEquals(planSource(flags({ file: "-" })), { kind: "stdin" });
-  assertEquals(planSource(flags()), undefined);
+/** A stdin that holds `text`, or fails the test if it is ever read. */
+function stdin(text?: string): () => Promise<string> {
+  return () =>
+    text === undefined
+      ? Promise.reject(new Error("stdin was read"))
+      : Promise.resolve(text);
+}
+
+async function withFile<T>(
+  text: string,
+  run: (path: string) => Promise<T>,
+): Promise<T> {
+  const path = await Deno.makeTempFile({ suffix: ".md" });
+
+  try {
+    await Deno.writeTextFile(path, text);
+    return await run(path);
+  } finally {
+    await Deno.remove(path);
+  }
+}
+
+Deno.test("no flag names no Source, and reads nothing", async () => {
+  assertEquals(await readRichText(flags(), stdin()), undefined);
 });
 
-Deno.test("an empty inline value is still an inline Source, not an absent one", () => {
-  // `--description ""` has always been accepted; what it means is the
-  // command's to decide, not this function's.
-  assertEquals(planSource(flags({ inline: "" })), { kind: "inline", text: "" });
+Deno.test("inline text is handed back untouched, without reading stdin", async () => {
+  assertEquals(
+    await readRichText(flags({ inline: "Just this." }), stdin()),
+    "Just this.",
+  );
+  // Blank inline text is the caller's own, so what it means is the command's
+  // to decide: `ergon edit --description ""` clears the field.
+  assertEquals(await readRichText(flags({ inline: "" }), stdin()), "");
+  assertEquals(await readRichText(flags({ inline: "  " }), stdin()), "  ");
 });
 
-Deno.test("planSource refuses both flags at once, naming both", () => {
-  assertThrows(
-    () => planSource(flags({ inline: "Just this.", file: "spec.md" })),
+Deno.test("- on either flag reads stdin", async () => {
+  assertEquals(
+    await readRichText(flags({ inline: "-" }), stdin("piped in")),
+    "piped in",
+  );
+  assertEquals(
+    await readRichText(flags({ file: "-" }), stdin("piped in")),
+    "piped in",
+  );
+});
+
+Deno.test("a path reads the file", async () => {
+  await withFile("## Goal\n\n- [ ] ship it\n", async (path) => {
+    assertEquals(
+      await readRichText(flags({ file: path }), stdin()),
+      "## Goal\n\n- [ ] ship it\n",
+    );
+  });
+});
+
+Deno.test("both flags at once is refused, naming both", async () => {
+  await assertRejects(
+    () =>
+      readRichText(
+        flags({ inline: "Just this.", file: "spec.md" }),
+        stdin(),
+      ),
     Error,
     "Pass either --description or --description-file, not both.",
   );
 });
 
-Deno.test("planSource refuses stdin on an Interactive run, which still may prompt", () => {
+Deno.test("stdin is refused on an Interactive run, which still may prompt", async () => {
   const message =
     "Reading the Description from stdin needs --non-interactive; pass " +
     "--description-file <path> to read a file and still prompt.";
 
   // Either flag can spell it, and the hazard is the same: reading stdin leaves
-  // nothing to answer the prompts with.
-  assertThrows(
-    () => planSource(flags({ inline: "-", interactive: true })),
+  // nothing to answer the prompts with. The refusal comes before the read.
+  await assertRejects(
+    () => readRichText(flags({ inline: "-", interactive: true }), stdin()),
     Error,
     message,
   );
-  assertThrows(
-    () => planSource(flags({ file: "-", interactive: true })),
+  await assertRejects(
+    () => readRichText(flags({ file: "-", interactive: true }), stdin()),
     Error,
     message,
   );
 });
 
-Deno.test("an Interactive run may still read a file, and name one path", () => {
-  assertEquals(planSource(flags({ file: "spec.md", interactive: true })), {
-    kind: "file",
-    path: "spec.md",
+Deno.test("an Interactive run may still read a file, or take inline text", async () => {
+  await withFile("From a file.", async (path) => {
+    assertEquals(
+      await readRichText(flags({ file: path, interactive: true }), stdin()),
+      "From a file.",
+    );
   });
-  assertEquals(planSource(flags({ inline: "Just this.", interactive: true })), {
-    kind: "inline",
-    text: "Just this.",
-  });
+  assertEquals(
+    await readRichText(
+      flags({ inline: "Just this.", interactive: true }),
+      stdin(),
+    ),
+    "Just this.",
+  );
 });
 
-Deno.test("a command with no path flag still refuses stdin on an Interactive run", () => {
-  // `ergon log` has no `--description-file`, so the advice has to drop the
-  // half of itself that does not exist.
-  assertThrows(
+Deno.test("a command with no path flag still refuses stdin on an Interactive run", async () => {
+  // A command without a `--<field>-file` flag gets advice without the half of
+  // itself that does not exist.
+  await assertRejects(
     () =>
-      planSource({
+      readRichText({
         flag: "--description",
         subject: "worklog description",
         inline: "-",
         interactive: true,
-      }),
+      }, stdin()),
     Error,
     "Reading the worklog description from stdin needs --non-interactive.",
   );
 });
 
-Deno.test("readSource hands inline text back untouched", async () => {
-  assertEquals(
-    await readSource({ kind: "inline", text: "  " }, {
-      subject: "Description",
-    }),
-    "  ",
-  );
-});
-
-Deno.test("readSource reads a file", async () => {
-  const path = await Deno.makeTempFile({ suffix: ".md" });
-
-  try {
-    await Deno.writeTextFile(path, "## Goal\n\n- [ ] ship it\n");
-    assertEquals(
-      await readSource({ kind: "file", path }, { subject: "Description" }),
-      "## Goal\n\n- [ ] ship it\n",
-    );
-  } finally {
-    await Deno.remove(path);
-  }
-});
-
-Deno.test("readSource reads stdin through the reader it is given", async () => {
-  assertEquals(
-    await readSource({ kind: "stdin" }, {
-      subject: "Description",
-      readStdin: () => Promise.resolve("piped in"),
-    }),
-    "piped in",
-  );
-});
-
 Deno.test("an empty file is refused, named", async () => {
-  const path = await Deno.makeTempFile({ suffix: ".md" });
-
-  try {
+  await withFile("", async (path) => {
     await assertRejects(
-      () => readSource({ kind: "file", path }, { subject: "Description" }),
+      () => readRichText(flags({ file: path }), stdin()),
       Error,
       `${path} is empty; a Description needs text.`,
     );
+  });
 
-    // Whitespace is nothing too: a file holding a stray newline is the same
-    // upstream failure as one holding no bytes.
-    await Deno.writeTextFile(path, "\n  \n");
+  // Whitespace is nothing too: a file holding a stray newline is the same
+  // upstream failure as one holding no bytes.
+  await withFile("\n  \n", async (path) => {
     await assertRejects(
-      () => readSource({ kind: "file", path }, { subject: "Description" }),
+      () => readRichText(flags({ file: path }), stdin()),
       Error,
       `${path} is empty; a Description needs text.`,
     );
-  } finally {
-    await Deno.remove(path);
-  }
+  });
 });
 
 Deno.test("an empty pipe is refused, and says so as a pipe", async () => {
   await assertRejects(
     () =>
-      readSource({ kind: "stdin" }, {
-        subject: "worklog description",
-        readStdin: () => Promise.resolve(""),
-      }),
+      readRichText(
+        { flag: "--description", subject: "worklog description", inline: "-" },
+        stdin(""),
+      ),
     Error,
     "Nothing arrived on stdin; a worklog description needs text.",
   );
@@ -167,41 +175,32 @@ Deno.test("an empty pipe is refused, and says so as a pipe", async () => {
 
 Deno.test("a path that names nothing is reported as a missing file", async () => {
   await assertRejects(
-    () =>
-      readSource({ kind: "file", path: "/nope/spec.md" }, {
-        subject: "Description",
-      }),
+    () => readRichText(flags({ file: "/nope/spec.md" }), stdin()),
     Error,
     "No such file: /nope/spec.md",
   );
 });
 
-Deno.test("assertExpressible passes markdown ergon can write", () => {
-  assertEquals(
-    assertExpressible("## Goal\n\n- [ ] ship it\n", {
-      kind: "file",
-      path: "spec.md",
-    }),
-    undefined,
-  );
+Deno.test("an unexpressible construct from a file names the file to fix", async () => {
+  await withFile("![a diagram](diagram.png)", async (path) => {
+    await assertRejects(
+      () => readRichText(flags({ file: path }), stdin()),
+      Error,
+      "ergon cannot write an image. Jira addresses an attachment by id, " +
+        `which markdown has no way to name. Rewrite ${path} without it.`,
+    );
+  });
 });
 
-Deno.test("an unexpressible construct from a file names the file to fix", () => {
-  assertThrows(
+Deno.test("the same construct from a pipe or inline keeps the generic remedy", async () => {
+  await assertRejects(
     () =>
-      assertExpressible("![a diagram](diagram.png)", {
-        kind: "file",
-        path: "spec.md",
-      }),
+      readRichText(flags({ inline: "-" }), stdin("![a diagram](diagram.png)")),
     Error,
-    "ergon cannot write an image. Jira addresses an attachment by id, which " +
-      "markdown has no way to name. Rewrite spec.md without it.",
+    "Rewrite the markdown without it.",
   );
-});
-
-Deno.test("the same construct from a pipe keeps the generic remedy", () => {
-  assertThrows(
-    () => assertExpressible("![a diagram](diagram.png)", { kind: "stdin" }),
+  await assertRejects(
+    () => readRichText(flags({ inline: "![a diagram](diagram.png)" }), stdin()),
     Error,
     "Rewrite the markdown without it.",
   );
@@ -221,28 +220,18 @@ Deno.test("refuseBlank still speaks in ergon comment's own words", () => {
 });
 
 Deno.test("a checklist in a file arrives as a checklist, not as text shaped like one", async () => {
-  // The whole point of story 1: what `readSource` hands over is what `toAdf`
-  // parses, so the markdown a file holds survives into ADF intact.
-  const path = await Deno.makeTempFile({ suffix: ".md" });
+  // What `readRichText` hands over is what `toAdf` parses, so the markdown a
+  // file holds survives into ADF intact.
+  const text = await withFile(
+    "## Acceptance criteria\n\n- [ ] refuses a CSV with no header row\n",
+    (path) => readRichText(flags({ file: path }), stdin()),
+  );
+  const doc = toAdf(text ?? "") as { content: { type: string }[] };
 
-  try {
-    await Deno.writeTextFile(
-      path,
-      "## Acceptance criteria\n\n- [ ] refuses a CSV with no header row\n",
-    );
-
-    const text = await readSource({ kind: "file", path }, {
-      subject: "Description",
-    });
-    const doc = toAdf(text) as { content: { type: string }[] };
-
-    assertEquals(doc.content.map((block) => block.type), [
-      "heading",
-      "taskList",
-    ]);
-  } finally {
-    await Deno.remove(path);
-  }
+  assertEquals(doc.content.map((block) => block.type), [
+    "heading",
+    "taskList",
+  ]);
 });
 
 Deno.test("blank inline text means no value, which is what the empty string always meant", () => {

@@ -2,7 +2,7 @@ import type { Command } from "cliffy/command/mod.ts";
 import { JiraClient } from "../../api/jira.ts";
 import { loadConfig } from "../../config.ts";
 import { loadState, saveState } from "../../state.ts";
-import { omitIfBlank, planSource, readSource } from "../../text_source.ts";
+import { omitIfBlank, readRichText } from "../../text_source.ts";
 
 interface LogOptions {
   date?: string;
@@ -30,15 +30,11 @@ export function registerLogCommand(program: Command): void {
 
       // `log` never prompts, so stdin is never contended here and needs no
       // path flag either: `--description - < note.md` already reads a file.
-      const subject = "worklog description";
-      const descriptionSource = planSource({
+      const description = await readRichText({
         inline: options.description,
         flag: "--description",
-        subject,
+        subject: "worklog description",
       });
-      const description = descriptionSource
-        ? await readSource(descriptionSource, { subject })
-        : undefined;
 
       const worklog = await jira.addWorklog({
         issueKey,
