@@ -48,7 +48,8 @@
     "check:static": "deno fmt --check && deno lint && deno check src tests scripts && deno task lint:ox",
     "lint:ox": "deno types > .deno-types.d.ts && oxlint --type-aware --deny-warnings src tests scripts",
     "check:nix": "deadnix --fail flake.nix && statix check flake.nix && nixfmt --check flake.nix",
-    "coverage": "deno test --allow-read --allow-write --allow-env --allow-run --allow-net=127.0.0.1 --coverage=coverage",
-    "coverage:report": "deno coverage coverage"
+    "coverage": "deno test --parallel --clean --allow-read --allow-write --allow-env --allow-run --allow-net=127.0.0.1 --coverage=coverage",
+    "coverage:report": "deno coverage coverage",
+    "coverage:check": "deno task coverage && deno coverage --lcov --exclude=tests/ coverage | deno run scripts/check-coverage.ts 68 81"
   }
 }

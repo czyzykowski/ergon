@@ -63,6 +63,14 @@
   `noPropertyAccessFromIndexSignature` stay off: about 50 errors each for little
   value.
 
+- CI runs the tests once, under coverage, through `deno task coverage:check`: it
+  fails below 68% of lines or 81% of branches outside `tests/` (69.2% and 82.1%
+  when set, a point of slack each so one untested branch does not break the
+  build). Raise the two numbers in `deno.json` as coverage grows. In the Claude
+  sandbox `deno coverage` reports "Missing transpiled source code", because the
+  default `DENO_DIR` is read-only there; a copy of its `remote/` and `npm/`
+  under `$TMPDIR`, named by `DENO_DIR`, works.
+
 - oxlint runs type-aware in `deno task check:static` (`deno task lint:ox`), for
   the promise rules `deno lint` cannot check: `no-floating-promises`,
   `no-misused-promises`, `await-thenable`, on top of oxlint's correctness
