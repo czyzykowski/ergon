@@ -150,13 +150,13 @@ export async function fileNewIssue(
     ? await prompter.labels(await jira.listLabels())
     : resolved.labels;
 
-  const clientSow = await settleClientSow(
-    resolved.clientSow,
-    clientSowFieldId,
+  const clientSow = await settleClientSow({
+    plan: resolved.clientSow,
+    fieldId: clientSowFieldId,
     projectKey,
     jira,
     prompter,
-  );
+  });
 
   const sprintId = await settleSprint({
     sprint: draft.sprint,
@@ -251,20 +251,23 @@ async function askParentIssue(
  * The Client SOW to write and the field to write it to, or `undefined` when
  * the plan skips it.
  */
-async function settleClientSow(
-  plan: ClientSowPlan,
-  clientSowFieldId: string | undefined,
-  projectKey: string,
-  jira: NewIssueJira,
-  prompter: Prompter,
-): Promise<{ fieldId: string; payload: Record<string, string> } | undefined> {
-  // Undefined only when the plan is "skip"; anything else throws here rather
-  // than settle a Client SOW against a field the project never declared.
-  const fieldId = requireClientSowFieldId(plan, clientSowFieldId, projectKey);
+async function settleClientSow(input: {
+  plan: ClientSowPlan;
+  /** The project's declared Client SOW field, if any. */
+  fieldId?: string;
+  projectKey: string;
+  jira: NewIssueJira;
+  prompter: Prompter;
+}): Promise<{ fieldId: string; payload: Record<string, string> } | undefined> {
+  const { plan, jira, prompter } = input;
 
-  if (!fieldId || plan.kind === "skip") {
+  if (plan.kind === "skip") {
     return undefined;
   }
+
+  // Throws rather than settle a Client SOW against a field the project never
+  // declared.
+  const fieldId = requireClientSowFieldId(input.fieldId, input.projectKey);
 
   if (plan.kind === "payload") {
     // Inherited values arrive with their option id attached, so they need no
@@ -409,20 +412,15 @@ interface ResolvedFields {
 }
 
 /**
- * The field id to settle this plan against, or `undefined` when the plan needs
- * no field at all. Every kind but `skip` either reads the field's options or
- * writes to it, so an unconfigured project is an error there rather than a
- * silent write to a guessed field — see docs/adr/0002.
+ * The field id to settle a Client SOW against. Every plan kind but `skip`
+ * either reads the field's options or writes to it, so an unconfigured project
+ * is an error there rather than a silent write to a guessed field — see
+ * docs/adr/0002.
  */
 function requireClientSowFieldId(
-  plan: ClientSowPlan,
   fieldId: string | undefined,
   projectKey: string,
-): string | undefined {
-  if (plan.kind === "skip") {
-    return undefined;
-  }
-
+): string {
   if (!fieldId) {
     throw new Error(
       `No Client SOW field configured for ${projectKey}. Set ` +
