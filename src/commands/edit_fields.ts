@@ -1,7 +1,7 @@
 import { isDate } from "../dates.ts";
 import { isActiveSprintKeyword } from "../sprint.ts";
-import type { AssigneeTarget } from "./new_fields.ts";
-import { isNoneValue, parseAssignee } from "./new_fields.ts";
+import type { AssigneeTarget } from "./new_issue.ts";
+import { isNoneValue, parseAssignee } from "./new_issue.ts";
 
 /** Which Sprint a `--sprint` value asks for, before Jira has been consulted. */
 export type SprintTarget =

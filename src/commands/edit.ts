@@ -10,7 +10,7 @@ import { loadState } from "../state.ts";
 import type { ProjectFieldDefaults } from "../types.ts";
 import type { EditOptions, SprintTarget } from "./edit_fields.ts";
 import { fieldFlagList, planEdit } from "./edit_fields.ts";
-import { assigneeField } from "./new_fields.ts";
+import { assigneeField } from "./new_issue.ts";
 
 export function registerEditCommand(program: Command): void {
   program

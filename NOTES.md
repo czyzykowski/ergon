@@ -37,6 +37,12 @@
 - [x] Assigning an issue to the operator (`--assignee me|none` on `new`, `edit`)
 - [x] Naming an issue's Reporter (`reporter` on `ergon get`)
 - [x] Searching issues as data (`ergon search --json`)
+- [x] `ergon new` behind one module, `fileNewIssue` (specs/new-issue-module.md,
+      commit 1 of 4; no behaviour change)
+- [ ] The three `new` drifts the spec fixes: Inherit from an Interactive Epic
+      pick, an empty Parent labels array is nothing to Inherit,
+      `--sprint
+      <name>` resolved like `edit`
 - [ ] `--sprint <name>` matching future Sprints, on `edit` and on `new` in both
       modes, through `listOpenSprints`
 - [ ] A command that takes up an issue in one step — assign it to the operator,
@@ -47,6 +53,39 @@
       people (`matt` fits two on PCK).
 
 ## Updates
+
+- `ergon new` is now wiring around one module, `fileNewIssue(draft, deps)` in
+  `src/commands/new_issue.ts`, which absorbs `new_fields.ts`. The draft is the
+  flags as given (summary already merged from the argument), the Description
+  already read and checked, and the parsed `--assignee`; deps are config, state,
+  `interactive`, the Prompter, the Jira port and `useCache`. It returns
+  `{ issue: { key, summary }, state }`; the summary comes back because it may
+  have been asked. Decisions:
+  - The module takes the _uncached_ port and `useCache`, and builds `CachedJira`
+    itself, rather than taking a cached and an uncached port. The module needs
+    the decorator's Cache for the next state anyway, and one port in keeps the
+    Active Sprint bypass inside: it reads boards from `deps.jira` past the
+    Cache, everything else through the decorator.
+  - For that, the port's `listBoards` now answers
+    `(CachedBoard & { type?: string })[]`: `JiraClient` supplies the type, the
+    Cache drops it. `CachedJira` still satisfies the port.
+  - `--no-cache` is the `useCache` input, so its module test is meaningful; the
+    action still reads `options.noCache`, which cliffy never sets (see below),
+    so the flag still does nothing from the command line.
+  - `chooseSprintBoard`, `chooseSprint` and the parent search moved from the
+    action into the module; the Prompter's `board` and `sprint` stay pure
+    selects.
+  - `ClientSowValue` moved to `src/types.ts`, so the Prompter does not import
+    its answer type from the module that consumes it.
+  - `tests/new_fields_test.ts` is gone: each scenario is a `fileNewIssue` test
+    in `tests/new_issue_test.ts`, asserting only the `createIssue` payload, the
+    next state and which Prompter methods were called. `parseLabels` and
+    `isNoneValue` tests moved there too. The three drifts are pinned as tests
+    named `pinned drift: …`, plus a fourth for the Interactive
+    `--sprint
+    <name>` board prompt, for the fixes to flip.
+  - `--epic __none__` still means no Epic, as before: the action's old check of
+    the cliffy sentinel came along unchanged, though no prompt produces it now.
 
 - `ergon new` reaches Jira through `NewIssueJira` in `src/commands/new_jira.ts`,
   a port listing only the calls it makes, and the Cache read-through is written

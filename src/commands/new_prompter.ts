@@ -5,9 +5,10 @@ import type {
   CachedBoard,
   CachedIssue,
   CachedOption,
+  ClientSowValue,
   JiraIssue,
 } from "../types.ts";
-import { type ClientSowValue, parseLabels } from "./new_fields.ts";
+import { parseLabels } from "./new_issue.ts";
 
 /**
  * Every question `ergon new` asks, one method each. A method takes the domain

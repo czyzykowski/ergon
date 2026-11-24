@@ -9,14 +9,17 @@ import type {
 /**
  * The Jira calls `ergon new` makes, and no others. `JiraClient` satisfies it
  * as it is. The epic and board lists are narrowed to what the Cache keeps, so
- * a cached answer and a fresh one have the same type; a board's type, which
- * the Cache does not keep, is read from `JiraClient` itself.
+ * a cached answer and a fresh one have the same type. A board's type is the
+ * one exception: Jira gives it and the Cache drops it, so it is optional, and
+ * only a board list asked of Jira past the Cache carries it.
  */
 export interface NewIssueJira {
   listEpics(projectKey: string): Promise<CachedIssue[]>;
   listLabels: JiraClient["listLabels"];
   getFieldOptions: JiraClient["getFieldOptions"];
-  listBoards(projectKey: string): Promise<CachedBoard[]>;
+  listBoards(
+    projectKey: string,
+  ): Promise<(CachedBoard & { type?: string })[]>;
   listActiveSprints: JiraClient["listActiveSprints"];
   search: JiraClient["search"];
   getIssueFields: JiraClient["getIssueFields"];

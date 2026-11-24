@@ -44,6 +44,12 @@ export interface CachedOption {
   value: string;
 }
 
+/** A Client SOW option, as either a Jira option id or its raw display value. */
+export interface ClientSowValue {
+  id?: string;
+  value?: string;
+}
+
 export interface CachedBoard {
   id: number;
   name: string;
