@@ -44,7 +44,7 @@ rules for every change you make.
 
 - `deno task check` runs format check, lint, type check, oxlint and tests, as CI
   does. The pre-commit hook in `.githooks/` runs only `deno task check:static`
-  (no tests, under a second), once a clone has run
+  and `deno task check:comments` (no tests, a few seconds), once a clone has run
   `git config core.hooksPath .githooks`, so run `deno task test` yourself before
   committing a behaviour change. Fix formatting with `deno fmt`.
 - Run tests through `deno task test`: plain `deno test` lacks the permissions
@@ -58,9 +58,10 @@ survivor is a change to your code that no test notices. For each one:
 
 1. Write or tighten a test that passes on the original and fails on the mutant,
    then rerun `deno task mutate:diff` until it reports no survivors.
-2. Only when no test can tell the two apart (the mutant changes nothing
-   observable), disable it on the line above, naming the mutator and why:
-   `// Stryker disable next-line ConditionalExpression: <why>`.
+2. When no test can tell the two apart, the mutated code is redundant: a
+   shortcut the general path covers, or a check that cannot fail. Simplify it
+   away so the mutant has nothing to change. If no simpler shape exists, stop
+   and show the user the survivor.
 
 A `Timeout` usually means a busy machine: rerun before treating it as a
 survivor. When the hook stops at its three-minute limit, the branch is too big;
@@ -76,6 +77,19 @@ ask them.
 - Keep modules small; extract helpers for clarity.
 - Use `async/await` for IO and API calls.
 - Avoid `any` unless interfacing with external APIs.
+
+### Code Without Comments
+
+- TypeScript says everything in code: names, extracted functions and test names
+  carry what a comment would. A decision goes in an ADR, any other fact in
+  `NOTES.md`; [ADR 0017](docs/adr/0017-code-carries-no-comments.md) maps each
+  kind of comment to its home.
+- The only comments are bare tool directives, such as
+  `// deno-lint-ignore <rule>` or `// @ts-expect-error`, with no reason after
+  them.
+- `deno task check:comments` enforces this on added and changed lines, in the
+  hook and in CI. A comment on a line you change goes; comments on lines you
+  leave alone stay. Nix, YAML and shell keep their comments.
 
 ### Imports
 

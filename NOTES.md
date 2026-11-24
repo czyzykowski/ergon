@@ -41,9 +41,9 @@
       CHANGELOG)
 - [x] Mutation testing: `deno task mutate`, and `mutate:diff` in the pre-push
       hook
-      ([ADR 0016](docs/adr/0016-mutation-testing-runs-before-push-not-in-ci.md))
-- [ ] Kill or disable the 339 survivors of the first full run, `adf.ts` first
-      (257)
+      ([ADR 0020](docs/adr/0020-mutation-testing-runs-before-push-not-in-ci.md))
+- [ ] The 339 survivors of the first full run, `adf.ts` first (257): a test for
+      each, or the redundant code it points at removed
 - [ ] Run only the tests that import a mutated module, if the hook's three
       minutes prove tight
 - [ ] `--sprint <name>` matching future Sprints, on `edit` and on `new` in both
@@ -58,7 +58,7 @@
 ## Updates
 
 - Mutation testing is StrykerJS 10 under Deno, through its command runner
-  ([ADR 0016](docs/adr/0016-mutation-testing-runs-before-push-not-in-ci.md)).
+  ([ADR 0020](docs/adr/0020-mutation-testing-runs-before-push-not-in-ci.md)).
   What the config cannot say:
   - **Concurrency is half the cores, and it matters.** At Stryker's default (one
     worker per core less one) seventeen `deno test` runs starve each other past
@@ -93,6 +93,23 @@
     inferred (no report or cleanup ever followed), not seen.
   - In the Claude sandbox Stryker needs `~/Library/Caches/deno` writable for its
     first download; it is on the sandbox's write allowlist.
+  - There are no `// Stryker disable` comments: `check:comments` rejects them as
+    it does any comment (ADR 0017). A mutant no test can kill is redundant code
+    to remove, as the early return in `identify` (`src/adf.ts`) is: without it
+    the general path returns an equal node, so only an identity assertion could
+    tell, and that would pin an optimisation nobody relies on.
+- Comments are banned from TypeScript on changed lines (ADR 0017).
+  `lint/no-comments.ts` (`ergon/no-comments`) is kept out of `deno.json`, which
+  would fail plain `deno lint` on the ~530 comments that predate it;
+  `scripts/check-comments.ts` lints the staged (or `HEAD`) copy of each changed
+  file in a temp dir and keeps hits on added lines. Found while building it:
+  `deno lint` skips a whole file whose `deno-lint-ignore-file` is bare or names
+  the rule, even for plugin rules, so the copy spells it `deno-lint-ignore-FILE`
+  and the rule matches directives case-insensitively; one naming another rule
+  does not skip the file. `Deno.lint.runPlugin` works only under `deno test`, so
+  the check runs `deno lint --json` as a subprocess. Diffs use `--no-renames`,
+  so moved code counts as added. CI diffs against the push's `before` (or the
+  PR's base), since work also lands on `develop` without a PR.
 - Every command lives in its own directory, `src/commands/<name>/mod.ts`, as
   `ergon new` did first; a module only one command uses sits beside its `mod.ts`
   (`edit/fields.ts`, `new/issue.ts`). Tests stay flat in `tests/`. Paths to the
@@ -114,9 +131,8 @@
 - Atomic writes are a lint rule, not an AGENTS.md line: `lint/atomic-write.ts`
   (`ergon/atomic-write`, a `deno lint` plugin) reports a `Deno.writeFile` or
   `Deno.writeTextFile` under `src/` unless the same function `Deno.rename`s the
-  variable it wrote. It is a heuristic on variable names, not data flow; the
-  editor's scratch file is the one exemption, by `deno-lint-ignore` with its
-  reason.
+  variable it wrote, or got from `Deno.makeTempFile` (a scratch file). It is a
+  heuristic on variable names, not data flow.
 
 - CI runs the tests once, under coverage, through `deno task coverage:check`: it
   fails below 68% of lines or 81% of branches outside `tests/` (69.2% and 82.1%
@@ -159,17 +175,17 @@
     `--no-cache` by parsing through the real command with its action swapped.
 
 - Checks are split by cost. The pre-commit hook runs `deno task check:static`
-  (fmt, lint, type check of `src`, `tests` and `scripts`; about 0.7s), and CI
-  (`.github/workflows/ci.yml`) runs the full `deno task check`,
-  `deno task check:nix` and `scripts/check-changelog.ts`. There is no pre-push
-  hook: it would only repeat CI. The CHANGELOG check fails a pushed `feat` or
-  `fix` commit that changes `src/` without `CHANGELOG.md`; work lands on
-  `develop` without PRs, so it checks commits, not a PR's diff. Over the history
-  so far it flags 4 of 50 such commits, and no `refactor` (none touch the
-  CHANGELOG, rightly). `deno.json` excludes `.claude/`, `.scratch/`, `.direnv/`
-  and `coverage/`. Before that, `deno test` also ran the tests of every worktree
-  under `.claude/worktrees/` (978 tests and 15s instead of 318 and 3s), and
-  `deno fmt --check` failed on untracked notes in `.scratch/`.
+  (fmt, lint, type check of `src`, `tests` and `scripts`; about 0.7s) and
+  `deno task check:comments`, and CI (`.github/workflows/ci.yml`) runs the full
+  `deno task check`, `deno task check:nix` and `scripts/check-changelog.ts`.
+  There is no pre-push hook: it would only repeat CI. The CHANGELOG check fails
+  a pushed `feat` or `fix` commit that changes `src/` without `CHANGELOG.md`;
+  work lands on `develop` without PRs, so it checks commits, not a PR's diff.
+  Over the history so far it flags 4 of 50 such commits, and no `refactor` (none
+  touch the CHANGELOG, rightly). `deno.json` excludes `.claude/`, `.scratch/`,
+  `.direnv/` and `coverage/`. Before that, `deno test` also ran the tests of
+  every worktree under `.claude/worktrees/` (978 tests and 15s instead of 318
+  and 3s), and `deno fmt --check` failed on untracked notes in `.scratch/`.
 
 - Jira's `/rest/api/3/search/jql` answers an unknown project key or status name
   with `{"issues":[],"isLast":true}`: no error, no warning. `search --project`

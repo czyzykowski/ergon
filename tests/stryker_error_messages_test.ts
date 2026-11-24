@@ -1,12 +1,14 @@
 import { assertEquals } from "testing/asserts.ts";
-import { type Path, shouldIgnore } from "../scripts/stryker-error-messages.ts";
+import {
+  type BabelPath,
+  shouldIgnore,
+} from "../scripts/stryker-error-messages.ts";
 
-/** A path from the root down to its last node, as Babel links it. */
-function pathOf(...nodes: Path["node"][]): Path {
-  return nodes.reduce<Path | null>(
+function pathFromRootTo(...nodes: BabelPath["node"][]): BabelPath {
+  return nodes.reduce<BabelPath | null>(
     (parentPath, node) => ({ node, parentPath }),
     null,
-  ) as Path;
+  ) as BabelPath;
 }
 
 const message = { type: "StringLiteral" };
@@ -16,7 +18,11 @@ const newError = (name: string) => ({
 });
 
 Deno.test("a message thrown is left unmutated", () => {
-  const path = pathOf({ type: "ThrowStatement" }, newError("Error"), message);
+  const path = pathFromRootTo(
+    { type: "ThrowStatement" },
+    newError("Error"),
+    message,
+  );
 
   assertEquals(
     shouldIgnore(path),
@@ -25,7 +31,7 @@ Deno.test("a message thrown is left unmutated", () => {
 });
 
 Deno.test("an error built but not yet thrown is left unmutated too", () => {
-  const path = pathOf(
+  const path = pathFromRootTo(
     { type: "ReturnStatement" },
     newError("UnexpressibleError"),
     { type: "TemplateLiteral" },
@@ -38,13 +44,13 @@ Deno.test("an error built but not yet thrown is left unmutated too", () => {
 });
 
 Deno.test("a string outside any error is mutated", () => {
-  const path = pathOf({ type: "ReturnStatement" }, message);
+  const path = pathFromRootTo({ type: "ReturnStatement" }, message);
 
   assertEquals(shouldIgnore(path), undefined);
 });
 
 Deno.test("a condition inside a throw is mutated", () => {
-  const path = pathOf({ type: "ThrowStatement" }, {
+  const path = pathFromRootTo({ type: "ThrowStatement" }, {
     type: "BinaryExpression",
   });
 
@@ -52,13 +58,17 @@ Deno.test("a condition inside a throw is mutated", () => {
 });
 
 Deno.test("a new object that is not an error does not count", () => {
-  const path = pathOf({ type: "ReturnStatement" }, newError("Map"), message);
+  const path = pathFromRootTo(
+    { type: "ReturnStatement" },
+    newError("Map"),
+    message,
+  );
 
   assertEquals(shouldIgnore(path), undefined);
 });
 
 Deno.test("a function boundary ends the search for a throw", () => {
-  const path = pathOf(
+  const path = pathFromRootTo(
     { type: "ThrowStatement" },
     { type: "ArrowFunctionExpression" },
     message,

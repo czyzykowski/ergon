@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          fetch-depth: 0 # the CHANGELOG check reads every pushed commit
+          fetch-depth: 0 # the CHANGELOG and comment checks read every pushed commit
 
       - uses: cachix/install-nix-action@v31
 
@@ -38,3 +38,16 @@ jobs:
             range="origin/develop..$AFTER"
           fi
           nix develop --command deno run --allow-run=git scripts/check-changelog.ts "$range"
+
+      - name: No comments on changed lines
+        env:
+          BEFORE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          # A new branch has no "before", and a force push may leave it out of
+          # the clone; both fall back to everything not yet on develop.
+          if git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            base="$BEFORE"
+          else
+            base="origin/develop"
+          fi
+          nix develop --command deno task check:comments "$base"

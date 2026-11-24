@@ -597,6 +597,15 @@ Run a quick API check:
 
 - `nix develop -c deno run --allow-net --allow-read --allow-env scripts/check-api.ts <ISSUE_KEY>`
 
+TypeScript carries no comments
+([ADR 0017](docs/adr/0017-code-carries-no-comments.md)), checked on changed
+lines only:
+
+- `deno task check:comments` checks the staged diff, as the pre-commit hook
+  does.
+- `deno task check:comments <base>` checks the commits since `<base>`, as CI
+  does.
+
 ## Tests
 
 - `deno task test` (uses read/write/env permissions)
@@ -621,15 +630,12 @@ _survivor_: a change no test notices. Only the domain modules are mutated (see
   it, once a clone has run `git config core.hooksPath .githooks`; it gives up
   after three minutes.
 
-A mutant no test can kill, because it changes nothing observable, is disabled in
-place with the mutator it covers and the reason, which `deno lint` requires:
-
-```ts
-// Stryker disable next-line ConditionalExpression: only a shortcut; the loop
-// below returns the same node.
-```
+A mutant no test can kill changes nothing observable, so the code it mutates is
+redundant: the fix is to simplify that code away, not to disable the mutant.
+There are no `// Stryker disable` comments; TypeScript carries none
+([ADR 0017](docs/adr/0017-code-carries-no-comments.md)).
 
 Stryker comes from npm into `node_modules/`; after changing its version in
 `deno.json`, run `deno install` so the next run does not stop to download it.
-See [ADR 0016](docs/adr/0016-mutation-testing-runs-before-push-not-in-ci.md) for
+See [ADR 0020](docs/adr/0020-mutation-testing-runs-before-push-not-in-ci.md) for
 why this runs before push and not in CI.

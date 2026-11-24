@@ -18,6 +18,14 @@ without `src/commands/` and `src/api/`. Mutants there are mostly output
 formatting and wiring, where a survivor is noise rather than a missing
 assertion.
 
+A survivor has no escape hatch: there are no `// Stryker disable` comments. A
+mutant no test can kill changes nothing observable, so the code it mutates is
+redundant (a shortcut the general path covers, a check that cannot fail), and
+the fix is to simplify that code away. That makes mutation testing a check on
+the code as much as on the tests. It also keeps faith with
+[ADR 0017](./0017-code-carries-no-comments.md), which would otherwise need an
+exception for a directive that must say why.
+
 ## Considered options
 
 - **A score floor in CI**, like coverage. Rejected for now: a full run takes
