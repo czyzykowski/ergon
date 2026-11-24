@@ -39,6 +39,13 @@
 - [x] Searching issues as data (`ergon search --json`)
 - [x] `ergon new` behind one module, `fileNewIssue`, and its fixes (see
       CHANGELOG)
+- [x] Mutation testing: `deno task mutate`, and `mutate:diff` in the pre-push
+      hook
+      ([ADR 0016](docs/adr/0016-mutation-testing-runs-before-push-not-in-ci.md))
+- [ ] Kill or disable the 339 survivors of the first full run, `adf.ts` first
+      (257)
+- [ ] Run only the tests that import a mutated module, if the hook's three
+      minutes prove tight
 - [ ] `--sprint <name>` matching future Sprints, on `edit` and on `new` in both
       modes, through `listOpenSprints`
 - [ ] A command that takes up an issue in one step — assign it to the operator,
@@ -50,6 +57,42 @@
 
 ## Updates
 
+- Mutation testing is StrykerJS 10 under Deno, through its command runner
+  ([ADR 0016](docs/adr/0016-mutation-testing-runs-before-push-not-in-ci.md)).
+  What the config cannot say:
+  - **Concurrency is half the cores, and it matters.** At Stryker's default (one
+    worker per core less one) seventeen `deno test` runs starve each other past
+    the timeout, and Stryker counts a timeout as a kill: the first full run
+    scored 98% with 552 timeouts, the same code 80% with one. `worklogs.ts` went
+    from 100% (56 timeouts) to 87.5% (7 survivors). Hence `mutate:diff` fails on
+    a timeout.
+  - **The first full run** (2026-11-24): 80.2%, 1374 killed, 339 survived, 1
+    timeout, in 11m45s on 9 workers. About 0.64 mutants per line of scope and
+    roughly a second per mutant, so the hook's three minutes cover about 250
+    changed lines.
+  - `"nodeModulesDir": "auto"` is what lets Stryker run under Deno at all:
+    without it plugin discovery fails reading a directory that only exists in a
+    `node_modules/` layout.
+  - `tsconfigFile` names a file that does not exist on purpose. Stryker rewrites
+    a `tsconfig.json` it finds, which needs the `typescript` package; the root
+    one is oxlint's alone, and Deno never reads it.
+  - `scripts/mutate.ts` drives `StrykerCli`, not
+    `new Stryker().runMutationTest()`: under Deno that promise never settles, as
+    Stryker's logging server never finishes closing. The CLI leaves nothing
+    awaiting it, so the process ends once the reports are written; `mutate:diff`
+    reads `mutation.json` after.
+  - `.stryker-tmp/` is in `deno.json`'s `exclude`, or `deno test` finds the copy
+    of the tests in Stryker's sandbox and runs every test twice.
+  - Error-message literals are not mutated (`scripts/stryker-error-messages.ts`,
+    an ignorer for strings under a `throw` or a `new …Error(…)`): which error is
+    thrown is behaviour, the sentence is not. A message built in a `super(…)`
+    call is still mutated.
+  - Killing `deno task mutate` at the hook's limit takes Stryker down with it,
+    but leaves `.stryker-tmp/` behind, which `mutate:diff` then removes. The
+    Claude sandbox hides processes, so whether Stryker's workers die too was
+    inferred (no report or cleanup ever followed), not seen.
+  - In the Claude sandbox Stryker needs `~/Library/Caches/deno` writable for its
+    first download; it is on the sandbox's write allowlist.
 - Every command lives in its own directory, `src/commands/<name>/mod.ts`, as
   `ergon new` did first; a module only one command uses sits beside its `mod.ts`
   (`edit/fields.ts`, `new/issue.ts`). Tests stay flat in `tests/`. Paths to the

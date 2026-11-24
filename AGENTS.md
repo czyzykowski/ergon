@@ -50,6 +50,23 @@ rules for every change you make.
 - Run tests through `deno task test`: plain `deno test` lacks the permissions
   the config tests need.
 
+### Mutation testing
+
+The pre-push hook mutates the lines your branch changed and blocks the push on
+each _survivor_, printed as `file:line:col Status Mutator: original → mutant`. A
+survivor is a change to your code that no test notices. For each one:
+
+1. Write or tighten a test that passes on the original and fails on the mutant,
+   then rerun `deno task mutate:diff` until it reports no survivors.
+2. Only when no test can tell the two apart (the mutant changes nothing
+   observable), disable it on the line above, naming the mutator and why:
+   `// Stryker disable next-line ConditionalExpression: <why>`.
+
+A `Timeout` usually means a busy machine: rerun before treating it as a
+survivor. When the hook stops at its three-minute limit, the branch is too big;
+tell the user. Skipping the hook with `--no-verify` is the user's decision, so
+ask them.
+
 ## Code Style Guidelines
 
 ### TypeScript Conventions

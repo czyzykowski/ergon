@@ -605,3 +605,31 @@ Run a quick API check:
 
 - `deno task coverage` (uses read/write/env permissions)
 - `deno task coverage:report`
+
+## Mutation testing
+
+[StrykerJS](https://stryker-mutator.io) changes the code one small edit at a
+time and runs the tests against each change. A mutant the tests still pass is a
+_survivor_: a change no test notices. Only the domain modules are mutated (see
+`mutate` in `stryker.config.json`).
+
+- `deno task mutate [file[:from-to]…]` mutates the whole scope, about twelve
+  minutes, or only the files or line ranges given. Reports land in
+  `reports/mutation/` (`mutation.html` to browse, `mutation.json` to read).
+- `deno task mutate:diff` mutates only the lines this branch changed since
+  `origin/develop` and fails on any survivor or timeout. The pre-push hook runs
+  it, once a clone has run `git config core.hooksPath .githooks`; it gives up
+  after three minutes.
+
+A mutant no test can kill, because it changes nothing observable, is disabled in
+place with the mutator it covers and the reason, which `deno lint` requires:
+
+```ts
+// Stryker disable next-line ConditionalExpression: only a shortcut; the loop
+// below returns the same node.
+```
+
+Stryker comes from npm into `node_modules/`; after changing its version in
+`deno.json`, run `deno install` so the next run does not stop to download it.
+See [ADR 0016](docs/adr/0016-mutation-testing-runs-before-push-not-in-ci.md) for
+why this runs before push and not in CI.
