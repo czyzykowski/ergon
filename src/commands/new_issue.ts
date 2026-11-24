@@ -122,10 +122,9 @@ export async function fileNewIssue(
 
   const fieldDefaults = config.defaults?.projects?.[projectKey]?.fields;
   const clientSowFieldId = fieldDefaults?.clientSowFieldId;
-  // Interactive runs only inherit from an explicit --parent. Non-interactive
-  // runs also inherit from the epic, which becomes this issue's parent when
-  // no --parent was given.
-  const inheritFromKey = parentKey ?? (interactive ? undefined : epicKey);
+  // Inherit from the Parent, else the Epic, which becomes this issue's parent
+  // when there is no Parent — in either mode.
+  const inheritFromKey = parentKey ?? epicKey;
   const parent = inheritFromKey
     ? parentFieldsFrom(
       await jira.getIssueFields(

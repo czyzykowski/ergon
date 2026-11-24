@@ -39,10 +39,9 @@
 - [x] Searching issues as data (`ergon search --json`)
 - [x] `ergon new` behind one module, `fileNewIssue` (specs/new-issue-module.md,
       commit 1 of 4; no behaviour change)
-- [ ] The three `new` drifts the spec fixes: Inherit from an Interactive Epic
-      pick, an empty Parent labels array is nothing to Inherit,
-      `--sprint
-      <name>` resolved like `edit`
+- [x] `new` Inherits from an Epic picked in an Interactive run (spec drift 1)
+- [ ] The other two `new` drifts the spec fixes: an empty Parent labels array is
+      nothing to Inherit, `--sprint <name>` resolved like `edit`
 - [ ] `--sprint <name>` matching future Sprints, on `edit` and on `new` in both
       modes, through `listOpenSprints`
 - [ ] A command that takes up an issue in one step — assign it to the operator,
@@ -53,6 +52,14 @@
       people (`matt` fits two on PCK).
 
 ## Updates
+
+- `fileNewIssue` Inherits from the Parent, else the Epic, in both modes; before,
+  an Interactive run inherited only from an explicit `--parent`. So an Epic
+  picked at the prompt, given by `--epic`, or defaulted from `state.lastEpic` or
+  config now supplies labels (no label prompt) and the Client SOW prompt's
+  default, which beats Remembered state. The pinned drift test became
+  `an
+  Interactive run Inherits from the Epic it picks, ahead of Remembered state`.
 
 - `ergon new` is now wiring around one module, `fileNewIssue(draft, deps)` in
   `src/commands/new_issue.ts`, which absorbs `new_fields.ts`. The draft is the

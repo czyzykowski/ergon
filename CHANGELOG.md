@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- An Interactive `ergon new` takes its labels and Client SOW from the Epic it
+  files under when there is no `--parent`, as a Non-interactive `--epic` already
+  did. An Epic picked at the prompt, passed with `--epic` or remembered from the
+  last run gives the new issue its labels without asking for them, and its
+  Client SOW is the default the Client SOW prompt offers, ahead of the one last
+  used. Before, a person at a terminal got a label prompt and no Epic default.
+
 - `ergon new` run without a terminal on both stdin and stdout — piped, captured,
   or started by a script or agent — is Non-interactive without
   `--non-interactive`, exactly as if the flag had been passed: it never prompts

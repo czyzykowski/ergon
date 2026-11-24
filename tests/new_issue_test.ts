@@ -560,13 +560,11 @@ Deno.test("an Interactive --client-sow is matched, not asked", async () => {
   assertEquals(fieldsOf(created).clientSow, { id: "10001" });
 });
 
-// The drifts tickets 04–06 fix, pinned as they are today.
-
-Deno.test("pinned drift: an Interactive run does not Inherit from the Epic it picks", async () => {
+Deno.test("an Interactive run Inherits from the Epic it picks, ahead of Remembered state", async () => {
   const { created, calls, asked, args } = await run({
     interactive: true,
     draft: { project: "PCK", type: "Story", sprint: "none" },
-    state: {},
+    state: { lastClientSow: "10099" },
     fields: { clientSowFieldId: SOW_FIELD, sprintFieldId: SPRINT_FIELD },
     fixtures: {
       epics: [{ key: "PCK-10", summary: "An epic" }],
@@ -576,17 +574,21 @@ Deno.test("pinned drift: an Interactive run does not Inherit from the Epic it pi
     },
     script: [
       ["epic", "PCK-10"],
-      ["labels", ["a"]],
-      ["clientSow", { id: "10001" }],
+      ["clientSow", { id: "10084" }],
     ],
   });
 
-  assertEquals(asked, ["epic", "labels", "clientSow"]);
-  assertEquals(calls.some((call) => call.startsWith("getIssueFields")), false);
-  assertEquals(args.clientSow, [SOW_OPTIONS, undefined]);
+  assertEquals(asked, ["epic", "clientSow"]);
+  assertEquals(
+    calls.filter((call) => call.startsWith("getIssueFields")),
+    [`getIssueFields PCK-10 ${SOW_FIELD},labels`],
+  );
+  assertEquals(args.clientSow, [SOW_OPTIONS, "10084"]);
   assertEquals(created[0].parentKey, "PCK-10");
-  assertEquals(created[0].labels, ["a"]);
+  assertEquals(created[0].labels, ["Druid", "Infrastructure"]);
 });
+
+// The drifts tickets 05–06 fix, pinned as they are today.
 
 Deno.test("pinned drift: an Interactive Parent with labels: [] asks for labels over config's", async () => {
   const { created, asked } = await run({
