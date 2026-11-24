@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- Inline code inside bold, italics or strikethrough (`**run`x`now**`) is refused
+  before anything reaches Jira, on every rich-text write: "ergon cannot write
+  inline code inside bold. Jira's code formatting combines only with a link.
+  Move the code out of the formatting, or drop the formatting.". ADF's `code`
+  mark combines with `link` alone, so there was never a correct way to send it.
+  Before, ergon built the forbidden mark pair and sent it. Inline code inside a
+  link is still written.
+
 - `ergon new` run without a terminal on both stdin and stdout — piped, captured,
   or started by a script or agent — is Non-interactive without
   `--non-interactive`, exactly as if the flag had been passed: it never prompts
