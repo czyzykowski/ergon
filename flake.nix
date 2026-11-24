@@ -27,6 +27,7 @@
             git
             deadnix
             nixfmt-rfc-style
+            oxlint # wrapped with tsgolint, for --type-aware
             statix
           ];
         };

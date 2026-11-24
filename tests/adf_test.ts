@@ -1,5 +1,6 @@
 import { assertEquals, assertThrows } from "testing/asserts.ts";
 import { canReplace, renderAdf, toAdf } from "../src/adf.ts";
+import { itemAt } from "./only.ts";
 
 const BULLETED = {
   type: "doc",
@@ -176,7 +177,7 @@ Deno.test("toAdf refuses inline code inside bold, italics or strikethrough", () 
       ["_run `x` now_", "inline code inside italics"],
       ["~~run `x` now~~", "inline code inside strikethrough"],
       ["**[run `x`](https://example.test/a)**", "inline code inside bold"],
-    ]
+    ] as const
   ) {
     assertThrows(
       () => toAdf(markdown),
@@ -360,7 +361,7 @@ Deno.test("markdown written another way means the same document", () => {
       ["* one", "- one"],
       ["Goal\n====", "# Goal"],
       ["***", "---"],
-    ]
+    ] as const
   ) {
     assertEquals(toAdf(written), toAdf(canonical), written);
   }
@@ -940,7 +941,7 @@ interface Generator {
 }
 
 function pick<T>(gen: Generator, values: T[]): T {
-  return values[Math.floor(gen.next() * values.length)];
+  return itemAt(values, Math.floor(gen.next() * values.length));
 }
 
 function times<T>(

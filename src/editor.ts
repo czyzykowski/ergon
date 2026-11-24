@@ -39,9 +39,13 @@ export async function editInBuffer(
   });
 
   try {
+    // deno-lint-ignore ergon/atomic-write -- a fresh scratch file, read back once
     await Deno.writeTextFile(path, edit.current);
 
-    const [command, ...args] = editor.split(/\s+/);
+    const [command, ...args] = editor.trim().split(/\s+/);
+    if (!command) {
+      throw new Error(edit.missingEditor);
+    }
     const status = await new Deno.Command(command, {
       args: [...args, path],
       stdin: "inherit",

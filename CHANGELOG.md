@@ -15,6 +15,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   before calling Jira, so neither fetches the issue or Comment for a write that
   cannot happen.
 
+- A `$VISUAL` or `$EDITOR` of only spaces counts as unset, so commands that open
+  an editor say no editor is configured. Before, ergon tried to run a command
+  with an empty name and failed with Deno's error.
+
 - An Interactive `ergon new` parent search finds text containing a backslash.
   Before, the backslash went into the JQL unescaped, so a search ending in one
   was refused by Jira.

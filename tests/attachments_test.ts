@@ -8,7 +8,8 @@ import {
   registerAttachmentsCommand,
   renderAttachments,
   selectAttachments,
-} from "../src/commands/attachments.ts";
+} from "../src/commands/attachments/mod.ts";
+import { itemAt, only } from "./only.ts";
 
 const SCREENSHOT: JiraAttachmentResponse = {
   id: "10423",
@@ -208,11 +209,11 @@ Deno.test("two attachments sharing a filename land at distinct paths", () => {
 });
 
 Deno.test("the unsanitized filename survives beside the safe path", () => {
-  const [row] = selectAttachments(
+  const row = only(selectAttachments(
     [mapAttachment({ ...SCREENSHOT, filename: "../../etc/passwd" })],
     [],
     "/work/att",
-  );
+  ));
 
   assertEquals(row.filename, "../../etc/passwd");
 });
@@ -225,7 +226,7 @@ Deno.test("without a dir no row has a path", () => {
 });
 
 Deno.test("a relative dir still gives an absolute path", () => {
-  const [row] = selectAttachments(ATTACHED, ["10423"], "att");
+  const row = only(selectAttachments(ATTACHED, ["10423"], "att"));
 
   assertEquals(row.path, join(Deno.cwd(), "att", "10423-checkout-error.png"));
 });
@@ -234,7 +235,9 @@ const byteLength = (text: string) => new TextEncoder().encode(text).length;
 
 /** The file name `filename` downloads to, as attachment 10423. */
 const downloadName = (filename: string) =>
-  selectAttachments([mapAttachment({ ...SCREENSHOT, filename })], [], "/att")[0]
+  only(
+    selectAttachments([mapAttachment({ ...SCREENSHOT, filename })], [], "/att"),
+  )
     .path.slice("/att/".length);
 
 Deno.test("a long filename is cut to 200 bytes, keeping its id and extension", () => {
@@ -283,7 +286,12 @@ const BYTES: Record<string, Uint8Array> = {
   "10425": new TextEncoder().encode("mp4 bytes"),
 };
 
-const fromJira = (id: string) => Promise.resolve(BYTES[id]);
+const fromJira = (id: string) => {
+  const bytes = BYTES[id];
+  return bytes
+    ? Promise.resolve(bytes)
+    : Promise.reject(new Error(`No bytes for ${id}.`));
+};
 
 async function inTempDir(run: (dir: string) => Promise<void>): Promise<void> {
   const dir = await Deno.makeTempDir();
@@ -300,7 +308,7 @@ const readText = async (path: string) =>
 async function entriesOf(dir: string): Promise<string[]> {
   const names = [];
   for await (const entry of Deno.readDir(dir)) names.push(entry.name);
-  return names.sort();
+  return names.sort((a, b) => a.localeCompare(b));
 }
 
 Deno.test("downloads land at the selected paths, creating a missing dir", async () => {
@@ -314,19 +322,19 @@ Deno.test("downloads land at the selected paths, creating a missing dir", async 
       "10423-checkout-error.png",
       "10424-server.log",
     ]);
-    assertEquals(await readText(rows[0].path), "png bytes");
-    assertEquals(await readText(rows[1].path), "log bytes");
+    assertEquals(await readText(itemAt(rows, 0).path), "png bytes");
+    assertEquals(await readText(itemAt(rows, 1).path), "log bytes");
   });
 });
 
 Deno.test("a download overwrites a file already at its path", async () => {
   await inTempDir(async (dir) => {
     const rows = selectAttachments(ATTACHED, ["10423"], dir);
-    await Deno.writeTextFile(rows[0].path, "a stale partial run");
+    await Deno.writeTextFile(itemAt(rows, 0).path, "a stale partial run");
 
     await downloadAttachments(rows, fromJira);
 
-    assertEquals(await readText(rows[0].path), "png bytes");
+    assertEquals(await readText(itemAt(rows, 0).path), "png bytes");
   });
 });
 

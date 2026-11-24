@@ -412,7 +412,7 @@ export class JiraClient {
   ): Promise<Record<string, unknown>> {
     const params = new URLSearchParams({ fields: fields.join(",") });
     const response = await this.request<JiraIssueFieldsResponse>(
-      `/rest/api/3/issue/${encodeURIComponent(issueKey)}?${params}`,
+      `/rest/api/3/issue/${encodeURIComponent(issueKey)}?${params.toString()}`,
       {
         method: "GET",
       },
@@ -449,7 +449,7 @@ export class JiraClient {
   async listBoards(projectKey: string): Promise<JiraBoard[]> {
     const params = new URLSearchParams({ projectKeyOrId: projectKey });
     const response = await this.request<JiraBoardResponse>(
-      `/rest/agile/1.0/board?${params}`,
+      `/rest/agile/1.0/board?${params.toString()}`,
       {
         method: "GET",
       },
@@ -461,7 +461,7 @@ export class JiraClient {
   async listActiveSprints(boardId: number): Promise<JiraSprint[]> {
     const params = new URLSearchParams({ state: "active" });
     const response = await this.request<JiraSprintResponse>(
-      `/rest/agile/1.0/board/${boardId}/sprint?${params}`,
+      `/rest/agile/1.0/board/${boardId}/sprint?${params.toString()}`,
       {
         method: "GET",
       },
@@ -484,7 +484,7 @@ export class JiraClient {
         startAt: startAt.toString(),
       });
       const response = await this.request<JiraSprintResponse>(
-        `/rest/agile/1.0/board/${boardId}/sprint?${params}`,
+        `/rest/agile/1.0/board/${boardId}/sprint?${params.toString()}`,
         { method: "GET" },
       );
 
@@ -530,7 +530,7 @@ export class JiraClient {
         maxResults: "1000",
       });
       const response = await this.request<JiraLabelResponse>(
-        `/rest/api/3/label?${params}`,
+        `/rest/api/3/label?${params.toString()}`,
         {
           method: "GET",
         },
@@ -625,7 +625,9 @@ export class JiraClient {
         orderBy: "created",
       });
       const response = await this.request<JiraCommentsResponse>(
-        `/rest/api/3/issue/${encodeURIComponent(issueKey)}/comment?${params}`,
+        `/rest/api/3/issue/${
+          encodeURIComponent(issueKey)
+        }/comment?${params.toString()}`,
         { method: "GET" },
       );
 

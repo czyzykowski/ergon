@@ -1,5 +1,5 @@
 import { assertEquals } from "testing/asserts.ts";
-import { renderRemoval } from "../src/commands/unlog.ts";
+import { renderRemoval } from "../src/commands/unlog/mod.ts";
 
 Deno.test("a receipt names what went, in the order a re-log is typed", () => {
   assertEquals(

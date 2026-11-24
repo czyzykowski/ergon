@@ -1,5 +1,5 @@
 import { assertEquals } from "testing/asserts.ts";
-import { renderIssue } from "../src/commands/get.ts";
+import { renderIssue } from "../src/commands/get/mod.ts";
 import type { JiraIssue } from "../src/types.ts";
 
 const ISSUE: JiraIssue = {
