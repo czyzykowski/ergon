@@ -1,15 +1,9 @@
 import type { Command } from "cliffy/command/mod.ts";
 import { Input, Select } from "cliffy/prompt/mod.ts";
 import { Checkbox } from "cliffy/prompt/checkbox.ts";
-import type { JiraBoard, JiraFieldOption, JiraSprint } from "../api/jira.ts";
+import type { JiraSprint } from "../api/jira.ts";
 import { JiraClient } from "../api/jira.ts";
-import type {
-  CachedBoard,
-  CachedIssue,
-  CachedOption,
-  CacheState,
-  JiraIssue,
-} from "../types.ts";
+import type { CachedBoard, CachedOption } from "../types.ts";
 import { loadConfig, requireDeclaredProject } from "../config.ts";
 import { isInteractive } from "../interactive.ts";
 import {
@@ -36,6 +30,7 @@ import {
   requireClientSowFieldId,
   resolveFields,
 } from "./new_fields.ts";
+import { CachedJira, type NewIssueJira } from "./new_jira.ts";
 
 interface NewOptions {
   project?: string;
@@ -174,18 +169,6 @@ function parseSprintId(value?: string): number | undefined {
   return undefined;
 }
 
-function toCachedIssues(epics: JiraIssue[]): CachedIssue[] {
-  return epics.map((epic) => ({ key: epic.key, summary: epic.summary }));
-}
-
-function toCachedOptions(options: JiraFieldOption[]): CachedOption[] {
-  return options.map((option) => ({ id: option.id, value: option.value }));
-}
-
-function toCachedBoards(boards: JiraBoard[]): CachedBoard[] {
-  return boards.map((board) => ({ id: board.id, name: board.name }));
-}
-
 async function promptSprintBoard(
   boards: CachedBoard[],
   boardId?: number | string,
@@ -267,7 +250,7 @@ async function promptSprint(
 }
 
 async function promptParentIssue(
-  jira: JiraClient,
+  jira: NewIssueJira,
   projectKey: string,
   parentTypes: string[],
 ): Promise<string> {
@@ -338,8 +321,13 @@ export function registerNewCommand(program: Command): void {
     )
     .action(async (options: NewOptions, summaryArg?: string) => {
       const config = await loadConfig();
-      const jira = new JiraClient(config.jira, config.defaults?.projects);
+      const client = new JiraClient(config.jira, config.defaults?.projects);
       const state = await loadState();
+      // --no-cache asks Jira every time and leaves the saved Cache as it was.
+      const cachedJira = options.noCache
+        ? undefined
+        : new CachedJira(client, state.cache);
+      const jira: NewIssueJira = cachedJira ?? client;
 
       const interactive = isInteractive(options);
 
@@ -385,34 +373,21 @@ export function registerNewCommand(program: Command): void {
       requireDeclaredProject(config.defaults?.projects, projectKey);
 
       const issueType = options.type ?? config.defaults?.issueType ?? "Task";
-      const useCache = !options.noCache;
-      const cache: CacheState = useCache
-        ? { ...(state.cache ?? {}) }
-        : state.cache ?? {};
       const epicNone = options.epic?.trim().toLowerCase() === "none" ||
         options.epic === EPIC_NONE_VALUE;
       let epicKey = epicNone ? undefined : (options.epic ??
         (interactive ? state.lastEpic : undefined) ?? config.defaults?.epic);
 
       if (!epicKey && !epicNone && issueType !== "Sub-task" && interactive) {
-        let cachedEpics = useCache ? cache.epics?.[projectKey] : undefined;
+        const epics = await jira.listEpics(projectKey);
 
-        if (!cachedEpics) {
-          const epics = await jira.listEpics(projectKey);
-          cachedEpics = toCachedIssues(epics);
-
-          if (useCache) {
-            cache.epics = { ...(cache.epics ?? {}), [projectKey]: cachedEpics };
-          }
-        }
-
-        if (cachedEpics.length > 0) {
+        if (epics.length > 0) {
           epicKey = await Select.prompt({
             message: "Epic",
             search: true,
             options: [
               { name: "None", value: EPIC_NONE_VALUE },
-              ...cachedEpics.map((epic) => ({
+              ...epics.map((epic) => ({
                 name: `${epic.key} ${epic.summary}`,
                 value: epic.key,
               })),
@@ -471,41 +446,8 @@ export function registerNewCommand(program: Command): void {
       let labels = resolved.labels;
 
       if (resolved.needsLabelPrompt) {
-        let availableLabels = useCache ? cache.labels : undefined;
-
-        if (!availableLabels) {
-          availableLabels = await jira.listLabels();
-
-          if (useCache) {
-            cache.labels = availableLabels;
-          }
-        }
-
-        labels = await promptLabels(availableLabels);
+        labels = await promptLabels(await jira.listLabels());
       }
-
-      const loadClientSowOptions = async (
-        fieldId: string,
-      ): Promise<CachedOption[]> => {
-        const cached = useCache ? cache.clientSowOptions?.[fieldId] : undefined;
-
-        if (cached) {
-          return cached;
-        }
-
-        const options = toCachedOptions(
-          await jira.getFieldOptions(fieldId),
-        );
-
-        if (useCache) {
-          cache.clientSowOptions = {
-            ...(cache.clientSowOptions ?? {}),
-            [fieldId]: options,
-          };
-        }
-
-        return options;
-      };
 
       const clientSowPlan = resolved.clientSow;
       // Undefined only when the plan is "skip"; anything else throws here rather
@@ -523,7 +465,7 @@ export function registerNewCommand(program: Command): void {
         clientSowPayload = clientSowPlan.payload;
       } else if (sowFieldId) {
         // Both remaining kinds — lookup and prompt — settle against the options.
-        const clientSowOptions = await loadClientSowOptions(sowFieldId);
+        const clientSowOptions = await jira.getFieldOptions(sowFieldId);
 
         if (clientSowPlan.kind === "lookup") {
           const match = clientSowOptions.find((option) =>
@@ -557,7 +499,7 @@ export function registerNewCommand(program: Command): void {
         sprintId = await resolveSprintId({
           projectKey,
           jira,
-          boards: await jira.listBoards(projectKey),
+          boards: await client.listBoards(projectKey),
           configuredBoardId: fieldDefaults?.sprintBoardId,
         });
       }
@@ -575,22 +517,8 @@ export function registerNewCommand(program: Command): void {
           );
         }
 
-        let availableBoards = useCache ? cache.boards?.[projectKey] : undefined;
-
-        if (!availableBoards) {
-          const boards = await jira.listBoards(projectKey);
-          availableBoards = toCachedBoards(boards);
-
-          if (useCache) {
-            cache.boards = {
-              ...(cache.boards ?? {}),
-              [projectKey]: availableBoards,
-            };
-          }
-        }
-
         const boardId = await promptSprintBoard(
-          availableBoards,
+          await jira.listBoards(projectKey),
           fieldDefaults?.sprintBoardId,
         );
 
@@ -644,7 +572,7 @@ export function registerNewCommand(program: Command): void {
           issueKey: issue.key,
           clientSow: clientSowPayload?.id ?? clientSowPayload?.value,
         }, interactive),
-        cache: useCache ? cache : state.cache,
+        cache: cachedJira?.cache ?? state.cache,
       });
 
       console.log(`Created ${issue.key}: ${summary}`);

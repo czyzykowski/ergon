@@ -48,6 +48,19 @@
 
 ## Updates
 
+- `ergon new` reaches Jira through `NewIssueJira` in `src/commands/new_jira.ts`,
+  a port listing only the calls it makes, and the Cache read-through is written
+  once, in the `CachedJira` decorator, instead of four times in the action. The
+  port narrows the epic and board lists to what the Cache keeps (`CachedIssue`,
+  `CachedBoard`), since a cached answer cannot produce a full `JiraIssue`;
+  `JiraClient` still satisfies it unchanged. The Active Sprint is still resolved
+  from `JiraClient.listBoards` directly: the Cache keeps no board type. A
+  prefactor for `specs/new-issue-module.md`.
+- `ergon new --no-cache` has never disabled the Cache. cliffy turns `--no-cache`
+  into `options.cache === false`, while the action reads `options.noCache`,
+  which is always undefined. Found while moving the Cache into the decorator,
+  and left as it was: that change was to alter no behaviour.
+
 - Jira's `/rest/api/3/search/jql` answers an unknown project key or status name
   with `{"issues":[],"isLast":true}`: no error, no warning. `search --project`
   now refuses an undeclared project, as `ls --project` does, so a typo cannot
