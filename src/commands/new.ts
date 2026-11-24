@@ -1,9 +1,7 @@
 import type { Command } from "cliffy/command/mod.ts";
-import { Input, Select } from "cliffy/prompt/mod.ts";
-import { Checkbox } from "cliffy/prompt/checkbox.ts";
 import type { JiraSprint } from "../api/jira.ts";
 import { JiraClient } from "../api/jira.ts";
-import type { CachedBoard, CachedOption } from "../types.ts";
+import type { CachedBoard } from "../types.ts";
 import { loadConfig, requireDeclaredProject } from "../config.ts";
 import { isInteractive } from "../interactive.ts";
 import {
@@ -25,12 +23,16 @@ import {
   optionPayload,
   parentFieldsFrom,
   parseAssignee,
-  parseLabels,
   rememberCreated,
   requireClientSowFieldId,
   resolveFields,
 } from "./new_fields.ts";
 import { CachedJira, type NewIssueJira } from "./new_jira.ts";
+import {
+  cliffyPrompter,
+  nonInteractivePrompter,
+  type Prompter,
+} from "./new_prompter.ts";
 
 interface NewOptions {
   project?: string;
@@ -50,110 +52,12 @@ interface NewOptions {
 
 const PARENT_REQUIRED_TYPES = new Set(["Task", "Sub-task"]);
 const EPIC_NONE_VALUE = "__none__";
-const SPRINT_NONE_VALUE = "__none__";
-
-async function promptProject(
-  projects?: Record<string, string>,
-): Promise<string | undefined> {
-  const entries = Object.entries(projects ?? {});
-
-  if (entries.length === 0) {
-    return await Input.prompt({
-      message: "Project key",
-      minLength: 1,
-    });
-  }
-
-  const options = entries.map(([key, name]) => ({
-    name: `${key} ${name}`,
-    value: key,
-  }));
-
-  return await Select.prompt({
-    message: "Project",
-    options,
-  });
-}
-
 function issueTypeRequiresParent(type?: string): boolean {
   if (!type) {
     return true;
   }
 
   return PARENT_REQUIRED_TYPES.has(type);
-}
-
-async function promptLabels(availableLabels: string[]): Promise<string[]> {
-  if (availableLabels.length === 0) {
-    const labelInput = await Input.prompt({
-      message: "Labels (comma separated)",
-      minLength: 1,
-    });
-
-    const labels = parseLabels(labelInput);
-    if (!labels) {
-      throw new Error("Labels are required.");
-    }
-
-    return labels;
-  }
-
-  const selection = await Checkbox.prompt({
-    message: "Labels",
-    options: availableLabels
-      .slice()
-      .sort((a, b) => a.localeCompare(b))
-      .map((label) => ({
-        name: label,
-        value: label,
-      })),
-    search: true,
-  });
-
-  if (!selection || selection.length === 0) {
-    throw new Error("Labels are required.");
-  }
-
-  return selection;
-}
-
-async function promptClientSow(
-  options: CachedOption[],
-  defaultValue?: string,
-): Promise<{ id?: string; value?: string }> {
-  if (options.length === 0) {
-    const value = await Input.prompt({
-      message: "Client SOW",
-      minLength: 1,
-    });
-
-    return { value };
-  }
-
-  const sortedOptions = [...options].sort((a, b) =>
-    a.value.localeCompare(b.value)
-  );
-  const defaultOption = defaultValue
-    ? sortedOptions.find((option) =>
-      option.id === defaultValue || option.value === defaultValue
-    )
-    : undefined;
-
-  const selection = await Select.prompt({
-    message: "Client SOW",
-    options: sortedOptions.map((option) => ({
-      name: option.value,
-      value: option.id,
-    })),
-    default: defaultOption?.id,
-  });
-
-  const selected = options.find((option) => option.id === selection);
-  if (!selected) {
-    return { value: selection };
-  }
-
-  return { id: selected.id, value: selected.value };
 }
 
 function parseSprintId(value?: string): number | undefined {
@@ -169,7 +73,12 @@ function parseSprintId(value?: string): number | undefined {
   return undefined;
 }
 
-async function promptSprintBoard(
+/**
+ * The board to pick an Active Sprint from: the configured one, else the only
+ * one, else the board the person picks.
+ */
+async function chooseSprintBoard(
+  prompter: Prompter,
   boards: CachedBoard[],
   boardId?: number | string,
 ): Promise<number | undefined> {
@@ -186,25 +95,15 @@ async function promptSprintBoard(
     return boards[0].id;
   }
 
-  const selection = await Select.prompt({
-    message: "Board",
-    options: [
-      { name: "None", value: SPRINT_NONE_VALUE },
-      ...boards.map((board) => ({
-        name: board.name,
-        value: board.id.toString(),
-      })),
-    ],
-  });
-
-  if (selection === SPRINT_NONE_VALUE) {
-    return undefined;
-  }
-
-  return Number(selection);
+  return await prompter.board(boards);
 }
 
-async function promptSprint(
+/**
+ * The Active Sprint named by --sprint, or else the one the person picks; none
+ * when the board has no Active Sprint and no name was given.
+ */
+async function chooseSprint(
+  prompter: Prompter,
   projectKey: string,
   sprints: JiraSprint[],
   sprintName?: string,
@@ -231,34 +130,20 @@ async function promptSprint(
     return match.id;
   }
 
-  const selection = await Select.prompt({
-    message: "Sprint",
-    options: [
-      { name: "None", value: SPRINT_NONE_VALUE },
-      ...sprints.map((sprint) => ({
-        name: sprint.name,
-        value: sprint.id.toString(),
-      })),
-    ],
-  });
-
-  if (selection === SPRINT_NONE_VALUE) {
-    return undefined;
-  }
-
-  return Number(selection);
+  return await prompter.sprint(sprints);
 }
 
-async function promptParentIssue(
+/**
+ * A Parent's key: typed outright, or picked from a search of the project's
+ * issues of the given types.
+ */
+async function askParentIssue(
+  prompter: Prompter,
   jira: NewIssueJira,
   projectKey: string,
   parentTypes: string[],
 ): Promise<string> {
-  const typeLabel = parentTypes.join("/");
-  const query = await Input.prompt({
-    message: `Parent ${typeLabel} search (or enter key)`,
-    minLength: 1,
-  });
+  const query = await prompter.parentQuery(parentTypes);
 
   if (/^[A-Z][A-Z0-9]+-\d+$/.test(query)) {
     return query;
@@ -275,13 +160,7 @@ async function promptParentIssue(
     throw new Error("No matching parent issues found.");
   }
 
-  return await Select.prompt({
-    message: `Select parent ${typeLabel}`,
-    options: matches.map((issue) => ({
-      name: `${issue.key} ${issue.summary}`,
-      value: issue.key,
-    })),
-  });
+  return await prompter.parent(matches, parentTypes);
 }
 
 export function registerNewCommand(program: Command): void {
@@ -330,6 +209,7 @@ export function registerNewCommand(program: Command): void {
       const jira: NewIssueJira = cachedJira ?? client;
 
       const interactive = isInteractive(options);
+      const prompter = interactive ? cliffyPrompter : nonInteractivePrompter;
 
       // Settled and read before the first prompt and the first Jira call: a
       // typo'd path, an empty file or a construct ergon cannot write costs an
@@ -361,7 +241,7 @@ export function registerNewCommand(program: Command): void {
         (interactive ? state.lastProject : undefined) ??
         config.defaults?.project ?? "";
       if (!projectKey && interactive) {
-        projectKey = (await promptProject(config.projects)) ?? "";
+        projectKey = await prompter.project(config.projects);
       }
 
       if (!projectKey) {
@@ -382,31 +262,12 @@ export function registerNewCommand(program: Command): void {
         const epics = await jira.listEpics(projectKey);
 
         if (epics.length > 0) {
-          epicKey = await Select.prompt({
-            message: "Epic",
-            search: true,
-            options: [
-              { name: "None", value: EPIC_NONE_VALUE },
-              ...epics.map((epic) => ({
-                name: `${epic.key} ${epic.summary}`,
-                value: epic.key,
-              })),
-            ],
-          });
-
-          if (epicKey === EPIC_NONE_VALUE) {
-            epicKey = undefined;
-          }
+          epicKey = await prompter.epic(epics);
         }
       }
 
       const summary = summaryArg ?? options.summary ??
-        (interactive
-          ? await Input.prompt({
-            message: "Summary",
-            minLength: 1,
-          })
-          : undefined);
+        (interactive ? await prompter.summary() : undefined);
 
       if (!summary) {
         throw new Error("Summary is required; pass --summary.");
@@ -414,7 +275,12 @@ export function registerNewCommand(program: Command): void {
       let parentKey = options.parent;
       if (!parentKey && issueTypeRequiresParent(issueType) && interactive) {
         const parentTypes = issueType === "Sub-task" ? ["Task"] : ["Story"];
-        parentKey = await promptParentIssue(jira, projectKey, parentTypes);
+        parentKey = await askParentIssue(
+          prompter,
+          jira,
+          projectKey,
+          parentTypes,
+        );
       }
 
       const projectDefaults = config.defaults?.projects?.[projectKey];
@@ -446,7 +312,7 @@ export function registerNewCommand(program: Command): void {
       let labels = resolved.labels;
 
       if (resolved.needsLabelPrompt) {
-        labels = await promptLabels(await jira.listLabels());
+        labels = await prompter.labels(await jira.listLabels());
       }
 
       const clientSowPlan = resolved.clientSow;
@@ -477,7 +343,7 @@ export function registerNewCommand(program: Command): void {
             : { value: clientSowPlan.value };
         } else if (clientSowPlan.kind === "prompt") {
           clientSowPayload = optionPayload(
-            await promptClientSow(clientSowOptions, clientSowPlan.default),
+            await prompter.clientSow(clientSowOptions, clientSowPlan.default),
           );
         }
       }
@@ -517,7 +383,8 @@ export function registerNewCommand(program: Command): void {
           );
         }
 
-        const boardId = await promptSprintBoard(
+        const boardId = await chooseSprintBoard(
+          prompter,
           await jira.listBoards(projectKey),
           fieldDefaults?.sprintBoardId,
         );
@@ -528,7 +395,8 @@ export function registerNewCommand(program: Command): void {
           }
         } else {
           // Never cached: an active Sprint is a fact with a shelf life.
-          sprintId = await promptSprint(
+          sprintId = await chooseSprint(
+            prompter,
             projectKey,
             await jira.listActiveSprints(boardId),
             sprintNameOverride,
