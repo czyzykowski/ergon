@@ -7,7 +7,7 @@ import { assertExpressible, planSource, readSource } from "../text_source.ts";
 import { fileNewIssue, parseAssignee } from "./new_issue.ts";
 import { cliffyPrompter, nonInteractivePrompter } from "./new_prompter.ts";
 
-interface NewOptions {
+export interface NewOptions {
   project?: string;
   epic?: string;
   parent?: string;
@@ -19,8 +19,14 @@ interface NewOptions {
   labels?: string;
   sprint?: string;
   assignee?: string;
-  noCache?: boolean;
+  // cliffy turns --no-cache into `cache: false`, and leaves it true otherwise.
+  cache?: boolean;
   nonInteractive?: boolean;
+}
+
+/** Whether a run reads and saves the Cache, from its parsed flags. */
+export function usesCache(options: NewOptions): boolean {
+  return options.cache !== false;
 }
 
 export function registerNewCommand(program: Command): void {
@@ -104,9 +110,7 @@ export function registerNewCommand(program: Command): void {
         interactive,
         prompter: interactive ? cliffyPrompter : nonInteractivePrompter,
         jira: new JiraClient(config.jira, config.defaults?.projects),
-        // cliffy sets `cache: false` for --no-cache, never `noCache`, so the
-        // flag does nothing yet — a known bug, see NOTES.md.
-        useCache: !options.noCache,
+        useCache: usesCache(options),
       });
 
       await saveState(next);

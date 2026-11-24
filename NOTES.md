@@ -76,9 +76,7 @@
   - For that, the port's `listBoards` now answers
     `(CachedBoard & { type?: string })[]`: `JiraClient` supplies the type, the
     Cache drops it. `CachedJira` still satisfies the port.
-  - `--no-cache` is the `useCache` input, so its module test is meaningful; the
-    action still reads `options.noCache`, which cliffy never sets (see below),
-    so the flag still does nothing from the command line.
+  - `--no-cache` is the `useCache` input, so its module test is meaningful.
   - `chooseSprintBoard`, `chooseSprint` and the parent search moved from the
     action into the module; the Prompter's `board` and `sprint` stay pure
     selects.
@@ -103,10 +101,13 @@
   from `JiraClient.listBoards` directly: the Cache keeps no board type. A
   prefactor for `specs/new-issue-module.md`.
 
-- `ergon new --no-cache` has never disabled the Cache. cliffy turns `--no-cache`
-  into `options.cache === false`, while the action reads `options.noCache`,
-  which is always undefined. Found while moving the Cache into the decorator,
-  and left as it was: that change was to alter no behaviour.
+- `ergon new --no-cache` did not disable the Cache. cliffy turns `--no-cache`
+  into `options.cache === false`, while the action read `options.noCache`, which
+  was always undefined. Found while moving the Cache into the decorator, and
+  left as it was: that change was to alter no behaviour. Fixed since: the action
+  derives `useCache` with `usesCache(options)` in `src/commands/new.ts`, tested
+  in `tests/new_test.ts` by parsing through the real command with its action
+  swapped for one that keeps the options.
 
 - `ergon new` asks every question through a Prompter
   (`src/commands/new_prompter.ts`), the first seam of the deep module the spec
