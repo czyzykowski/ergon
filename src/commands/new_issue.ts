@@ -63,7 +63,6 @@ export interface FiledIssue {
 }
 
 const PARENT_REQUIRED_TYPES = new Set(["Task", "Sub-task"]);
-const EPIC_NONE_VALUE = "__none__";
 
 /**
  * Create the issue the draft describes, asking the Prompter whatever the
@@ -98,7 +97,7 @@ export async function fileNewIssue(
   requireDeclaredProject(config.defaults?.projects, projectKey);
 
   const issueType = draft.type ?? config.defaults?.issueType ?? "Task";
-  const epicNone = isNoneValue(draft.epic) || draft.epic === EPIC_NONE_VALUE;
+  const epicNone = isNoneValue(draft.epic);
   let epicKey = epicNone ? undefined : (draft.epic ??
     (interactive ? state.lastEpic : undefined) ?? config.defaults?.epic);
 

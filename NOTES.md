@@ -116,6 +116,9 @@
     <name>` board prompt, for the fixes to flip.
   - `--epic __none__` still means no Epic, as before: the action's old check of
     the cliffy sentinel came along unchanged, though no prompt produces it now.
+    Dropped since, as the spec keeps sentinels inside the cliffy adapter:
+    `--epic` reads None through `isNoneValue` like every other flag, so the
+    literal `--epic __none__` is now taken as an Epic key.
 
 - `ergon new` reaches Jira through `NewIssueJira` in `src/commands/new_jira.ts`,
   a port listing only the calls it makes, and the Cache read-through is written

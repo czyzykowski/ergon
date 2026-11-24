@@ -315,6 +315,23 @@ Deno.test("a Non-interactive run Inherits from --epic when no --parent is given"
   });
 });
 
+Deno.test("--epic none files under no Epic", async () => {
+  const { created, calls } = await run({
+    draft: { project: "PCK", epic: " None ", labels: "a", clientSow: "none" },
+  });
+
+  assertEquals(calls, ["createIssue"]);
+  assertEquals(created[0].parentKey, undefined);
+});
+
+Deno.test("--epic __none__ is an Epic key, not None", async () => {
+  const { created } = await run({
+    draft: { project: "PCK", epic: "__none__", labels: "a", clientSow: "none" },
+  });
+
+  assertEquals(created[0].parentKey, "__none__");
+});
+
 Deno.test("explicit labels replace Inherited ones", async () => {
   const { created } = await run({
     draft: { project: "PCK", parent: "PCK-5", labels: "urgent, spike" },
