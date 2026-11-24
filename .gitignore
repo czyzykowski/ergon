@@ -1,0 +1,4 @@
+.claude/worktrees/
+.direnv/
+.scratch/
+coverage/

@@ -2,6 +2,7 @@
   "name": "ergon",
   "version": "0.1.0",
   "exports": "./src/main.ts",
+  "exclude": [".claude/", ".direnv/", ".scratch/", "coverage/"],
   "imports": {
     "cliffy/": "https://deno.land/x/cliffy@v0.25.7/",
     "mdast-util-from-markdown": "npm:mdast-util-from-markdown@^2.0.2",
