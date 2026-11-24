@@ -40,6 +40,7 @@ the same strictness yet. _Superseded by
 the condition this paragraph named: reading an issue's Sprints made the sprint
 field's semantics something ergon reports._
 
-The "does this plan need a field?" question lives in one pure function,
-`requireClientSowFieldId` in `src/commands/new/issue.ts`, so the boundary
-between `skip` and everything else is stated once and covered by tests.
+The boundary is stated once, in `settleClientSow` in
+`src/commands/new/issue.ts`: a `skip` plan returns before any field is needed,
+and every other plan goes through `requireClientSowFieldId`, which refuses a
+project with no `clientSowFieldId`. Tests cover both sides.
